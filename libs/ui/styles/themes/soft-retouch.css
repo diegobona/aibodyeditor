@@ -1,0 +1,94 @@
+/* Soft Retouch Theme (aibodyeditor.net brand) - CSS Variables
+ * Lilac ground, ink text, violet accent. Pairs with Fraunces (display) + Figtree (body).
+ */
+.theme-soft-retouch {
+  --background: #F6F4FB;
+  --foreground: #1E1A2E;
+  --card: #FFFFFF;
+  --card-foreground: #1E1A2E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E1A2E;
+  --primary: #6D4AFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #1E1A2E;
+  --muted: #EEEAF8;
+  --muted-foreground: #5E5872;
+  --accent: #ECE6FF;
+  --accent-foreground: #1E1A2E;
+  --destructive: #C8344F;
+  --destructive-foreground: #FFFFFF;
+  --border: #E4DFF0;
+  --input: #D6CFE8;
+  --ring: #6D4AFF;
+  --chart-1: #6D4AFF;
+  --chart-2: #E0457B;
+  --chart-3: #DCD3FA;
+  --chart-4: #FFD9CF;
+  --chart-5: #1E1A2E;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1E1A2E;
+  --sidebar-primary: #6D4AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EEEAF8;
+  --sidebar-accent-foreground: #1E1A2E;
+  --sidebar-border: #E4DFF0;
+  --sidebar-ring: #6D4AFF;
+  --radius: 1rem;
+
+  --chart-1-bg-10: rgb(109 74 255 / 0.1);
+  --chart-1-bg-15: rgb(109 74 255 / 0.15);
+  --chart-2-bg-15: rgb(224 69 123 / 0.15);
+  --chart-3-bg-15: rgb(220 211 250 / 0.15);
+  --chart-4-bg-15: rgb(255 217 207 / 0.15);
+  --chart-5-bg-15: rgb(30 26 46 / 0.15);
+
+  --gradient-chart-warm: linear-gradient(to right, #6D4AFF, #E0457B);
+  --gradient-chart-cool: linear-gradient(to right, #DCD3FA, #6D4AFF);
+}
+
+.theme-soft-retouch.dark {
+  --background: #15121F;
+  --foreground: #F1EEF9;
+  --card: #1E1A2E;
+  --card-foreground: #F1EEF9;
+  --popover: #1E1A2E;
+  --popover-foreground: #F1EEF9;
+  --primary: #A08CFF;
+  --primary-foreground: #15121F;
+  --secondary: #262139;
+  --secondary-foreground: #F1EEF9;
+  --muted: #262139;
+  --muted-foreground: #B9B2CC;
+  --accent: #2E2745;
+  --accent-foreground: #F1EEF9;
+  --destructive: #FF6B86;
+  --destructive-foreground: #15121F;
+  --border: #332C4A;
+  --input: #3D3557;
+  --ring: #A08CFF;
+  --chart-1: #A08CFF;
+  --chart-2: #FF7AA6;
+  --chart-3: #3D3557;
+  --chart-4: #5A4436;
+  --chart-5: #F1EEF9;
+  --sidebar: #1E1A2E;
+  --sidebar-foreground: #F1EEF9;
+  --sidebar-primary: #A08CFF;
+  --sidebar-primary-foreground: #15121F;
+  --sidebar-accent: #262139;
+  --sidebar-accent-foreground: #F1EEF9;
+  --sidebar-border: #332C4A;
+  --sidebar-ring: #A08CFF;
+  --radius: 1rem;
+
+  --chart-1-bg-10: rgb(160 140 255 / 0.1);
+  --chart-1-bg-15: rgb(160 140 255 / 0.15);
+  --chart-2-bg-15: rgb(255 122 166 / 0.15);
+  --chart-3-bg-15: rgb(61 53 87 / 0.15);
+  --chart-4-bg-15: rgb(90 68 54 / 0.15);
+  --chart-5-bg-15: rgb(241 238 249 / 0.15);
+
+  --gradient-chart-warm: linear-gradient(to right, #A08CFF, #FF7AA6);
+  --gradient-chart-cool: linear-gradient(to right, #3D3557, #A08CFF);
+}

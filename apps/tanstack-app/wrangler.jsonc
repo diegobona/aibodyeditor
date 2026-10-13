@@ -1,0 +1,39 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "aibodyeditor",
+	"compatibility_date": "2026-03-17",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": {
+		"enabled": true
+	},
+	// PostgreSQL via Hyperdrive.
+	// TODO before first deploy: `npx wrangler hyperdrive create aibodyeditor-db --connection-string="postgres://..."`
+	// and replace `id` below with your own Hyperdrive config id (the current one is the scaffold's sample).
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "d811cfad030643698c9c92f88f47ee34",
+			"localConnectionString": "postgresql://username:password@localhost:5432/aibodyeditor"
+		}
+	],
+	// Non-sensitive environment variables
+	"vars": {
+		"DB_DIALECT": "pg",
+		// Canonical origin: https, apex domain, no www.
+		"APP_BASE_URL": "https://aibodyeditor.net",
+		"BETTER_AUTH_URL": "https://aibodyeditor.net",
+		"VITE_STORAGE_PROVIDER": "r2"
+	},
+	"r2_buckets": [
+		{
+			"binding": "R2_BUCKET",
+			"bucket_name": "aibodyeditor"
+		}
+	]
+	// Custom domain: route aibodyeditor.net to this Worker, then in the Cloudflare
+	// dashboard add a Redirect Rule www.aibodyeditor.net/* -> https://aibodyeditor.net/${1} (301)
+	// and enable SSL/TLS -> Edge Certificates -> "Always Use HTTPS".
+}

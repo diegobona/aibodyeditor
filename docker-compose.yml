@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # TanStack Start app (aibodyeditor.net)
+  tinyship-tanstack:
+    build:
+      context: .
+      dockerfile: apps/tanstack-app/Dockerfile
+    image: tinyship-tanstack
+    container_name: tinyship-tanstack
+    ports:
+      - "7001:7001"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+# Usage:
+# Start:    docker-compose up -d
+# Stop:     docker-compose down
+# Logs:     docker-compose logs -f
+# Rebuild:  docker-compose up -d --build
