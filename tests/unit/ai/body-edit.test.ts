@@ -83,7 +83,7 @@ describe('body image edit HTTP contract', () => {
     const result = await editBodyImage(options(), { apiKey: TEST_KEY, fetch: fetchMock });
     expect(result).toMatchObject({
       imageUrl: `data:image/png;base64,${PNG_B64}`, provider: 'openai', model: MODEL,
-      mode: 'slim', intensity: 'balanced', requestId: 'req-test-image',
+      mode: 'slim', intensity: 70, requestId: 'req-test-image',
     });
     expect(result.outputFormat).toBe('png');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -92,8 +92,8 @@ describe('body image edit HTTP contract', () => {
   test('returns a secure provider URL without downloading it', async () => {
     const url = 'https://images.example.test/edited.png?signature=unit-test';
     const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ data: [{ url }] }));
-    const result = await editBodyImage(options({ mode: 'muscle', intensity: 'balanced' }), { apiKey: TEST_KEY, fetch: fetchMock });
-    expect(result).toMatchObject({ imageUrl: url, provider: 'openai', model: MODEL, mode: 'muscle', intensity: 'balanced' });
+    const result = await editBodyImage(options({ mode: 'muscle', intensity: 70 }), { apiKey: TEST_KEY, fetch: fetchMock });
+    expect(result).toMatchObject({ imageUrl: url, provider: 'openai', model: MODEL, mode: 'muscle', intensity: 70 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -137,12 +137,12 @@ describe('body image edit HTTP contract', () => {
       breast: /adult.*clothed.*bust/i,
     }[mode];
     const fetchMock = vi.fn<typeof fetch>(async () => imageResponse());
-    const result = await editBodyImage(options({ mode, intensity: 'noticeable' }), { apiKey: TEST_KEY, fetch: fetchMock });
+    const result = await editBodyImage(options({ mode, intensity: 90 }), { apiKey: TEST_KEY, fetch: fetchMock });
     const form = fetchMock.mock.calls[0][1]?.body as FormData;
     expect([...form.keys()].sort()).toEqual(['image', 'model', 'n', 'prompt']);
     expect(String(form.get('prompt'))).toMatch(target);
-    expect(String(form.get('prompt'))).toMatch(/noticeable intensity/i);
-    expect(result).toMatchObject({ mode, intensity: 'noticeable' });
+    expect(String(form.get('prompt'))).toMatch(/Editing strength: 90 out of 100/i);
+    expect(result).toMatchObject({ mode, intensity: 90 });
   });
 
   test('ignores client attempts to override the model or fixed prompt', async () => {
@@ -159,13 +159,13 @@ describe('body image edit HTTP contract', () => {
     const b64 = Buffer.from(WEBP).toString('base64');
     const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ data: [{ b64_json: b64 }] }));
     const result = await editBodyImage(options({
-      sourceImage: { bytes: WEBP, mimeType: 'image/webp' }, mode: 'breast', intensity: 'subtle',
+      sourceImage: { bytes: WEBP, mimeType: 'image/webp' }, mode: 'breast', intensity: 20,
     }), { apiKey: TEST_KEY, fetch: fetchMock });
     const form = fetchMock.mock.calls[0][1]?.body as FormData;
     const image = form.get('image') as File;
     expect(image.type).toBe('image/webp');
     expect(new Uint8Array(await image.arrayBuffer())).toEqual(WEBP);
-    expect(result).toMatchObject({ imageUrl: `data:image/webp;base64,${b64}`, outputFormat: 'webp', mode: 'breast', intensity: 'subtle' });
+    expect(result).toMatchObject({ imageUrl: `data:image/webp;base64,${b64}`, outputFormat: 'webp', mode: 'breast', intensity: 20 });
   });
 });
 

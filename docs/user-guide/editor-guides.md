@@ -6,12 +6,12 @@ Choose one JPG, PNG or WebP image up to 10 MB. Use a clear, clothed adult portra
 
 Choose a mode:
 
-- **Slim** asks for a narrower waist and upper-arm outline.
-- **Muscle** asks for athletic shoulder and arm definition under original clothing.
-- **Proportions** asks for overall shoulder, waist and leg balance.
+- **Slim** asks for a slimmer waist, abdomen, upper arms and visible thighs.
+- **Muscle** asks for stronger shoulders, arms and chest, with muscle volume under original clothing and abdominal definition where already visible.
+- **Proportions** asks for longer-looking legs relative to the torso and a more defined waist within the original frame.
 - **Breast** asks for a fuller bust silhouette under existing clothes, retaining neckline and coverage.
 
-Choose Subtle, Balanced or Noticeable intensity. These express intended strength, not an exact measurement. Results vary with the photo, clothing and requested change.
+Set the **Intensity** slider anywhere from 1 to 100. It starts at 70 for a clearly visible change. Lower values request subtle adjustments and higher values request a dramatic transformation. Arrow keys adjust by one; Home and End select the endpoints. The number describes editing strength, not a body-size percentage or an exact measurement. Results vary with the photo, clothing and requested change. Moving the slider does not generate an image or consume credits; select **Edit my photo** to apply it.
 
 Sign in and select **Edit my photo** to generate a result. Your selected original is retained while you sign in. Each account gets 15 trial credits once, enough for one edit; subsequent edits also use 15 credits. If an edit fails, the app returns its consumed credits. Generating another result uses credits, including after changing mode or intensity.
 

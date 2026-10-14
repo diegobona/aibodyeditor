@@ -1,4 +1,4 @@
-import { bodyEditConfig } from '../../../../config/body-editor';
+import { bodyEditConfig, LEGACY_BODY_EDIT_INTENSITIES, normalizeBodyEditIntensity } from '../../../../config/body-editor';
 import { prepareBodyImageEdit, type BodyImageEditOptions } from '../../../../libs/ai/body-edit';
 import { isBodyEditUuid, type BodyEditorService } from '../../../../libs/ai/body-editor-service';
 import { BodyEditError, type BodyEditOutcome } from '../../../../libs/credits/body-edit-types';
@@ -87,10 +87,19 @@ export function createBodyEditHandlers(deps: {
         if (image.size > bodyEditConfig.maxInputBytes) throw new BodyEditError('INVALID_INPUT', 413);
         const requestId = form.get('requestId');
         if (typeof requestId !== 'string' || !isBodyEditUuid(requestId)) throw new BodyEditError('INVALID_INPUT', 400);
+        const rawIntensity = form.get('intensity') ?? undefined;
+        if (form.getAll('intensity').length > 1) throw new BodyEditError('INVALID_INPUT', 400);
+        let intensity: BodyImageEditOptions['intensity'];
+        try {
+          const numeric = normalizeBodyEditIntensity(rawIntensity);
+          // Keep legacy names for old idempotency hashes; new requests use numbers.
+          intensity = typeof rawIntensity === 'string' && Object.hasOwn(LEGACY_BODY_EDIT_INTENSITIES, rawIntensity)
+            ? rawIntensity as BodyImageEditOptions['intensity'] : numeric;
+        } catch { throw new BodyEditError('INVALID_INPUT', 400); }
         const options: BodyImageEditOptions = {
           sourceImage: { bytes: new Uint8Array(await image.arrayBuffer()), mimeType: image.type as BodyImageEditOptions['sourceImage']['mimeType'] },
           mode: form.get('mode') as BodyImageEditOptions['mode'],
-          intensity: (form.get('intensity') ?? undefined) as BodyImageEditOptions['intensity'],
+          intensity,
         };
         try { prepareBodyImageEdit(options, { baseURL: bodyEditConfig.baseURL }); }
         catch { throw new BodyEditError('INVALID_INPUT', 400); }

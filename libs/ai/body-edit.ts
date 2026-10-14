@@ -2,9 +2,10 @@ import { Buffer } from "node:buffer";
 import {
   bodyEditConfig,
   BODY_EDIT_MODES,
-  BODY_EDIT_INTENSITIES,
+  normalizeBodyEditIntensity,
   type BodyEditMode,
   type BodyEditIntensity,
+  type BodyEditIntensityInput,
 } from "../../config/body-editor";
 import { buildBodyEditPrompt } from "./body-edit-prompts";
 import { getApiKey, getBaseUrl } from "./config";
@@ -41,7 +42,7 @@ export class BodyImageEditError extends Error {
 export interface BodyImageEditOptions {
   sourceImage: { bytes: Uint8Array; mimeType: ImageMime; fileName?: string };
   mode: BodyEditMode;
-  intensity?: BodyEditIntensity;
+  intensity?: BodyEditIntensityInput;
   signal?: AbortSignal;
 }
 
@@ -121,16 +122,16 @@ export function prepareBodyImageEdit(
     source.bytes.byteLength > bodyEditConfig.maxInputBytes ||
     !bodyEditConfig.allowedMimeTypes.includes(source.mimeType) ||
     `image/${imageFormat(source.bytes)}` !== source.mimeType ||
-    !BODY_EDIT_MODES.includes(options.mode) ||
-    (options.intensity !== undefined &&
-      !BODY_EDIT_INTENSITIES.includes(options.intensity))
+    !BODY_EDIT_MODES.includes(options.mode)
   ) {
     throw new BodyImageEditError(
       "INVALID_INPUT",
       "Provide a PNG, JPEG or WebP image up to 10 MB and a supported mode and intensity.",
     );
   }
-  const intensity = options.intensity ?? "balanced";
+  let intensity: BodyEditIntensity;
+  try { intensity = normalizeBodyEditIntensity(options.intensity); }
+  catch { throw new BodyImageEditError('INVALID_INPUT', 'Provide an integer editing intensity from 1 to 100.'); }
   const fileName =
     source.fileName
       ?.split(/[\\/]/)

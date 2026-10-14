@@ -12,7 +12,7 @@ let serial = 0;
 function input(overrides: Partial<ReserveBodyEdit> = {}): ReserveBodyEdit {
   serial++;
   return { jobId: `job-${serial}`, userId: 'u1', requestId: `request-${serial}`, inputHash: 'a'.repeat(64),
-    mode: 'slim', intensity: 'balanced', model: 'gpt-image-2.5-1k', costCredits: 15, trialCredits: 15,
+    mode: 'slim', intensity: 70, model: 'gpt-image-2.5-1k', costCredits: 15, trialCredits: 15,
     now: start, deadlineAt: new Date(start.getTime() + 185_000), ...overrides };
 }
 const rows = () => sqlite.prepare('SELECT * FROM credit_transaction').all();
@@ -32,6 +32,15 @@ beforeEach(() => {
 afterEach(() => sqlite?.close());
 
 describe('persistent body edit billing', () => {
+  test('stores exact continuous strength and reads historical named strengths without another debit', async () => {
+    const request = input({ intensity: 73 });
+    const first = await repo.reserve(request);
+    expect(first.job.intensity).toBe(73);
+    expect(rows()).toEqual(expect.arrayContaining([expect.objectContaining({ metadata: expect.stringContaining('"intensity":73') })]));
+    sqlite.prepare('UPDATE body_image_edit SET intensity = ? WHERE id = ?').run('noticeable', request.jobId);
+    expect((await repo.get('u1', request.jobId, start)).job.intensity).toBe(80);
+    expect(balance()).toBe(0); expect(rows()).toHaveLength(2);
+  });
   test('atomically grants the one account trial and debits its first edit once', async () => {
     const first = input();
     expect(await repo.reserve(first)).toMatchObject({ job: { id: first.jobId, status: 'processing' }, balance: 0, reused: false });

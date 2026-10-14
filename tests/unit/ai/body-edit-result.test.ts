@@ -11,7 +11,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const WEBP = new Uint8Array(readFileSync(resolve('apps/tanstack-app/public/examples/v2/slim-editorial-v2.webp')));
 
 function result(imageUrl = CDN_URL): BodyImageEditResult {
-  return { imageUrl, provider: 'openai', model: 'gpt-image-2.5-1k', mode: 'slim', intensity: 'balanced', requestId: 'req-result-unit' };
+  return { imageUrl, provider: 'openai', model: 'gpt-image-2.5-1k', mode: 'slim', intensity: 70, requestId: 'req-result-unit' };
 }
 
 function imageResponse(bytes = PNG, init: ResponseInit = {}) {

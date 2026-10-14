@@ -11,11 +11,12 @@ import {
 } from "@libs/react-shared/ui/dialog";
 import { DiptychPhoto } from "@libs/react-shared/components/photo-comparison";
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
+import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
 import { useBodyEdit } from "@libs/react-shared/hooks/use-body-edit";
 import { cn } from "@libs/ui/utils/cn";
 import {
   BODY_EDIT_MODES,
-  BODY_EDIT_INTENSITIES,
+  BODY_EDIT_INTENSITY,
   bodyEditConfig,
   type BodyEditMode,
   type BodyEditIntensity,
@@ -93,7 +94,7 @@ export function UploadDropzone({
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
-  const [intensity, setIntensity] = useState<BodyEditIntensity>("balanced");
+  const [intensity, setIntensity] = useState<BodyEditIntensity>(BODY_EDIT_INTENSITY.default);
   const [error, setError] = useState(""),
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),
@@ -373,38 +374,19 @@ export function UploadDropzone({
             ))}
           </fieldset>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-3 px-1">
-            <fieldset disabled={locked} className="min-w-0">
-              <legend className="mb-1.5 text-xs font-medium text-muted-foreground">
-                {editCopy.intensityLabel}
-              </legend>
-              <div className="flex gap-1 rounded-full bg-background p-1">
-                {BODY_EDIT_INTENSITIES.map((value) => (
-                  <label
-                    key={value}
-                    className={cn(
-                      "rounded-full px-3 py-2 text-xs font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                      intensity === value
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground",
-                      !locked && "cursor-pointer",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name={"edit-intensity-" + inputId}
-                      value={value}
-                      checked={intensity === value}
-                      onChange={() => {
-                        setIntensity(value);
-                        editing.reset();
-                      }}
-                      className="sr-only"
-                    />
-                    {editCopy.intensities[value]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <div className="w-full min-w-0 sm:max-w-sm sm:flex-1">
+              <BodyEditIntensitySlider
+                value={intensity}
+                onChange={(value) => { setIntensity(value); editing.reset(); }}
+                disabled={locked}
+                label={editCopy.intensityLabel}
+                lowLabel={editCopy.intensityLow}
+                highLabel={editCopy.intensityHigh}
+                valueLabel={editCopy.intensityValue.replace('{value}', String(intensity))}
+                description={editCopy.intensityDescriptions[mode]}
+                hint={editCopy.intensityHint}
+              />
+            </div>
             <Button
               type="button"
               size="lg"

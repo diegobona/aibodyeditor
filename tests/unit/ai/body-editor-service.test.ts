@@ -36,7 +36,7 @@ function setup() {
   };
   const store: BodyEditResultStore = { put: vi.fn(async (jobId) => `body-edits/${jobId}.png`), get: vi.fn(async () => null), delete: vi.fn(async () => undefined) };
   const edit = vi.fn(async () => ({ imageUrl: `data:image/png;base64,${Buffer.from(PNG).toString('base64')}`,
-    outputFormat: 'png' as const, provider: 'openai' as const, model: 'gpt-image-2.5-1k' as const, mode: 'slim' as const, intensity: 'balanced' as const }));
+    outputFormat: 'png' as const, provider: 'openai' as const, model: 'gpt-image-2.5-1k' as const, mode: 'slim' as const, intensity: 70 as const }));
   const available = vi.fn(async () => true);
   const service = createBodyEditorService({ repository: repo, storage: store, editImage: edit, checkAvailable: available,
     now: () => new Date('2026-10-14T12:00:00Z'), newJobId: () => id });
@@ -45,6 +45,29 @@ function setup() {
 }
 
 describe('body editor domain', () => {
+  test('keeps numeric strength in the job, prompt options and request fingerprint', async () => {
+    const { service, repo, edit, input } = setup();
+    await service.submit({ ...input, intensity: 73 });
+    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ intensity: 73 }));
+    expect(edit).toHaveBeenCalledWith(expect.objectContaining({ intensity: 73 }));
+    const numericHash = vi.mocked(repo.reserve).mock.calls[0][0].inputHash;
+    await service.submit({ ...input, requestId: '87654321-1234-4234-8234-123456789012', intensity: 74 });
+    expect(vi.mocked(repo.reserve).mock.calls[1][0].inputHash).not.toBe(numericHash);
+  });
+  test('preserves historical named request fingerprints while recording numeric strength', async () => {
+    const { service, repo, input } = setup();
+    await service.submit({ ...input, intensity: 'balanced' });
+    const prefix = new TextEncoder().encode('slim\0balanced\0image/png\0');
+    const bytes = new Uint8Array(prefix.length + input.image.bytes.length);
+    bytes.set(prefix); bytes.set(input.image.bytes, prefix.length);
+    const expectedHash = Buffer.from(await crypto.subtle.digest('SHA-256', bytes)).toString('hex');
+    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ intensity: 50, inputHash: expectedHash }));
+  });
+  test.each([0, 101, 73.5, NaN])('rejects invalid strength %s before reserving credits', async (intensity) => {
+    const { service, repo, edit, input } = setup();
+    await expect(service.submit({ ...input, intensity })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    expect(repo.reserve).not.toHaveBeenCalled(); expect(edit).not.toHaveBeenCalled();
+  });
   test('reserves billing once, stores only the output, and reuses a completed request', async () => {
     const { service, repo, edit, store, input } = setup();
     const first = await service.submit(input);

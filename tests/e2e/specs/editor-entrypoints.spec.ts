@@ -13,7 +13,7 @@ const TOOLS = [
 ] as const;
 const INDEXABLE_PAGES = [{ path: '/', name: 'AI Body Editor' }, ...TOOLS];
 const AVAILABILITY = 'Choose a mode and intensity. Sign in to generate your edit.';
-const SHARED_EDITOR_INTRO = 'Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus three intensity choices.';
+const SHARED_EDITOR_INTRO = 'Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus a continuous intensity slider.';
 const PREVIEW_NOTICE = 'Your selected photo will stay here while you sign in.';
 const PREVIEW_PNG = readFileSync(resolve(__dirname, '../../../apps/tanstack-app/public/favicon-32x32.png'));
 
@@ -126,12 +126,12 @@ test.describe('One editor, homepage and topic entry points', () => {
       await visit(page, path);
       const editor = page.locator('#try');
       await expect(editor.getByText(AVAILABILITY, { exact: true })).toBeVisible();
-      await expect(editor.getByRole('radio')).toHaveCount(7);
+      await expect(editor.getByRole('radio')).toHaveCount(4);
       for (const mode of ['Slim', 'Muscle', 'Proportions', 'Breast']) {
         await expect(editor.locator('fieldset').getByText(mode, { exact: true })).toBeVisible();
       }
       await expect(editor.locator('input[value="slim"]')).toBeChecked();
-      await expect(editor.getByRole('slider')).toHaveCount(0);
+      await expect(editor.getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('70');
 
       const input = editor.locator('input[type="file"]');
       await input.setInputFiles({ name: 'local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });

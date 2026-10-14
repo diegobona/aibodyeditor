@@ -14,11 +14,30 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const WIRE_LIMIT = MAX_IMAGE_BYTES + 64 * 1024;
 const PRIVATE_ERROR = 'sk-private-unit-only upstream-detail private/storage-path';
 
+test.each(['1', '37', '73', '100'])('HTTP intensity %s reaches the service as an exact number', async (value) => {
+  const { handlers, service } = setup();
+  const response = await handlers.submit(formRequest({ intensity: value }));
+  expect(response.status).toBe(200);
+  expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ intensity: Number(value) }));
+});
+
+test.each(['0', '-1', '101', '37.5', 'NaN', 'Infinity', '', ' 70 ', '070', '1e2', '0x46'])('rejects malformed numeric intensity %s before executing', async (value) => {
+  const { handlers, service } = setup();
+  await expectError(await handlers.submit(formRequest({ intensity: value })), 400, 'INVALID_INPUT');
+  expect(service.submit).not.toHaveBeenCalled();
+});
+
+test('legacy strengths remain accepted when old clients retry requests', async () => {
+  const { handlers, service } = setup();
+  expect((await handlers.submit(formRequest({ intensity: 'balanced' }))).status).toBe(200);
+  expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ intensity: 'balanced' }));
+});
+
 function outcome(overrides: Partial<BodyEditJob> = {}, reused = false): BodyEditOutcome {
   return {
     job: {
       id: JOB_ID, userId: 'user-owner', requestId: REQUEST_ID, inputHash: 'a'.repeat(64),
-      mode: 'slim', intensity: 'balanced', model: 'gpt-image-2.5-1k', status: 'succeeded', costCredits: 15,
+      mode: 'slim', intensity: 70, model: 'gpt-image-2.5-1k', status: 'succeeded', costCredits: 15,
       resultKey: `private/body-edits/${JOB_ID}.png`, resultMimeType: 'image/png', errorCode: null, refunded: false,
       createdAt: new Date('2026-10-14T12:00:00Z'), updatedAt: new Date('2026-10-14T12:01:00Z'),
       deadlineAt: new Date('2026-10-14T12:03:05Z'), ...overrides,
@@ -44,7 +63,7 @@ function formRequest(fields: Record<string, string | null> = {}, headers: Header
   if (typeof image === 'string') body.set('image', image);
   else if (image) body.set('image', image, 'portrait.png');
   body.set('mode', 'slim');
-  body.set('intensity', 'balanced');
+  body.set('intensity', '70');
   body.set('requestId', REQUEST_ID);
   for (const [key, value] of Object.entries(fields)) {
     if (value === null) body.delete(key);
@@ -113,12 +132,12 @@ describe('body edit API authentication and projection', () => {
     expect(response.headers.get('Cache-Control')).toContain('no-store');
     expect(await response.json()).toEqual({
       jobId: JOB_ID, status: 'succeeded',
-      result: { imageUrl: `/api/body-edit/${JOB_ID}/image`, downloadUrl: `/api/body-edit/${JOB_ID}/image?download=1`, mode: 'slim', intensity: 'balanced' },
+      result: { imageUrl: `/api/body-edit/${JOB_ID}/image`, downloadUrl: `/api/body-edit/${JOB_ID}/image?download=1`, mode: 'slim', intensity: 70 },
       credits: { charged: 15, balance: 45 }, reused: false,
     });
     expect(service.submit).toHaveBeenCalledTimes(1);
     const input = service.submit.mock.calls[0][0];
-    expect(input).toMatchObject({ userId: 'user-owner', requestId: REQUEST_ID, mode: 'slim', intensity: 'balanced' });
+    expect(input).toMatchObject({ userId: 'user-owner', requestId: REQUEST_ID, mode: 'slim', intensity: 70 });
     expect(input.image.mimeType).toBe('image/png');
     expect(input.image.bytes).toEqual(PNG);
   });
@@ -261,8 +280,8 @@ describe('body edit API validation before billing', () => {
 
   test.each(['slim', 'muscle', 'proportions', 'breast'] as const)('accepts the %s mode without overriding the server-owned service', async (mode) => {
     const { handlers, service } = setup();
-    expect((await handlers.submit(formRequest({ mode, intensity: 'noticeable' }))).status).toBe(200);
-    expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ mode, intensity: 'noticeable' }));
+    expect((await handlers.submit(formRequest({ mode, intensity: '90' }))).status).toBe(200);
+    expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ mode, intensity: 90 }));
     expect(service.submit).toHaveBeenCalledTimes(1);
   });
 });
@@ -322,7 +341,7 @@ describe('body edit public configuration and stable job DTOs', () => {
     expect(response.headers.get('Cache-Control')).toContain('no-store');
     expect(await response.json()).toEqual({
       jobId: JOB_ID, status: 'succeeded',
-      result: { imageUrl: `/api/body-edit/${JOB_ID}/image`, downloadUrl: `/api/body-edit/${JOB_ID}/image?download=1`, mode: 'slim', intensity: 'balanced' },
+      result: { imageUrl: `/api/body-edit/${JOB_ID}/image`, downloadUrl: `/api/body-edit/${JOB_ID}/image?download=1`, mode: 'slim', intensity: 70 },
       credits: { charged: 15, balance: 45 }, reused: true,
     });
     expect(service.getJob).toHaveBeenCalledExactlyOnceWith({ userId: 'user-owner', jobId: JOB_ID });

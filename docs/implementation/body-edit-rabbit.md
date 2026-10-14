@@ -1,6 +1,6 @@
 # Rabbit API body photo editing
 
-The homepage and published guides use one authenticated AI editing flow. Users choose an original photo, one of four modes and one of three intensities, then generate a result to compare and download. Promotional concept photos remain labeled as illustrations rather than outputs from this editor.
+The homepage and published guides use one authenticated AI editing flow. Users choose an original photo, one of four modes and a continuous intensity from 1 to 100 (default 70), then explicitly generate a result to compare and download. Moving the slider makes no provider call. Promotional concept photos remain labeled as illustrations rather than outputs from this editor.
 
 ## Configuration and protocol
 
@@ -83,7 +83,15 @@ Node-fix verification: 256 related unit tests and 11 editing E2E tests passed, t
 | `proportions` | Shoulder, waist and leg balance in original framing |
 | `breast` | Fuller clothed bust silhouette, retaining neckline and coverage |
 
-Shared prompt instructions ask to preserve identity, face, age, expression, pose, camera angle, lighting, background, outfit, framing and aspect ratio. `subtle`, `balanced` and `noticeable` express intended strength in the prompt; they are not invented gateway parameters or promises of a percentage, centimetres, cup size or exact pixel preservation. Users must review the result.
+Shared prompt instructions preserve identity, face, age, expression, pose, camera angle, lighting, background, outfit design/coverage, framing and aspect ratio, while allowing fabric contours and folds to adapt to the changed body. Integer strengths 1–100 continuously interpolate mode-specific relative visual targets: waist/arm/thigh narrowing, shoulder width and muscle volume, leg-to-torso proportion, or clothed bust fullness/projection. These are approximate prompt guides, not measured physical changes or provider API parameters. High strength explicitly requests a substantial transformation, including muscular/bodybuilder volume where applicable. Users must review the result.
+
+Multipart requests carry `intensity` as a canonical integer string; the service and response expose a number. Validation rejects fractions, out-of-range values, whitespace, exponent/hex forms, empty strings and duplicate intensity fields before credits are reserved. Existing `subtle`, `balanced`, `noticeable` requests remain accepted as 25, 50, 80. Historical named request hashes remain unchanged for safe retries. The existing text DB column stores new numeric strings and normalizes historical names on read; no destructive migration is needed. Credit metadata records the exact numeric strength; every strength costs the same 15 credits.
+
+### Continuous intensity verification (2026-10-14)
+
+Related verification passed: 295 units, 23 browser E2E cases, uncached typecheck/build, and Workers SSR checks for `/`, `/body-editor`, `/skinny-filter`, `/breast-expansion`. Turbo now includes root shared libraries/configuration in its global dependency hash; previously a shared-prompt-only edit could incorrectly reuse a prior build or typecheck cache entry.
+
+Bounded live checks used only the original halves of this project's fictional-adult concepts, never private user photos. Thirteen explicit Rabbit calls returned ten valid PNGs (1086 × 1448), one 502 and two timeouts. Source/strength comparison images and safe manifests are ignored under `test-results/body-intensity-live/`. Slim and Muscle were compared at 20/90; Proportions at 20/90 after strengthening the leg-to-torso target and landmark instructions. Breast's first 20/90 pass was conservative; its final prompt increases the bust-volume target and explicitly changes the underlying clothed contour. A final strength-70 call succeeded after the new strength-90 call timed out. The final breast prompt therefore has a successful default-strength check, not a completed multi-strength quality sweep. These observations are a spot check; generation is stochastic and neither monotonic visible change nor exact geometry can be promised for arbitrary photos. CLI tests bypass app credits and preserve response files before CDN downloads to avoid accidental paid re-generation.
 
 The shared uploader provides local preview, mode/intensity choices, sign-in guidance with the image retained, configured cost/trial information, pending status, localized errors, original/result comparison and owner download. Samples load their original half into that uploader. Selecting a sample alone generates nothing; submitting it uses the same authenticated credit flow as a local photo. The marketing gallery still contains three concept directions while the working editor supports all four modes.
 

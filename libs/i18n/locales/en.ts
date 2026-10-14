@@ -1618,10 +1618,15 @@ export const en: Locale = {
     },
     editing: {
       intensityLabel: "Intensity",
-      intensities: {
-        subtle: "Subtle",
-        balanced: "Balanced",
-        noticeable: "Noticeable"
+      intensityLow: "Subtle",
+      intensityHigh: "Dramatic",
+      intensityValue: "{value} out of 100",
+      intensityHint: "Applies when you generate.",
+      intensityDescriptions: {
+        slim: "Slim the waist, abdomen, arms and thighs.",
+        muscle: "Increase shoulder, arm and chest muscle definition and volume.",
+        proportions: "Adjust leg-to-torso proportions and define the waist.",
+        breast: "Increase the bust silhouette under the original clothing."
       },
       pending: "Editing your photo…",
       resultTitle: "Your edited photo",
@@ -1715,7 +1720,7 @@ export const en: Locale = {
         },
         {
           title: "Pick a mode",
-          description: "Choose Slim, Muscle, Proportions or Breast, then set Subtle, Balanced or Noticeable intensity."
+          description: "Choose Slim, Muscle, Proportions or Breast, then adjust the intensity slider from 1 to 100."
         },
         {
           title: "Generate and compare",
@@ -1795,7 +1800,7 @@ export const en: Locale = {
         },
         {
           question: "Which mode is for a slimmer look?",
-          answer: "Choose Slim for a narrower waist and upper-arm silhouette. Subtle, Balanced and Noticeable describe the intended strength; the result depends on the starting photo."
+          answer: "Choose Slim for a narrower waist and upper-arm silhouette. The intensity slider controls the intended strength; the result depends on the starting photo."
         },
         {
           question: "What is Muscle mode for?",
@@ -1857,13 +1862,13 @@ export const en: Locale = {
       relatedTitle: "Related guides",
       homeLinkText: "AI body editor",
       homeLinkDescription: "Edit a photo in the same AI Body Editor and explore all four modes.",
-      editorIntro: "Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus three intensity choices."
+      editorIntro: "Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus a continuous intensity slider."
     },
     bodyEditor: {
       keyword: "body editor",
       metadata: {
         title: "Body Editor | Photo Reshaping Guide and Portrait Tips",
-        description: "Use the body editor to reshape clothed portraits with four modes and three intensities. Generate an AI edit, compare the original and download the result."
+        description: "Use the body editor to reshape clothed portraits with four modes and a continuous intensity slider. Generate an AI edit, compare the original and download the result."
       },
       breadcrumb: "Body Editor",
       hero: {
@@ -1877,7 +1882,7 @@ export const en: Locale = {
           "A body editor changes the way a person's silhouette appears in a photo. Common goals include a slimmer outline, more muscle definition or a different balance between the upper and lower body. Start with one clear aim: decide what bothers you about the picture and whether it comes from the pose, the outfit or the shape you want to explore.",
           "Photo choice often matters more than the size of a planned change. A phone held close to the body, a twisted stance or a coat covering the waist can make proportions difficult to read. Compare the image with another portrait taken from a comfortable distance. If the issue is mainly the angle, taking a new picture can give you a better starting point than trying to reshape a poor one.",
           "For an outfit portrait, you might want the silhouette to read more evenly while keeping the way the garment hangs. In a fitness portrait, the aim might be to explore a more defined appearance. Keep those goals specific to the photo. An edited image cannot show how a body will change through training, and it cannot establish how an item of clothing will fit.",
-          "On this site, the Body Editor guide and homepage use one AI Body Editor. Choose Slim, Muscle, Proportions or Breast, then set Subtle, Balanced or Noticeable intensity. Sign in and submit the original photo to generate an edit. Compare the result with your source image and download it only after reviewing the details. The advice below helps you choose a useful starting photo and assess the change."
+          "On this site, the Body Editor guide and homepage use one AI Body Editor. Choose Slim, Muscle, Proportions or Breast, then adjust the intensity slider from 1 to 100. Sign in and submit the original photo to generate an edit. Compare the result with your source image and download it only after reviewing the details. The advice below helps you choose a useful starting photo and assess the change."
         ],
         linkBefore: "The ",
         linkAfter: " homepage explains the product and offers the same photo editor.",
@@ -1905,7 +1910,7 @@ export const en: Locale = {
           },
           {
             title: "Choose your direction",
-            description: "Select Slim for a narrower waist and arms, Muscle for athletic definition, Proportions for overall balance or Breast for a fuller clothed bust silhouette. Choose an intensity: Subtle, Balanced or Noticeable. Start with a restrained change when clothing or background details are complex."
+            description: "Select Slim for a narrower waist and arms, Muscle for athletic definition, Proportions for overall balance or Breast for a fuller clothed bust silhouette. Adjust the intensity slider from 1 to 100. Start with a restrained change when clothing or background details are complex."
           },
           {
             title: "Generate, compare and download",
@@ -1935,7 +1940,7 @@ export const en: Locale = {
         items: [
           {
             question: "Is Body Editor a different tool from the homepage?",
-            answer: "No. Both pages use the same AI Body Editor with Slim, Muscle, Proportions and Breast, plus three intensities. This page adds photo selection advice and body reshaping guidance."
+            answer: "No. Both pages use the same AI Body Editor with Slim, Muscle, Proportions and Breast, plus a continuous intensity slider. This page adds photo selection advice and body reshaping guidance."
           },
           {
             question: "Can I reshape my body with it now?",
@@ -1943,7 +1948,7 @@ export const en: Locale = {
           },
           {
             question: "Are there controls for individual body areas?",
-            answer: "Use Slim, Muscle, Proportions or Breast and one of three intensities. There are no separate waist, hip, arm or leg sliders, and intensity is an editing direction rather than an exact measurement."
+            answer: "Use Slim, Muscle, Proportions or Breast and adjust the intensity slider. There are no separate waist, hip, arm or leg sliders, and intensity is an editing direction rather than an exact measurement."
           },
           {
             question: "Should I use a full body or half body portrait?",
@@ -1971,7 +1976,7 @@ export const en: Locale = {
       keyword: "skinny filter",
       metadata: {
         title: "Skinny Filter | Slim Photo Guide and Portrait Tips",
-        description: "Apply Slim in the AI body editor with three intensity choices. Use these skinny filter photo tips, compare the generated edit and download your result."
+        description: "Apply Slim in the AI body editor with a continuous intensity slider. Use these skinny filter photo tips, compare the generated edit and download your result."
       },
       breadcrumb: "Skinny Filter",
       hero: {
@@ -1985,7 +1990,7 @@ export const en: Locale = {
           "A skinny filter is a photo effect that makes a person's outline look slimmer. People use the term for several kinds of edits, from a light change to the torso to a narrower silhouette across the whole portrait. In this guide, the focus is on choosing a suitable picture and planning a modest change that still fits the person, pose and outfit.",
           "Look at the starting image before deciding what needs to be slimmer. A seated pose folds clothing around the waist. An oversized coat can make the upper body look wider, while an arm pressed against the torso can hide the waist entirely. Another photo from the same session may show the outline more clearly and reduce the need for a change.",
           "A useful slimming reference shows the body with some space around it. In a standing portrait, leave the hands and feet visible if possible. For a seated photo, look for a pose where the torso is easy to read and the clothing is not bunched up. Keep the original crop when comparing candidates so you can judge the full composition.",
-          "Slim is part of the AI Body Editor used on the homepage and every guide. It targets a narrower waist and upper-arm outline. Choose an original photo, set Subtle, Balanced or Noticeable intensity, then sign in to generate an edit. Compare the result with the whole original portrait before downloading. The other modes remain available in the same editor when your goal concerns muscle definition, overall proportions or a clothed bust silhouette."
+          "Slim is part of the AI Body Editor used on the homepage and every guide. It targets a narrower waist and upper-arm outline. Choose an original photo, adjust the intensity slider from 1 to 100, then sign in to generate an edit. Compare the result with the whole original portrait before downloading. The other modes remain available in the same editor when your goal concerns muscle definition, overall proportions or a clothed bust silhouette."
         ],
         linkBefore: "For the product overview and the other mode choices, visit the ",
         linkAfter: " homepage.",
@@ -2009,7 +2014,7 @@ export const en: Locale = {
           },
           {
             title: "Choose Slim",
-            description: "Select Slim in the shared editor, then choose Subtle, Balanced or Noticeable intensity. The choice controls the intended strength in the AI instructions. Start with Subtle if you want to assess a small waist and upper-arm change before trying a stronger result."
+            description: "Select Slim in the shared editor, then adjust the intensity slider from 1 to 100. The choice controls the intended strength in the AI instructions. Start with a low strength if you want to assess a small waist and upper-arm change before trying a stronger result."
           },
           {
             title: "Read the pose and clothing",
@@ -2051,7 +2056,7 @@ export const en: Locale = {
           },
           {
             question: "Is this a separate app from AI Body Editor?",
-            answer: "No. This guide uses the same AI Body Editor as the homepage. Its four modes are Slim, Muscle, Proportions and Breast, with three intensity choices."
+            answer: "No. This guide uses the same AI Body Editor as the homepage. Its four modes are Slim, Muscle, Proportions and Breast, with a continuous intensity slider."
           },
           {
             question: "Can I use it on a video or a batch of photos?",
@@ -2121,7 +2126,7 @@ export const en: Locale = {
           },
           {
             title: "Choose Breast and an intensity",
-            description: "Select Breast in the shared editor. Choose Subtle, Balanced or Noticeable intensity to describe the intended change. The AI instructions keep the subject clothed and retain the original neckline; inspect the result because preservation is not guaranteed."
+            description: "Select Breast in the shared editor. Adjust the intensity slider from 1 to 100 to describe the intended change. The AI instructions keep the subject clothed and retain the original neckline; inspect the result because preservation is not guaranteed."
           },
           {
             title: "Generate and assess the result",
@@ -2159,7 +2164,7 @@ export const en: Locale = {
           },
           {
             question: "Does this guide use a different editor?",
-            answer: "No. Every guide and the homepage use the same AI Body Editor. All four modes and three intensities are available; this guide adds advice about clothed bust silhouettes."
+            answer: "No. Every guide and the homepage use the same AI Body Editor. All four modes and a continuous intensity slider are available; this guide adds advice about clothed bust silhouettes."
           },
           {
             question: "Which clothes make proportions easier to assess?",

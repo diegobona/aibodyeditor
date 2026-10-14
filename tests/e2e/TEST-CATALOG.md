@@ -1,5 +1,16 @@
 # E2E 测试流程目录
 
+## Continuous body-edit intensity — implemented and verified (2026-10-14)
+
+- The uploader exposes a labeled slider from 1 to 100, initially 70, with localized Subtle/Dramatic endpoints and an accessible numeric value out of 100.
+- Pointer/touch and keyboard input can select intermediate values such as 37 and 73. Moving the slider or changing mode sends no edit POST.
+- All four modes submit the exact numeric strength only on explicit generation. Server prompts interpolate mode-specific shape targets across the entire range.
+- Pending and unresolved requests lock strength. Sign-in preserves the photo, mode and exact value. Uncertain retries preserve settings and request ID.
+- Invalid, fractional and out-of-range strengths fail before billing/provider execution. Legacy named requests and saved jobs stay compatible.
+- Mobile controls fit the viewport. Credit cost remains 15 at every strength.
+- Verification: 295 related unit tests passed; 23 body-editing/entrypoint E2E tests passed; fresh uncached typecheck and Cloudflare build passed; Workers SSR smoke returned 200 with the slider, h1 and canonical on all four public pages. Desktop/mobile screenshots are under ignored `test-results/body-intensity-*.png`.
+- Live quality checks: 13 bounded Rabbit requests on original fictional-adult samples produced 10 valid images; one request returned 502 and two timed out. All four modes returned usable edits. Slim and Muscle 20/90 and calibrated Proportions 20/90 were visually reviewed; Breast returned a final calibrated strength-70 edit after its strength-90 calibration request timed out. These samples do not establish strictly linear or repeatable output at every strength. No automatic paid retries or test-account credit deductions were performed.
+
 本文档详细记录所有已实现的 E2E 测试用例，包含每个测试的具体步骤和验证内容。
 
 > 编写规范和架构约定请查看 [`AGENTS.md`](./AGENTS.md)。

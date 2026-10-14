@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { bodyEditConfig } from '../../config/body-editor';
+import { bodyEditConfig, LEGACY_BODY_EDIT_INTENSITIES } from '../../config/body-editor';
 import { BODY_EDIT_CREDIT_COST, creditsConfig } from '../../config/credits';
 import { BodyImageEditError, prepareBodyImageEdit, type editBodyImage, type BodyImageEditOptions } from './body-edit';
 import { BodyEditError, type BodyEditRepository, type BodyEditResultStore, type BodyEditOutcome } from '../credits/body-edit-types';
@@ -41,7 +41,10 @@ export function createBodyEditorService(deps: {
       }
       if (!(await deps.checkAvailable())) throw new BodyEditError('NOT_CONFIGURED', 503);
       const hashInput = new Uint8Array(input.image.bytes.length + 128);
-      const prefix = new TextEncoder().encode(`${prepared.mode}\0${prepared.intensity}\0${prepared.mimeType}\0`);
+      // Preserve the hash format of old in-flight requests when an old client retries.
+      const hashIntensity = typeof input.intensity === 'string' && Object.hasOwn(LEGACY_BODY_EDIT_INTENSITIES, input.intensity)
+        ? input.intensity : prepared.intensity;
+      const prefix = new TextEncoder().encode(`${prepared.mode}\0${hashIntensity}\0${prepared.mimeType}\0`);
       hashInput.set(prefix); hashInput.set(input.image.bytes, prefix.length);
       const digest = await crypto.subtle.digest('SHA-256', hashInput.subarray(0, prefix.length + input.image.bytes.length));
       const inputHash = Buffer.from(digest).toString('hex');

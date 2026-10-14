@@ -199,7 +199,7 @@ export function useBodyEdit(ownerId?: string) {
     const form = new FormData();
     form.set("image", value.image);
     form.set("mode", value.mode);
-    form.set("intensity", value.intensity);
+    form.set("intensity", String(value.intensity));
     form.set("requestId", value.requestId);
     try {
       await read(

@@ -67,7 +67,7 @@ describe('body editor smoke test CLI', () => {
     expect(result.stdout).toContain('"endpoint": "https://body-edit.test/v1/images/edits"');
     expect(result.stdout).toContain('"model": "gpt-image-2.5-1k"');
     expect(result.stdout).toContain('"mode": "breast"');
-    expect(result.stdout).toContain('"intensity": "balanced"');
+    expect(result.stdout).toContain('"intensity": 70');
     expect(result.stdout).toContain('Dry run passed.');
     expect(result.requests).toEqual([]);
   });
@@ -114,7 +114,7 @@ describe('body editor smoke test CLI', () => {
 
   test('makes one multipart edit, saves the actual format, and refuses to overwrite it', () => {
     const prefix = join(directory, 'edited');
-    const args = ['--input', input, '--mode', 'muscle', '--intensity', 'subtle', '--execute', '--output', prefix];
+    const args = ['--input', input, '--mode', 'muscle', '--intensity', '20', '--execute', '--output', prefix];
     const result = run(args, true);
 
     expect(result.status).toBe(0);
@@ -127,7 +127,7 @@ describe('body editor smoke test CLI', () => {
       authorizationMatches: true, contentTypeWasForced: false,
     });
     expect(result.requests[0].prompt).toMatch(/shoulders.*arms/i);
-    expect(result.requests[0].prompt).toMatch(/subtle intensity/i);
+    expect(result.requests[0].prompt).toMatch(/Editing strength: 20 out of 100/i);
     expect(result.stdout).toContain(`Edited image saved: ${prefix}.webp`);
     expect(readFileSync(`${prefix}.webp`)).toEqual(WEBP);
     expect(existsSync(`${prefix}.png`)).toBe(false);

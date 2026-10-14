@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { normalizeBodyEditIntensity } from '../../config/body-editor';
 import { TransactionTypeCode } from './utils';
 import { BodyEditError, type BodyEditJob, type BodyEditOutcome, type BodyEditRepository, type ReserveBodyEdit } from './body-edit-types';
 
@@ -15,7 +16,7 @@ type Options = PgOptions | { dialect: 'sqlite'; sqlite: Database.Database };
 const trialId = (userId: string) => `body_edit_trial:${userId}`;
 function record(row: any, sqlite: boolean): BodyEditJob {
   return { id: row.id, userId: row.user_id, requestId: row.request_id, inputHash: row.input_hash,
-    mode: row.mode, intensity: row.intensity, model: row.model, status: row.status, costCredits: Number(row.cost_credits),
+    mode: row.mode, intensity: normalizeBodyEditIntensity(row.intensity), model: row.model, status: row.status, costCredits: Number(row.cost_credits),
     resultKey: row.result_key, resultMimeType: row.result_mime_type, errorCode: row.error_code, refunded: Boolean(row.refunded),
     createdAt: new Date(sqlite ? Number(row.created_at) : row.created_at),
     updatedAt: new Date(sqlite ? Number(row.updated_at) : row.updated_at),
@@ -70,7 +71,7 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
             .run(input.costCredits, Math.floor(input.now.getTime() / 1000), input.userId, input.costCredits);
           if (!debit.changes) throw new BodyEditError('INSUFFICIENT_CREDITS', 402);
           db.prepare('INSERT INTO body_image_edit (id,user_id,request_id,input_hash,mode,intensity,model,cost_credits,created_at,updated_at,deadline_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-            .run(input.jobId, input.userId, input.requestId, input.inputHash, input.mode, input.intensity, input.model, input.costCredits, input.now.getTime(), input.now.getTime(), input.deadlineAt.getTime());
+            .run(input.jobId, input.userId, input.requestId, input.inputHash, input.mode, String(input.intensity), input.model, input.costCredits, input.now.getTime(), input.now.getTime(), input.deadlineAt.getTime());
           const created = job(input.userId, input.jobId);
           ledger(`body_edit_debit:${input.jobId}`, input.userId, 'consumption', -input.costCredits, TransactionTypeCode.AI_BODY_EDIT, metadata(record(created, true)), input.now);
           return outcome(created);
@@ -140,7 +141,7 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
         const debit = await client.query('UPDATE "user" SET credit_balance = credit_balance - $1, updated_at = $2 WHERE id = $3 AND credit_balance >= $1 RETURNING credit_balance', [input.costCredits, input.now, input.userId]);
         if (!debit.rows.length) throw new BodyEditError('INSUFFICIENT_CREDITS', 402);
         const created = (await client.query('INSERT INTO body_image_edit (id,user_id,request_id,input_hash,mode,intensity,model,cost_credits,created_at,updated_at,deadline_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$10) RETURNING *',
-          [input.jobId, input.userId, input.requestId, input.inputHash, input.mode, input.intensity, input.model, input.costCredits, input.now, input.deadlineAt])).rows[0];
+          [input.jobId, input.userId, input.requestId, input.inputHash, input.mode, String(input.intensity), input.model, input.costCredits, input.now, input.deadlineAt])).rows[0];
         await ledger(client, `body_edit_debit:${input.jobId}`, input.userId, 'consumption', -input.costCredits, TransactionTypeCode.AI_BODY_EDIT, metadata(record(created, false)), input.now);
         return outcome(client, created);
       });

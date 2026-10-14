@@ -2,7 +2,8 @@ import { describe, expect, test } from 'vitest';
 import {
   BODY_EDITOR_MODES,
   BODY_EDIT_MODES,
-  BODY_EDIT_INTENSITIES,
+  BODY_EDIT_INTENSITY,
+  normalizeBodyEditIntensity,
   bodyEditConfig,
   type BodyEditMode,
   type BodyEditIntensity,
@@ -10,13 +11,13 @@ import {
 import { buildBodyEditPrompt } from '../../../libs/ai/body-edit-prompts';
 
 const modes = ['slim', 'muscle', 'proportions', 'breast'] as const;
-const intensities = ['subtle', 'balanced', 'noticeable'] as const;
+const intensities = [1, 20, 37, 50, 70, 73, 90, 100] as const;
 
 describe('body edit configuration', () => {
   test('keeps the public preview choices while exposing breast for the server adapter', () => {
     expect(BODY_EDITOR_MODES).toEqual(['slim', 'muscle', 'proportions']);
     expect(BODY_EDIT_MODES).toEqual(modes);
-    expect(BODY_EDIT_INTENSITIES).toEqual(intensities);
+    expect(BODY_EDIT_INTENSITY).toEqual({ min: 1, max: 100, step: 1, default: 70 });
   });
 
   test('sets bounded Tuzi image edit defaults', () => {
@@ -71,7 +72,8 @@ describe('fixed body edit prompts', () => {
     expect(prompt).toMatch(/muscle definition/i);
     expect(prompt).toMatch(/shoulders.*arms/i);
     expect(prompt).toMatch(/under.*(?:existing|original).*clothing/i);
-    expect(prompt).toMatch(/avoid.*exaggerated/i);
+    expect(prompt).toMatch(/bodybuilder/i);
+    expect(prompt).toMatch(/never paint abs onto fabric/i);
   });
 
   test('proportions balances shoulders, waist, and legs within the original frame', () => {
@@ -99,31 +101,33 @@ describe('fixed body edit prompts', () => {
     expect(new Set(prompts).size).toBe(modes.length);
   });
 
-  test('omitting intensity chooses balanced', () => {
+  test('omitting intensity chooses a strong default of 70', () => {
     expect(buildBodyEditPrompt({ mode: 'slim' })).toBe(
-      buildBodyEditPrompt({ mode: 'slim', intensity: 'balanced' }),
+      buildBodyEditPrompt({ mode: 'slim', intensity: 70 }),
     );
   });
 
   test('strength choices describe visibly different degrees while staying natural', () => {
-    const subtle = buildBodyEditPrompt({ mode: 'slim', intensity: 'subtle' });
-    const balanced = buildBodyEditPrompt({ mode: 'slim', intensity: 'balanced' });
-    const noticeable = buildBodyEditPrompt({ mode: 'slim', intensity: 'noticeable' });
+    const subtle = buildBodyEditPrompt({ mode: 'slim', intensity: 20 });
+    const balanced = buildBodyEditPrompt({ mode: 'slim', intensity: 50 });
+    const noticeable = buildBodyEditPrompt({ mode: 'slim', intensity: 90 });
 
-    expect(subtle).toMatch(/minimal/i);
+    expect(subtle).toMatch(/light, subtle/i);
     expect(balanced).toMatch(/moderate/i);
-    expect(noticeable).toMatch(/clearly visible/i);
+    expect(noticeable).toMatch(/dramatic/i);
     expect(new Set([subtle, balanced, noticeable]).size).toBe(3);
     for (const prompt of [subtle, balanced, noticeable]) {
       expect(prompt).toMatch(/natural/i);
     }
   });
 
-  test.each(modes)('%s never promises numeric body measurements for any intensity', (mode) => {
+  test.each(modes)('%s treats numeric targets as relative visual guides, not body measurements', (mode) => {
     for (const intensity of intensities) {
       const prompt = buildBodyEditPrompt({ mode, intensity });
 
-      expect(prompt).not.toMatch(/\b(?:cup[ -]?size|centimet(?:er|re)s?|inches|percentage)\b|%|\b\d+(?:\.\d+)?\s*(?:cm|mm)\b/i);
+      expect(prompt).toContain('approximate guidance');
+      expect(prompt).toContain('not real-world body measurements');
+      expect(prompt).not.toMatch(/\b(?:cup[ -]?size|centimet(?:er|re)s?|inches)\b|\b\d+(?:\.\d+)?\s*(?:cm|mm)\b/i);
     }
   });
 
@@ -135,11 +139,27 @@ describe('fixed body edit prompts', () => {
     },
   );
 
-  test.each(['', 'strong', '__proto__', 'constructor', null, 0])(
+  test.each(['', 'strong', '__proto__', 'constructor', null, 0, -1, 101, 37.5, NaN, Infinity, '070', '70.5', ' 70 ', true])(
     'rejects an unsupported runtime intensity: %s',
     (intensity) => {
       expect(() => buildBodyEditPrompt({ mode: 'slim', intensity: intensity as BodyEditIntensity })).toThrow(TypeError);
       expect(() => buildBodyEditPrompt({ mode: 'slim', intensity: intensity as BodyEditIntensity })).toThrow(/intensity/i);
     },
   );
+
+  test.each(modes)('%s has 100 distinct monotonically increasing shape targets', (mode) => {
+    const prompts = Array.from({ length: 100 }, (_, i) => buildBodyEditPrompt({ mode, intensity: i + 1 }));
+    expect(new Set(prompts).size).toBe(100);
+    const targets = prompts.map(prompt => [...prompt.matchAll(/(\d+\.\d+)%/g)].map(match => Number(match[1])));
+    expect(targets[0].length).toBeGreaterThan(0);
+    for (let i = 1; i < targets.length; i++) {
+      expect(targets[i].length).toBe(targets[0].length);
+      targets[i].forEach((value, index) => expect(value).toBeGreaterThan(targets[i - 1][index]));
+    }
+  });
+
+  test.each([['subtle', 25], ['balanced', 50], ['noticeable', 80]] as const)('maps historical %s to %i', (name, value) => {
+    expect(normalizeBodyEditIntensity(name)).toBe(value);
+    expect(buildBodyEditPrompt({ mode: 'slim', intensity: name })).toBe(buildBodyEditPrompt({ mode: 'slim', intensity: value }));
+  });
 });

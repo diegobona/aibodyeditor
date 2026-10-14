@@ -4,7 +4,7 @@ import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { config as loadEnv } from 'dotenv';
-import { bodyEditConfig, type BodyEditMode, type BodyEditIntensity } from '../config/body-editor';
+import { bodyEditConfig, type BodyEditMode, type BodyEditIntensityInput } from '../config/body-editor';
 import { editBodyImage, prepareBodyImageEdit, BodyImageEditError, type BodyImageEditOptions } from '../libs/ai/body-edit';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,7 +17,7 @@ async function main() {
     help: { type: 'boolean', short: 'h' },
   } });
   if (values.help) {
-    console.log('Usage: pnpm exec tsx scripts/body-editor-smoke-test.ts --input <photo> --mode <slim|muscle|proportions|breast> [--intensity subtle|balanced|noticeable] [--execute --output <file-prefix>]');
+    console.log('Usage: pnpm exec tsx scripts/body-editor-smoke-test.ts --input <photo> --mode <slim|muscle|proportions|breast> [--intensity 1-100] [--execute --output <file-prefix>]');
     console.log('Default: dry run, no network call. --execute makes one potentially billable request. Output gets the actual .png/.jpeg/.webp extension; URL results are printed without downloading.');
     return;
   }
@@ -31,7 +31,7 @@ async function main() {
   const extension = extname(inputPath).toLowerCase() as keyof typeof mimeTypes;
   const options: BodyImageEditOptions = {
     sourceImage: { bytes: new Uint8Array(await readFile(inputPath)), mimeType: mimeTypes[extension] },
-    mode: values.mode as BodyEditMode, intensity: values.intensity as BodyEditIntensity | undefined,
+    mode: values.mode as BodyEditMode, intensity: values.intensity as BodyEditIntensityInput | undefined,
   };
   const prepared = prepareBodyImageEdit(options);
   console.log(JSON.stringify({
