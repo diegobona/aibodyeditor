@@ -15,15 +15,15 @@ export type EditorSample = {
 /** Original, AI-generated concepts. Neither variant is an output of this app's editor. */
 export const SHOWCASE_IMAGES = {
   slim: {
-    primary: "/examples/v2/slim-editorial-v2.webp",
-    secondary: "/examples/v2/slim-lifestyle.webp",
+    primary: "/examples/v3/slim-editorial.webp",
+    secondary: "/examples/v3/slim-lifestyle.webp",
   },
   muscle: {
-    primary: "/examples/v2/muscle-editorial.webp",
-    secondary: "/examples/v2/muscle-lifestyle.webp",
+    primary: "/examples/v3/muscle-editorial.webp",
+    secondary: "/examples/v3/muscle-lifestyle.webp",
   },
   proportions: {
-    primary: "/examples/v2/proportions-editorial.webp",
-    secondary: "/examples/v2/proportions-lifestyle.webp",
+    primary: "/examples/v3/proportions-editorial.webp",
+    secondary: "/examples/v3/proportions-lifestyle.webp",
   },
 } satisfies Record<BodyEditorMode, { primary: string; secondary: string }>;

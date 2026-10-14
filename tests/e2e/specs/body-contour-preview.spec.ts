@@ -21,7 +21,7 @@ async function openEditor(page: Page) {
     return route.fulfill({ json: { available: true, costCredits: 15, freeTrialEdits: 1 } });
   });
   await page.goto('/');
-  await expect(editor(page).getByRole('button', { name: 'Edit my photo', exact: true })).toBeEnabled();
+  await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
   return () => posts;
 }
 
@@ -118,7 +118,7 @@ test.describe('Live local body contour preview', () => {
       await expect(editor(page).getByText(copy, { exact: true })).toBeVisible();
       await expect(target(page)).toHaveCount(0);
       await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
-      await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+      await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(posts()).toBe(0);
     });

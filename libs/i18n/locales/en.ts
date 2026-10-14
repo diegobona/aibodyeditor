@@ -1536,7 +1536,7 @@ export const en: Locale = {
       after: "Edited concept",
       modesLabel: "Explore editing concepts",
       sampleLabel: "Try a sample photo",
-      sampleNotice: "Samples are AI-generated concepts. Select Edit my photo to generate a new edit.",
+      sampleNotice: "Samples are AI-generated concepts. Select Edit Photo to generate a new edit.",
       clearSample: "Clear sample",
       examplesTitle: "More editing concepts",
       examplesSubtitle: "More portraits to help you picture each editing direction.",
@@ -1554,33 +1554,33 @@ export const en: Locale = {
       modes: {
         slim: {
           label: "Slim",
-          title: "A subtle shift in silhouette",
-          description: "Explore a narrower outline in a clothed portrait, starting with a small change around the waist.",
+          title: "A slimmer silhouette",
+          description: "Explore a visibly slimmer waist, abdomen and upper arms in a clothed portrait.",
           cta: "Preview Slim",
           beforeAlt: "Original Slim concept: adult woman in a cream T-shirt and dark brown trousers on a warm white terrace with green plants",
-          afterAlt: "Edited Slim concept: the woman in a cream T-shirt and dark brown trousers on the terrace with a subtly narrower waist and upper-arm silhouette",
+          afterAlt: "Edited Slim concept: the woman in a cream T-shirt and dark brown trousers on the terrace with a noticeably narrower waist, abdomen and upper arms",
           secondaryBeforeAlt: "Original Slim concept: adult woman in a mauve long-sleeve top and indigo jeans on a leafy neighborhood street",
-          secondaryAfterAlt: "Edited Slim concept: the woman in a mauve top and jeans on the street with a subtly narrower waist and upper-arm silhouette"
+          secondaryAfterAlt: "Edited Slim concept: the woman in a mauve top and jeans on the street with a noticeably slimmer waist, abdomen, upper arms and thighs"
         },
         muscle: {
           label: "Muscle",
           title: "A more defined athletic look",
-          description: "Explore more definition in the shoulders and arms while considering the pose and fit of the clothing.",
+          description: "Explore fuller shoulders, chest and upper arms for a more defined athletic silhouette.",
           cta: "Preview Muscle",
           beforeAlt: "Original Muscle concept: adult man in a forest-green athletic tank top and charcoal trousers in a gym lit by tall windows",
-          afterAlt: "Edited Muscle concept: the man in a green athletic tank top and charcoal trousers in the gym with more defined shoulders and upper arms",
+          afterAlt: "Edited Muscle concept: the man in a green athletic tank top and charcoal trousers in the gym with noticeably fuller shoulders, chest and upper arms",
           secondaryBeforeAlt: "Original Muscle concept: adult man in a blue T-shirt and olive joggers on a riverside park path with trees and a stone railing",
-          secondaryAfterAlt: "Edited Muscle concept: the man in a blue T-shirt and olive joggers on the riverside path with more defined shoulders and upper arms"
+          secondaryAfterAlt: "Edited Muscle concept: the man in a blue T-shirt and olive joggers on the riverside path with visibly broader shoulders, a fuller chest and thicker upper arms"
         },
         proportions: {
           label: "Proportions",
-          title: "A different balance",
-          description: "Explore how a small shift in torso and leg proportions changes the overall silhouette.",
+          title: "A clearer waist-to-hip balance",
+          description: "Explore a more defined waist and balanced hip line with a clear contrast in the overall silhouette.",
           cta: "Preview Proportions",
           beforeAlt: "Original Proportions concept: adult woman in a navy jumpsuit in a studio with a terracotta wall and warm gray floor",
-          afterAlt: "Edited Proportions concept: the woman in a navy jumpsuit in the studio with subtly adjusted shoulder, waist and leg proportions",
+          afterAlt: "Edited Proportions concept: the woman in a navy jumpsuit in the studio with a noticeably more defined waist and balanced hip line",
           secondaryBeforeAlt: "Original Proportions concept: adult woman in a sage-green knit top and rust trousers in a brick courtyard with shrubs and a bicycle",
-          secondaryAfterAlt: "Edited Proportions concept: the woman in a sage top and rust trousers in the courtyard with subtly adjusted shoulder, waist and leg proportions"
+          secondaryAfterAlt: "Edited Proportions concept: the woman in a sage top and rust trousers in the courtyard with a visibly narrower waist and fuller hip line"
         }
       },
       preparation: {
@@ -1606,7 +1606,7 @@ export const en: Locale = {
         proportions: "Proportions",
         breast: "Breast"
       },
-      submit: "Edit my photo",
+      submit: "Edit Photo",
       replace: "Choose another photo",
       previewAlt: "Preview of the photo you selected",
       errors: {
@@ -1741,7 +1741,7 @@ export const en: Locale = {
         },
         {
           title: "Generate and compare",
-          description: "Sign in and select Edit my photo. Compare the result with your original, check the details and download the image."
+          description: "Sign in and select Edit Photo. Compare the result with your original, check the details and download the image."
         }
       ]
     },
@@ -1837,7 +1837,7 @@ export const en: Locale = {
         },
         {
           question: "When is my photo uploaded?",
-          answer: "Choosing a photo creates a local preview. Submitting Edit my photo uploads it for processing by Rabbit API. The app stores the result privately for your account and does not persistently store your original upload."
+          answer: "Choosing a photo creates a local preview. Submitting Edit Photo uploads it for processing by Rabbit API. The app stores the result privately for your account and does not persistently store your original upload."
         },
         {
           question: "Can I edit on my phone?",
@@ -1931,7 +1931,7 @@ export const en: Locale = {
           },
           {
             title: "Generate, compare and download",
-            description: "Sign in and select Edit my photo to send the original for AI processing. Wait for the result, then move the comparison control to inspect the face, hands, clothing and background. Download the edited image when you are satisfied. A generated result can vary from your intended change."
+            description: "Sign in and select Edit Photo to send the original for AI processing. Wait for the result, then move the comparison control to inspect the face, hands, clothing and background. Download the edited image when you are satisfied. A generated result can vary from your intended change."
           }
         ]
       },
@@ -1961,7 +1961,7 @@ export const en: Locale = {
           },
           {
             question: "Can I reshape my body with it now?",
-            answer: "Yes. Choose an original photo, a mode and an intensity, then sign in and select Edit my photo. The editor sends it for AI processing and shows a result you can compare and download."
+            answer: "Yes. Choose an original photo, a mode and an intensity, then sign in and select Edit Photo. The editor sends it for AI processing and shows a result you can compare and download."
           },
           {
             question: "Are there controls for individual body areas?",
@@ -2039,7 +2039,7 @@ export const en: Locale = {
           },
           {
             title: "Generate and keep a reference",
-            description: "Sign in and select Edit my photo. Once the result is ready, compare it with the original and inspect the face, hands and overall balance alongside the waist. Check garment seams and background lines, then download the result if the change suits the portrait."
+            description: "Sign in and select Edit Photo. Once the result is ready, compare it with the original and inspect the face, hands and overall balance alongside the waist. Check garment seams and background lines, then download the result if the change suits the portrait."
           }
         ]
       },
@@ -2147,7 +2147,7 @@ export const en: Locale = {
           },
           {
             title: "Generate and assess the result",
-            description: "Sign in and select Edit my photo. When the result is ready, compare the shoulders, waist and hips with the original. Check the neckline and garment seams for coherent folds, and make sure the hands and background still look plausible before downloading."
+            description: "Sign in and select Edit Photo. When the result is ready, compare the shoulders, waist and hips with the original. Check the neckline and garment seams for coherent folds, and make sure the hands and background still look plausible before downloading."
           }
         ]
       },

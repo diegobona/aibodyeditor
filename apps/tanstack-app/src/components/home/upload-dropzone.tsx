@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@libs/react-shared/ui/dialog";
-import { DiptychPhoto } from "@libs/react-shared/components/photo-comparison";
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
 import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
 import { BodyContourPreview } from "@libs/react-shared/components/body-contour-preview";
@@ -27,7 +26,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { LoginForm } from "@/components/login-form";
 import type { EditorSample } from "./showcase-data";
 
-/** Send only the original half of a same-origin concept sample. */
+/** Load the original half as a photo for the shared outline and editing flow. */
 async function sampleOriginal(sample: EditorSample): Promise<File> {
   const url = new URL(sample.src, window.location.origin);
   if (
@@ -100,6 +99,7 @@ export function UploadDropzone({
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),
     [preparing, setPreparing] = useState(false);
+  const [loadingSample, setLoadingSample] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const startLock = useRef(false);
   const mode = selectedMode ?? localMode,
@@ -135,12 +135,23 @@ export function UploadDropzone({
     return () => URL.revokeObjectURL(url);
   }, [file]);
   useEffect(() => {
-    if (!sample || locked) return;
+    if (!sample) {
+      setLoadingSample(false);
+      return;
+    }
+    if (locked) return;
+    let active = true;
     setFile(null);
     setPreviewUrl(null);
     setError("");
     editing.reset();
+    setLoadingSample(true);
     if (inputRef.current) inputRef.current.value = "";
+    void sampleOriginal(sample)
+      .then((source) => { if (active) setFile(source); })
+      .catch(() => { if (active) setError(editCopy.errors.INVALID_INPUT); })
+      .finally(() => { if (active) setLoadingSample(false); });
+    return () => { active = false; };
   }, [sample]);
   useEffect(() => {
     if (code === "UNAUTHENTICATED") setSigninOpen(true);
@@ -170,8 +181,8 @@ export function UploadDropzone({
     pickFile(event.dataTransfer.files?.[0]);
   };
   const handleSubmit = async () => {
-    if (locked || startLock.current) return;
-    if (!file && !sample) {
+    if (locked || loadingSample || startLock.current) return;
+    if (!file) {
       inputRef.current?.click();
       return;
     }
@@ -187,12 +198,7 @@ export function UploadDropzone({
     setPreparing(true);
     setError("");
     try {
-      const source = file ?? (await sampleOriginal(sample!));
-      if (!file) {
-        setFile(source);
-        onSampleClear?.();
-      }
-      await editing.submit(source, mode, intensity);
+      await editing.submit(file, mode, intensity);
     } catch {
       setError(editCopy.errors.INVALID_INPUT);
     } finally {
@@ -303,21 +309,13 @@ export function UploadDropzone({
                 : "border-input bg-background hover:border-primary/60",
             )}
           >
-            {previewUrl || sample ? (
+            {previewUrl ? (
               <>
-                {sample && !file ? (
-                  <DiptychPhoto
-                    src={sample.src}
-                    alt={sample.alt}
-                    className="w-36 rounded-xl"
-                  />
-                ) : (
-                  <img
-                    src={previewUrl ?? undefined}
-                    alt={copy.previewAlt}
-                    className="max-h-56 rounded-xl object-contain"
-                  />
-                )}
+                <img
+                  src={previewUrl}
+                  alt={copy.previewAlt}
+                  className="max-h-56 rounded-xl object-contain"
+                />
                 {!locked && (
                   <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
                     <RefreshCw className="size-4" aria-hidden="true" />
@@ -328,10 +326,10 @@ export function UploadDropzone({
             ) : (
               <>
                 <span className="flex size-14 items-center justify-center rounded-full bg-accent text-primary">
-                  <ImageUp className="size-7" aria-hidden="true" />
+                  {loadingSample ? <LoaderCircle className="size-7 animate-spin" aria-hidden="true" /> : <ImageUp className="size-7" aria-hidden="true" />}
                 </span>
                 <span className="text-lg font-semibold text-foreground">
-                  {copy.dropTitle}
+                  {loadingSample ? editCopy.contourPreview.analyzing : copy.dropTitle}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {copy.dropHint}
@@ -405,7 +403,7 @@ export function UploadDropzone({
               type="button"
               size="lg"
               className="h-12 rounded-full px-6 text-base"
-              disabled={pending || session.isPending}
+              disabled={pending || loadingSample || session.isPending}
               onClick={
                 unresolved
                   ? () => {
@@ -425,21 +423,6 @@ export function UploadDropzone({
               {unresolved ? editCopy.checkEdit : copy.submit}
             </Button>
           </div>
-          {sample && !file && (
-            <div className="mt-3 flex items-start gap-3 px-2">
-              <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
-                {t.home.showcase.sampleNotice}
-              </p>
-              <button
-                type="button"
-                disabled={locked}
-                onClick={onSampleClear}
-                className="min-h-10 shrink-0 text-xs font-semibold text-primary underline underline-offset-4"
-              >
-                {t.home.showcase.clearSample}
-              </button>
-            </div>
-          )}
         </>
       )}
       {(error || editError) && (

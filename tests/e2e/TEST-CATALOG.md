@@ -1,5 +1,28 @@
 # E2E 测试流程目录
 
+## Unified edit action — verified (2026-10-14)
+
+- Sample and uploaded photos use the exact English action label `Edit Photo` in every edit mode.
+- The editor contains neither the sample-specific notice nor a `Clear sample` button. The sample sidebar keeps its notice, with `Edit Photo` wording.
+- Selecting another sample or uploading a replacement photo remains available; choosing a sample does not generate an edit.
+- Focused regression: the four mode submission cases and the live sample outline case in `body-editing.spec.ts`. Updated existing preview and entrypoint selectors; no new broad coverage.
+- Verification: all 5 focused E2E cases passed (10.0s); fresh local `tsc --noEmit` and Cloudflare build passed, with existing chunk-size warnings. Provider responses were mocked; the full suite and adapted visual-homepage cases were not run.
+
+## Sample portrait outline — verified (2026-10-14)
+
+- Selecting a sample crops its original portrait half into the same local-photo input used by uploads, mounts the contour preview and starts local analysis once.
+- Changing mode or intensity updates the target contour without rerunning analysis or sending an edit POST; the original contour stays unchanged.
+- Explicit generation submits the prepared 768×1024 original portrait with the selected settings. Clearing the result removes its contour; uploading another photo starts fresh analysis.
+- Focused regression: `body-editing.spec.ts` → `samples preview a live outline and send only the original portrait half`.
+- Verification: 2 focused E2E tests passed (5.0s), covering the live sample outline and missing-task sample selection. Fresh local `tsc --noEmit` and Cloudflare `vite build` passed; existing chunk-size warnings remain. Outline analysis and edit responses were mocked; no provider generation, billing or full-suite checks.
+
+## Sample placement and missing-request recovery — verified (2026-10-14)
+
+- Sample portraits sit beside the homepage upload/editor area on desktop and stay adjacent on mobile. Selecting a sample only changes the preview; generation requires the edit button.
+- A saved request without a job ID gets a 15-second upload/reservation grace period, measured from submission. Repeated `NOT_FOUND` responses then stop the spinner, clear the missing recovery record and unlock photo/sample selection.
+- A request found during the grace period resumes its original job without another edit POST or charge.
+- Verification: 6 focused body-editing E2E tests passed (17.5s), including stale recovery, a temporary lookup 404 during reload, sample submission/placement, ambiguous failures and mobile controls. Fresh local `tsc --noEmit` and Cloudflare `vite build` passed; existing chunk-size warnings remain. Used installed CLI wrappers because the environment's `pnpm` wrapper attempted an unrelated dependency reinstall. No full suite, provider generation or database writes were performed.
+
 ## Continuous body-edit intensity — implemented and verified (2026-10-14)
 
 - The uploader exposes a labeled slider from 1 to 100, initially 70, with localized Subtle/Dramatic endpoints and an accessible numeric value out of 100.
@@ -1220,6 +1243,13 @@ Stripe 发送 webhook → stripe listen 转发到 /api/payment/webhook/stripe
 
 证据：`test-results/body-contour-unit.log`、`body-contour-e2e.log`、`body-contour-e2e-final.log`、`body-contour-typecheck.log`、`body-contour-build.log`、`body-contour-cf.log`；最终桌面/手机截图 `body-contour-final-desktop.png`、`body-contour-final-mobile.png`。
 
+## 首页主要概念图加强（Verified，2026-10-14）
+
+- Slim、Muscle、Proportions 的主要对比图呈现清晰差异：腰腹与上臂收窄；肩、胸与上臂更饱满；腰臀比例更明显。英语、中文标题、说明与主图 alt 对应变化。
+- 保留原始 Before 输入；每张对比图为 1536×1024，原始样例为 768×1024。After 保持同一人物与相近姿势、衣物、背景构图，生成纹理仍有少量差异；主图引用 `/examples/v3/*-editorial.webp`。
+- 首页三模式切换、滑杆方向、图片解码、原始样例与上传入口正常；现有 AI 概念图披露、标签及生活场景副图保持不变。
+- 三张图经内置 imagegen 各编辑一次，重新拼接原始 Before 后保存 WebP。目视检查小尺寸三联预览，相关 E2E 5/5（14.7s），覆盖 SSR、切换、对比端点、六图解码及 sample outline/原图提交；fresh typecheck 和 Cloudflare build 通过，保留既有分块大小提示。未跑全量检查或调用项目 AI provider。生成提示词与资产路径记录在 `test-results/showcase-v3/generation-manifest.json`，预览为 `test-results/showcase-v3/showcase-preview.jpg`。
+
 ## 测试结果追踪
 
 2026-10-14 结果破图恢复验收（Green）：实际根因是 Nitro dev 中间件将 `Sec-Fetch-Dest: image` 误分流到静态资源处理，私有动态图片接口返回 404；相同请求使用 `empty` 则正常进入路由（未登录401），直接文档导航也可读取 owner 的图片。原组件又没有稳定高度和加载错误处理，导致破图后区域塌成24px。修改为带同源凭证的 fetch → 校验 MIME/大小 → blob URL 展示；手机/桌面保持320/420px，有限两次自动 GET 重试，持续失败提供手动重载。结果解码后才出现比较控件，重载不 POST 生图、不扣积分；四模式正常流程增加 naturalWidth/naturalHeight 断言。
@@ -1290,3 +1320,21 @@ Stripe 发送 webhook → stripe listen 转发到 /api/payment/webhook/stripe
 | 2026-10-14 | TanStack | 14 | 0 | 0 | 结果破图修复：带登录态 fetch/blob 展示、稳定高度、有限自动重试/手动重载；真实已生成图片恢复，未新增付费调用；fresh typecheck/build通过 |
 
 _每次测试运行后更新此表。_
+
+### 2026-10-14：More editing concepts 生活场景对比增强
+
+验收场景（素材替换前记录）：
+- Slim / Muscle / Proportions 三张生活场景图在约 300px 宽卡片上呈现明显的腰腹收窄、肩胸手臂增肌、腰臀轮廓变化；保留同一人物、姿势、服装、光线与场景。
+- 左半原始输入直接裁自原素材，仅做 WebP 重新编码；右半编辑概念增强。双图维持 1536×1024 和等宽半图，滑杆在 0 / 50 / 100 时方向正确、人物对齐、图片可解码。
+- 点击三个生活场景 Preview 链接仍向唯一上传器加载原始半图和对应模式；AI-generated concept 披露与现有 SSR alt 保留。
+- 桌面与手机实际走查；相关首页 E2E、typecheck、build 通过后记录结果。
+
+状态：验收完成（2026-10-15）。内置 imagegen 编辑三张生活场景图，Proportions 追加一次腰臀轮廓增强；仅用 Sharp 裁取原始左半图、拼接新版右半图及 quality 90 WebP 编码。引用 `/examples/v3/*-lifestyle.webp`，每图 1536×1024，分别 265988 / 267294 / 205102 bytes；原素材保留。实际生成提示词与来源记录于 `docs/implementation/homepage-lifestyle-v3.json`。
+
+桌面 1280×900 及手机 390×844 内置浏览器复核：0 / 50 / 100 对比方向正确，体型差异可见；生活场景 Preview Proportions 载入 768×1024 原始半图并选中对应模式。`agent-browser` 未安装，使用 Codex 内置浏览器完成同等走查。截图与三组对照预览保存在 `test-results/lifestyle-v3/`。
+
+验证：相关 E2E 最终 5/5（16.2s；首页 SSR、全部对比端点、六图解码、主要/生活场景入口，以及原始半图提交的 provider mock 回归）。首轮 3/4，一条旧测试把 #try 内侧边样例说明计入上传器，按真实 DOM 改为 `[data-body-editor]` 范围后通过。`E2E_SKIP_CLEANUP=true`，无真实提供商调用或数据库清理。`pnpm typecheck --force` 通过（12.943s）；最终 `pnpm build --force` 通过（35.786s，无缓存）；Cloudflare workerd 7003 预览首页 SSR 200、三图 200 且解码/字节与源文件和构建产物一致，无 SSR 异常。日志 `typecheck.log`、`build.log`、`e2e-final.log`、`cf-check.log`；保留既有分块大小/混合 import 警告。仅 TanStack 为现有应用。
+
+| 日期 | 应用 | 通过 | 失败 | 跳过 | 范围 |
+| --- | --- | ---: | ---: | ---: | --- |
+| 2026-10-15 | TanStack | 5 | 0 | 0 | More editing concepts 生活场景对比增强；类型检查、fresh CF build、Workers SSR/资产和桌面/手机走查通过 |

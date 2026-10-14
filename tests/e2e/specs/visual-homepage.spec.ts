@@ -7,29 +7,29 @@ import { TIMEOUTS } from '../helpers/constants';
 const SITE_URL = 'https://aibodyeditor.net';
 const CONCEPT_LABEL = 'AI-generated concept';
 const CONCEPT_NOTICE = 'Concept images illustrate editing directions. They are not results from this app.';
-const SAMPLE_NOTICE = 'Samples are AI-generated concepts. Select Edit my photo to generate a new edit.';
+const SAMPLE_NOTICE = 'Samples are AI-generated concepts. Select Edit Photo to generate a new edit.';
 const AVAILABILITY = 'Choose a mode and intensity. Sign in to generate your edit.';
 const PREVIEW_NOTICE = 'Your selected photo will stay here while you sign in.';
 const COMPARE_LABEL = 'Compare original and edited concepts';
 const PREVIEW_PNG = readFileSync(resolve(__dirname, '../../../apps/tanstack-app/public/favicon-32x32.png'));
 const MODES = [
   {
-    id: 'slim', label: 'Slim', title: 'A subtle shift in silhouette',
-    description: 'Explore a narrower outline in a clothed portrait, starting with a small change around the waist.',
+    id: 'slim', label: 'Slim', title: 'A slimmer silhouette',
+    description: 'Explore a visibly slimmer waist, abdomen and upper arms in a clothed portrait.',
     primarySubject: 'cream T-shirt', secondarySubject: 'mauve',
-    primarySource: '/examples/v2/slim-editorial-v2.webp',
+    primarySource: '/examples/v3/slim-editorial.webp',
   },
   {
     id: 'muscle', label: 'Muscle', title: 'A more defined athletic look',
-    description: 'Explore more definition in the shoulders and arms while considering the pose and fit of the clothing.',
+    description: 'Explore fuller shoulders, chest and upper arms for a more defined athletic silhouette.',
     primarySubject: 'athletic tank top', secondarySubject: 'blue T-shirt',
-    primarySource: '/examples/v2/muscle-editorial.webp',
+    primarySource: '/examples/v3/muscle-editorial.webp',
   },
   {
-    id: 'proportions', label: 'Proportions', title: 'A different balance',
-    description: 'Explore how a small shift in torso and leg proportions changes the overall silhouette.',
+    id: 'proportions', label: 'Proportions', title: 'A clearer waist-to-hip balance',
+    description: 'Explore a more defined waist and balanced hip line with a clear contrast in the overall silhouette.',
     primarySubject: 'navy jumpsuit', secondarySubject: 'sage',
-    primarySource: '/examples/v2/proportions-editorial.webp',
+    primarySource: '/examples/v3/proportions-editorial.webp',
   },
 ] as const;
 
@@ -52,7 +52,7 @@ async function expectUploadControlsInViewport(page: Page) {
   const controls = [
     editor.getByRole('heading', { level: 1 }), editor.locator('label[for]'),
     ...await editor.locator('fieldset label').all(),
-    editor.getByRole('button', { name: 'Edit my photo', exact: true }),
+    editor.getByRole('button', { name: 'Edit Photo', exact: true }),
     editor.getByText(AVAILABILITY, { exact: true }),
   ];
   expect(controls).toHaveLength(11);
@@ -154,7 +154,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
         hero: text('#home-hero'), editor: text('#try'), pricing: text('#pricing'), faq: text('#faq'),
         canonical: Array.from(document.querySelectorAll('head link[rel="canonical"]'), (node) => node.getAttribute('href')),
         keywords: document.querySelectorAll('head meta[name="keywords"]').length,
-        images: Array.from(document.querySelectorAll('img[src^="/examples/v2/"]'), (node) => ({
+        images: Array.from(document.querySelectorAll('img[src^="/examples/"]'), (node) => ({
           src: node.getAttribute('src'), alt: node.getAttribute('alt'),
         })),
         heroImages: Array.from(document.querySelectorAll('#hero-showcase img'), (node) => ({
@@ -188,7 +188,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       expect(image.loading).toBe('eager');
     }
     const expectedAssets = MODES.flatMap((mode) => [
-      mode.primarySource, `/examples/v2/${mode.id}-lifestyle.webp`,
+      mode.primarySource, `/examples/v3/${mode.id}-lifestyle.webp`,
     ]).sort();
     expect([...new Set(rendered.images.map((image) => image.src))].sort()).toEqual(expectedAssets);
     for (const image of rendered.images) {
@@ -311,7 +311,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       const example = page.locator(`#examples figure[data-secondary-mode="${mode.id}"]`);
       await example.scrollIntoViewIfNeeded();
       for (const image of await example.getByRole('img').all()) await expectDecoded(image);
-      await expectComparisonDirection(example, `/examples/v2/${mode.id}-lifestyle.webp`);
+      await expectComparisonDirection(example, `/examples/v3/${mode.id}-lifestyle.webp`);
     }
   });
 
@@ -385,7 +385,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       const example = page.locator(`#examples figure[data-secondary-mode="${mode.id}"]`);
       for (const [container, source, subject] of [
         [card, mode.primarySource, mode.primarySubject],
-        [example, `/examples/v2/${mode.id}-lifestyle.webp`, mode.secondarySubject],
+        [example, `/examples/v3/${mode.id}-lifestyle.webp`, mode.secondarySubject],
       ] as const) {
         await container.scrollIntoViewIfNeeded();
         await expect(container.getByRole('img')).toHaveCount(2);
@@ -412,57 +412,60 @@ test.describe('Upload-first homepage and honest local previews', () => {
   test('primary and lifestyle sample links carry their photo and mode into the editor', async ({ page }) => {
     const requests = await preventMutations(page);
     await visit(page);
-    const editor = page.locator('#try');
+    const editor = page.locator('#try [data-body-editor]');
+    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
     for (const mode of MODES) {
-      for (const [selector, attribute, variant] of [
-        ['#features article', 'data-showcase-mode', 'editorial'],
-        ['#examples figure', 'data-secondary-mode', 'lifestyle'],
+      for (const [selector, attribute] of [
+        ['#features article', 'data-showcase-mode'],
+        ['#examples figure', 'data-secondary-mode'],
       ] as const) {
         const container = page.locator(`${selector}[${attribute}="${mode.id}"]`);
         const link = container.getByRole('link', { name: `Preview ${mode.label}`, exact: true });
         await expect(link).toHaveAttribute('href', '#try');
+        const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
         await link.click();
         await expect(page).toHaveURL(/\/#try$/);
-        const preview = editor.locator('label[for] img');
-        await expect(preview).toHaveAttribute('src', variant === 'editorial' ? mode.primarySource : `/examples/v2/${mode.id}-lifestyle.webp`);
+        await expect(preview).toHaveAttribute('src', /^blob:/);
+        if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
         await expectDecoded(preview);
         await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-        await expect(editor.getByRole('button', { name: 'Clear sample', exact: true })).toBeVisible();
+        await expect(editor.getByRole('button', { name: 'Clear sample', exact: true })).toHaveCount(0);
+        await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
+        await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
         await expect(editor.getByText(AVAILABILITY, { exact: true })).toBeVisible();
       }
     }
     expect(requests).toEqual([]);
   });
 
-  test('samples, reset and local files can replace one another without uploads', async ({ page }) => {
+  test('samples and local files can replace one another without uploads', async ({ page }) => {
     const requests = await preventMutations(page);
     await visit(page);
     const editor = page.locator('#try');
     const samples = page.locator('#samples');
     const input = editor.getByLabel('Upload a photo to edit', { exact: true });
-    const preview = editor.locator('label[for] img');
+    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
     const clear = editor.getByRole('button', { name: 'Clear sample', exact: true });
 
     for (const mode of MODES) {
       const link = samples.getByRole('link', { name: `Preview ${mode.label}`, exact: true });
+      const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
       await link.click();
       await expect(link).toHaveAttribute('aria-current', 'true');
       await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-      await expect(preview).toHaveAttribute('src', mode.primarySource);
+      await expect(preview).toHaveAttribute('src', /^blob:/);
+      if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
+      await expectDecoded(preview);
     }
+    const sampleBlob = await preview.getAttribute('src');
     await editor.locator('fieldset').getByText('Muscle', { exact: true }).click();
     await expect(editor.getByRole('radio', { name: 'Muscle', exact: true })).toBeChecked();
-    await expect(preview).toHaveAttribute('src', '/examples/v2/proportions-editorial.webp');
-    await editor.getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await expect(preview).toHaveAttribute('src', sampleBlob!);
+    await expect(clear).toHaveCount(0);
+    await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
+    await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
-
-    await clear.click();
-    await expect(preview).toHaveCount(0);
-    await expect(clear).toHaveCount(0);
-    await expect(editor.getByText('Drop a photo here or click to upload', { exact: true })).toBeVisible();
-    await expect(samples.locator('a[aria-current="true"]')).toHaveCount(0);
-    await samples.getByRole('link', { name: 'Preview Slim', exact: true }).click();
 
     await input.setInputFiles({ name: 'local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
     await expect(preview).toHaveAttribute('alt', 'Preview of the photo you selected');
@@ -475,16 +478,19 @@ test.describe('Upload-first homepage and honest local previews', () => {
     await expect(preview).not.toHaveAttribute('src', firstBlob!);
     await expect(preview).toHaveAttribute('src', /^blob:/);
     await expectDecoded(preview);
-    await editor.getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
 
+    const uploadedBlob = await preview.getAttribute('src');
     await samples.getByRole('link', { name: 'Preview Muscle', exact: true }).click();
-    await expect(preview).toHaveAttribute('src', '/examples/v2/muscle-editorial.webp');
+    await expect(preview).toHaveAttribute('src', /^blob:/);
+    await expect(preview).not.toHaveAttribute('src', uploadedBlob!);
     await expectDecoded(preview);
     await expect(input).toHaveValue('');
-    await expect(clear).toBeVisible();
-    await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(1);
+    await expect(clear).toHaveCount(0);
+    await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
+    await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
     await expect(samples.getByText(SAMPLE_NOTICE, { exact: true })).toBeVisible();
     expect(requests, 'Concept and file previews must never upload or create an edit task').toEqual([]);
   });

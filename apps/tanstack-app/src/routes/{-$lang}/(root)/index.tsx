@@ -66,17 +66,54 @@ function HomePage() {
             <h1 className="mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               {home.hero.title}
             </h1>
-            <UploadDropzone
-              selectedMode={editMode}
-              onModeChange={(value) => {
-                setEditMode(value);
-                if (value !== "breast") setMode(value);
-              }}
-              onPendingChange={setEditingPending}
-              sample={sample}
-              onSampleClear={() => setSample(undefined)}
-              className="w-full"
-            />
+            <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_9rem] lg:grid-cols-[minmax(0,1fr)_8rem]">
+              <UploadDropzone
+                selectedMode={editMode}
+                onModeChange={(value) => {
+                  setEditMode(value);
+                  if (value !== "breast") setMode(value);
+                }}
+                onPendingChange={setEditingPending}
+                sample={sample}
+                onSampleClear={() => setSample(undefined)}
+                className="w-full min-w-0"
+              />
+              <section id="samples" aria-labelledby="sample-heading" className="min-w-0">
+                <h2 id="sample-heading" className="mb-3 text-sm font-semibold text-foreground">
+                  {copy.sampleLabel}
+                </h2>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-1">
+                  {BODY_EDITOR_MODES.map((value) => (
+                    <a
+                      key={value}
+                      href="#try"
+                      aria-label={copy.modes[value].cta}
+                      aria-current={
+                        sample?.id === `${value}-primary` ? "true" : undefined
+                      }
+                      onClick={() => previewSample(value, "primary")}
+                      className={cn(
+                        "flex flex-col overflow-hidden rounded-xl border border-border text-left transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:items-center",
+                        sample?.id === `${value}-primary` &&
+                          "border-primary ring-2 ring-primary/20",
+                      )}
+                    >
+                      <DiptychPhoto
+                        src={SHOWCASE_IMAGES[value].primary}
+                        alt={copy.modes[value].beforeAlt}
+                        className="sm:w-12 sm:shrink-0"
+                      />
+                      <span className="flex min-h-10 items-center justify-center px-1 text-xs font-semibold text-foreground">
+                        {copy.modes[value].label}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  {copy.sampleNotice}
+                </p>
+              </section>
+            </div>
           </div>
           <div
             id="hero-showcase"
@@ -192,39 +229,6 @@ function HomePage() {
         </div>
         <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
           {copy.conceptNotice}
-        </p>
-      </Section>
-
-      <Section id="samples" className="py-10 md:py-12">
-        <SectionHeading title={copy.sampleLabel} />
-        <div className="grid max-w-sm grid-cols-3 gap-3">
-          {BODY_EDITOR_MODES.map((value) => (
-            <a
-              key={value}
-              href="#try"
-              aria-label={copy.modes[value].cta}
-              aria-current={
-                sample?.id === `${value}-primary` ? "true" : undefined
-              }
-              onClick={() => previewSample(value, "primary")}
-              className={cn(
-                "block overflow-hidden rounded-xl border border-border text-left transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring",
-                sample?.id === `${value}-primary` &&
-                  "border-primary ring-2 ring-primary/20",
-              )}
-            >
-              <DiptychPhoto
-                src={SHOWCASE_IMAGES[value].primary}
-                alt={copy.modes[value].beforeAlt}
-              />
-              <span className="flex min-h-10 items-center justify-center px-1 text-xs font-semibold text-foreground">
-                {copy.modes[value].label}
-              </span>
-            </a>
-          ))}
-        </div>
-        <p className="mt-3 max-w-sm text-xs leading-relaxed text-muted-foreground">
-          {copy.sampleNotice}
         </p>
       </Section>
 

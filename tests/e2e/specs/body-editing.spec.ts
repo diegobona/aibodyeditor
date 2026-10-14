@@ -19,7 +19,7 @@ async function setup(page: Page, handler: (route: Route) => Promise<void>, signe
     return handler(route);
   });
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Edit my photo', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
 }
 async function upload(page: Page) { await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG }); }
 const editor = (page: Page) => page.locator('[data-body-editor]');
@@ -63,7 +63,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
       await upload(page);
       await editor(page).getByText(label, { exact: true }).click();
       await selectStrength(page, 37);
-      await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+      await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
       await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
       expect(requests).toHaveLength(1);
       expect(requests[0].get('mode')).toBe(mode); expect(requests[0].get('intensity')).toBe('37');
@@ -87,11 +87,11 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
       else { statusCalls++; await json(route, success()); }
     });
     await upload(page);
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByText('Editing your photo…')).toBeVisible();
     await expect(editor(page).getByRole('radio', { name: 'Breast', exact: true })).toBeDisabled();
     await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
-    await expect(editor(page).getByRole('button', { name: 'Edit my photo', exact: true })).toBeDisabled();
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeDisabled();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
     expect(posts).toBe(1); expect(statusCalls).toBe(1);
   });
@@ -108,7 +108,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     });
     await setup(page, async route => { posts++; await json(route, success()); });
     await upload(page);
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
     const resultImage = editor(page).locator('img[alt="AI-edited result of your selected photo"]');
     await expect.poll(() => resultImage.evaluate((img: HTMLImageElement) => img.naturalWidth), { timeout: 7000 }).toBeGreaterThan(0);
@@ -128,7 +128,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     });
     await setup(page, async route => { posts++; await json(route, success()); });
     await upload(page);
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByRole('button', { name: 'Reload image', exact: true })).toBeVisible({ timeout: 8000 });
     await expect(editor(page).getByRole('alert')).toContainText('Your edit is saved');
     expect(imageGets, imageRequests.join('\n')).toBe(3);
@@ -150,7 +150,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     try {
       await setup(page, route => json(route, success()));
       await upload(page);
-      await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+      await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
       await expect(editor(page).getByText('Loading your edited photo…', { exact: true })).toBeVisible();
       expect(await editor(page).locator('[data-result-frame]').evaluate(el => el.getBoundingClientRect().height)).toBe(420);
       await expect(editor(page).getByRole('slider')).toHaveCount(0);
@@ -167,7 +167,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
       await json(route, ids.length === 1 ? { error: { code: 'INTERNAL_ERROR' } } : success(), ids.length === 1 ? 500 : 200);
     });
     await upload(page); await selectStrength(page, 73);
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByRole('radio', { name: 'Muscle', exact: true })).toBeDisabled();
     await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
     await editor(page).getByRole('button', { name: 'Check edit status' }).click();
@@ -176,21 +176,43 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     expect(strengths).toEqual(['73', '73']);
   });
   test('reload finds the paid request even if the POST never returned its job ID', async ({ page }) => {
-    let id = '', posts = 0, lookedUp = '';
+    let id = '', posts = 0, lookups = 0, lookedUp = '';
     let release!: () => void;
     const held = new Promise<void>(resolve => { release = resolve; });
     await setup(page, async route => {
       if (route.request().method() === 'POST') {
         posts++; id = String((await formOf(route)).get('requestId'));
         await held; await json(route, success()).catch(() => undefined);
-      } else { lookedUp = new URL(route.request().url()).searchParams.get('requestId') ?? ''; await json(route, success()); }
+      } else {
+        lookedUp = new URL(route.request().url()).searchParams.get('requestId') ?? '';
+        lookups++;
+        await json(route, lookups === 1 ? { error: { code: 'NOT_FOUND' } } : success(), lookups === 1 ? 404 : 200);
+      }
     });
-    await upload(page); await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await upload(page); await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect.poll(() => id).not.toBe('');
     await page.reload();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
-    expect(lookedUp).toBe(id); expect(posts).toBe(1); release();
+    expect(lookedUp).toBe(id); expect(lookups).toBe(2); expect(posts).toBe(1); release();
     await expect(editor(page).getByRole('link', { name: 'Download photo' })).toBeVisible();
+  });
+  test('a missing saved request unlocks sample selection instead of leaving the uploader spinning', async ({ page }) => {
+    let lookups = 0, posts = 0;
+    await page.addInitScript(({ ownerId }) => {
+      sessionStorage.setItem('body-editor-job', JSON.stringify({ ownerId, requestId: 'e6fd3fc6-e63f-4100-bb66-37d166f39e86', startedAt: Date.now() - 20_000 }));
+    }, { ownerId: USER });
+    await setup(page, async route => {
+      if (route.request().method() === 'POST') posts++;
+      else lookups++;
+      await json(route, { error: { code: 'NOT_FOUND' } }, 404);
+    });
+    await expect(editor(page).getByRole('alert')).toContainText('This edit could not be found.');
+    await expect(page.getByLabel('Upload a photo to edit', { exact: true })).toBeEnabled();
+    expect(await page.evaluate(() => sessionStorage.getItem('body-editor-job'))).toBeNull();
+    await page.locator('#samples').getByRole('link', { name: 'Preview Slim', exact: true }).click();
+    await expect(editor(page).getByRole('alert')).toHaveCount(0);
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    expect(lookups).toBe(1); expect(posts).toBe(0);
   });
   test('a refunded provider failure allows a fresh explicit attempt', async ({ page }) => {
     const ids: string[] = [];
@@ -198,9 +220,9 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
       ids.push(String((await formOf(route)).get('requestId')));
       await json(route, ids.length === 1 ? { jobId: JOB, error: { code: 'UPSTREAM_ERROR', refunded: true } } : success(), ids.length === 1 ? 502 : 200);
     });
-    await upload(page); await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await upload(page); await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByRole('alert')).toContainText('The credits for this edit were returned.');
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
     expect(ids[0]).not.toBe(ids[1]);
   });
@@ -208,17 +230,58 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     await setup(page, route => json(route, { error: { code: 'INSUFFICIENT_CREDITS' } }, 402));
     await upload(page); const preview = editor(page).getByRole('img', { name: 'Preview of the photo you selected' });
     const source = await preview.getAttribute('src');
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByRole('alert')).toContainText('You need more credits for this edit.');
     await expect(preview).toHaveAttribute('src', source!);
   });
-  test('samples send only the original portrait half', async ({ page }) => {
+  test('samples preview a live outline and send only the original portrait half', async ({ page }) => {
+    const analysis = {
+      landmarks: Array.from({ length: 33 }, (_, i) => ({ x: i % 2 ? .35 : .65, y: i < 11 ? .1 : i < 13 ? .23 : i < 15 ? .4 : i < 23 ? .5 : i < 25 ? .55 : i < 27 ? .75 : .95, visibility: .99 })),
+      contours: [[{ x: .45, y: .04 }, { x: .55, y: .04 }, { x: .6, y: .19 }, { x: .7, y: .23 }, { x: .75, y: .4 }, { x: .7, y: .55 }, { x: .65, y: .5 }, { x: .65, y: .7 }, { x: .6, y: .98 }, { x: .53, y: .98 }, { x: .5, y: .65 }, { x: .47, y: .98 }, { x: .4, y: .98 }, { x: .35, y: .7 }, { x: .35, y: .5 }, { x: .3, y: .55 }, { x: .25, y: .4 }, { x: .3, y: .23 }, { x: .4, y: .19 }]],
+    };
+    let workers = 0, posts = 0;
+    page.on('request', request => { if (request.url().endsWith('/body-preview/worker.js')) workers++; });
+    await page.route('**/body-preview/worker.js', route => route.fulfill({ contentType: 'application/javascript', body: `self.onmessage=async({data})=>{const image=await createImageBitmap(data.file);self.postMessage({type:'result',analysis:{...${JSON.stringify(analysis)},width:image.width,height:image.height}});image.close();};` }));
     let dimensions: { width?: number; height?: number } | undefined;
-    await setup(page, async route => { const form = await formOf(route); dimensions = await sharp(Buffer.from(await (form.get('image') as File).arrayBuffer())).metadata(); await json(route, success()); });
+    await setup(page, async route => {
+      posts++;
+      const form = await formOf(route);
+      expect(form.get('mode')).toBe('muscle'); expect(form.get('intensity')).toBe('37');
+      dimensions = await sharp(Buffer.from(await (form.get('image') as File).arrayBuffer())).metadata();
+      await json(route, success('muscle', 37));
+    });
+    expect(workers).toBe(0);
+    await expect(page.locator('#home-hero #samples')).toBeVisible();
+    const uploadBox = await editor(page).boundingBox(), samplesBox = await page.locator('#samples').boundingBox();
+    expect(samplesBox!.x).toBeGreaterThanOrEqual(uploadBox!.x + uploadBox!.width);
+    expect(samplesBox!.y).toBeLessThan(uploadBox!.y + uploadBox!.height);
     await page.locator('#samples').getByRole('link', { name: 'Preview Slim', exact: true }).click();
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await expect(editor(page).locator('[data-body-contour-preview]')).toBeVisible();
+    await expect(editor(page).getByText('Samples are AI-generated concepts.', { exact: false })).toHaveCount(0);
+    await expect(editor(page).getByRole('button', { name: 'Clear sample', exact: true })).toHaveCount(0);
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    await expect(editor(page).locator('[data-contour-overlay]')).toHaveAttribute('viewBox', '0 0 768 1024');
+    const original = await editor(page).locator('[data-contour-original]').getAttribute('d');
+    const target = editor(page).locator('[data-contour-target]');
+    await expect(target).toBeVisible();
+    const slim = await target.getAttribute('d');
+    await editor(page).getByText('Muscle', { exact: true }).click();
+    await expect(target).not.toHaveAttribute('d', slim!);
+    const muscle = await target.getAttribute('d');
+    await selectStrength(page, 37);
+    await expect(target).not.toHaveAttribute('d', muscle!);
+    await expect(editor(page).locator('[data-contour-original]')).toHaveAttribute('d', original!);
+    expect(workers).toBe(1); expect(posts).toBe(0);
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
+    expect(posts).toBe(1);
     expect(dimensions).toMatchObject({ width: 768, height: 1024 });
+    await editor(page).getByRole('button', { name: 'Edit another photo' }).click();
+    await expect(editor(page).locator('[data-body-contour-preview]')).toHaveCount(0);
+    await upload(page);
+    await expect(editor(page).locator('[data-contour-overlay]')).toHaveAttribute('viewBox', '0 0 32 32');
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    expect(workers).toBe(2); expect(posts).toBe(1);
   });
   test('anonymous submission opens sign in and keeps photo, mode and strength', async ({ page }) => {
     let posts = 0;
@@ -226,7 +289,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     await upload(page); await editor(page).getByText('Breast', { exact: true }).click();
     await selectStrength(page, 93);
     const source = await editor(page).getByRole('img').getAttribute('src');
-    await editor(page).getByRole('button', { name: 'Edit my photo', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
     await expect(page.getByRole('dialog')).toContainText('Your selected photo will stay here while you sign in.');
     await expect(page.getByRole('dialog').getByRole('link', { name: 'Sign up', exact: true })).toHaveAttribute('target', '_blank');
     await page.getByRole('button', { name: 'Close', exact: true }).click();

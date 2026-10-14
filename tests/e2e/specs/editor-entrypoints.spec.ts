@@ -153,7 +153,7 @@ test.describe('One editor, homepage and topic entry points', () => {
       await expect(preview).not.toHaveAttribute('src', originalPreviewUrl!);
       await expect(preview).toHaveAttribute('src', /^blob:/);
       await expect.poll(() => preview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-      await editor.getByRole('button', { name: 'Edit my photo', exact: true }).click();
+      await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
       await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
       expect(mutationRequests, 'Preview selection, replacement and submission must not send mutations').toEqual([]);

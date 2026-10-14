@@ -30,6 +30,7 @@ type Recovery = {
 };
 type EditFailure = { code: string; refunded?: boolean; uncertain?: boolean };
 const savedJobKey = "body-editor-job";
+const reservationGraceMs = 15_000;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -135,12 +136,12 @@ export function useBodyEdit(ownerId?: string) {
     }
     const code =
       typeof body.error?.code === "string" ? body.error.code : "UNKNOWN";
-    // On refresh, the first POST may still be uploading or committing its reservation.
+    // Allow a brief upload/reservation race on refresh, then release stale recovery.
     if (
       code === "NOT_FOUND" &&
       !recovery.current?.jobId &&
       recovery.current &&
-      Date.now() - recovery.current.startedAt < 300_000
+      Date.now() - recovery.current.startedAt < reservationGraceMs
     ) {
       schedule();
       return;
