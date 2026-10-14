@@ -13,6 +13,10 @@ Choose a mode:
 
 Set the **Intensity** slider anywhere from 1 to 100. It starts at 70 for a clearly visible change. Lower values request subtle adjustments and higher values request a dramatic transformation. Arrow keys adjust by one; Home and End select the endpoints. The number describes editing strength, not a body-size percentage or an exact measurement. Results vary with the photo, clothing and requested change. Moving the slider does not generate an image or consume credits; select **Edit my photo** to apply it.
 
+After selecting a device photo, wait for the local outline analysis. A gray outline marks the original silhouette and a purple outline shows the selected target. Move Intensity or switch modes to update that target immediately, before generating. You can hide the overlay to see the original clearly or adjust its alignment when needed. These controls are free and do not send your photo for generation.
+
+The outline is a target guide, not a guaranteed prediction of the generated result. Clothing and occlusion affect recognition, and a visible silhouette does not reveal hidden anatomy. If the outline cannot be detected, you can replace the photo or continue with normal generation. Example gallery photos retain their existing sample-preview flow.
+
 Sign in and select **Edit my photo** to generate a result. Your selected original is retained while you sign in. Each account gets 15 trial credits once, enough for one edit; subsequent edits also use 15 credits. If an edit fails, the app returns its consumed credits. Generating another result uses credits, including after changing mode or intensity.
 
 While processing, wait for the result instead of submitting again. If the connection is interrupted, check the edit status before starting another edit. Reloading the same browser tab while signed in can recover the pending or completed result without generating another image. After a reload, the result remains downloadable, but the local original is no longer available for side-by-side comparison.

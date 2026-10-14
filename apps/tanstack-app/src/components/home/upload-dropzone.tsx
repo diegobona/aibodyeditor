@@ -12,6 +12,7 @@ import {
 import { DiptychPhoto } from "@libs/react-shared/components/photo-comparison";
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
 import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
+import { BodyContourPreview } from "@libs/react-shared/components/body-contour-preview";
 import { useBodyEdit } from "@libs/react-shared/hooks/use-body-edit";
 import { cn } from "@libs/ui/utils/cn";
 import {
@@ -163,7 +164,7 @@ export function UploadDropzone({
     setFile(candidate);
     onSampleClear?.();
   };
-  const onDrop = (event: DragEvent<HTMLLabelElement>) => {
+  const onDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
     setDragging(false);
     pickFile(event.dataTransfer.files?.[0]);
@@ -265,15 +266,36 @@ export function UploadDropzone({
         </div>
       ) : (
         <>
-          <label
-            htmlFor={inputId}
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            accept={bodyEditConfig.allowedMimeTypes.join(",")}
+            disabled={locked}
+            className="sr-only"
+            aria-label={copy.inputLabel}
+            onChange={(event) => pickFile(event.target.files?.[0])}
+          />
+          <div
             onDragOver={(event) => {
               event.preventDefault();
               if (!locked) setDragging(true);
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
-            className={cn(
+            className="relative"
+          >
+          {file && previewUrl ? (
+            <div className="relative">
+              <BodyContourPreview file={file} previewUrl={previewUrl} mode={mode} intensity={intensity}
+                disabled={locked} alt={copy.previewAlt} copy={editCopy.contourPreview} />
+              <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
+                className="absolute right-2 top-2 flex size-11 items-center justify-center gap-1.5 rounded-full bg-card/95 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 sm:w-auto sm:px-3">
+                <RefreshCw className="size-3.5" aria-hidden="true" /><span className="sr-only sm:not-sr-only">{copy.replace}</span>
+              </button>
+            </div>
+          ) : (
+          <label htmlFor={inputId} className={cn(
               "relative flex min-h-64 flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed p-6 text-center transition-colors",
               locked ? "cursor-wait" : "cursor-pointer",
               dragging
@@ -281,16 +303,6 @@ export function UploadDropzone({
                 : "border-input bg-background hover:border-primary/60",
             )}
           >
-            <input
-              ref={inputRef}
-              id={inputId}
-              type="file"
-              accept={bodyEditConfig.allowedMimeTypes.join(",")}
-              disabled={locked}
-              className="sr-only"
-              aria-label={copy.inputLabel}
-              onChange={(event) => pickFile(event.target.files?.[0])}
-            />
             {previewUrl || sample ? (
               <>
                 {sample && !file ? (
@@ -326,6 +338,8 @@ export function UploadDropzone({
                 </span>
               </>
             )}
+          </label>
+          )}
             {pending && (
               <div
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[20px] bg-background/90"
@@ -340,7 +354,7 @@ export function UploadDropzone({
                 </p>
               </div>
             )}
-          </label>
+          </div>
           <fieldset
             disabled={locked}
             className="mt-3 flex flex-wrap items-center gap-2 px-1"

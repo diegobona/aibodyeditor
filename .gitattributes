@@ -1,0 +1,3 @@
+# Preserve the exact upstream bytes verified by the body-preview asset manifest.
+apps/tanstack-app/public/body-preview/mediapipe-*/** -text
+apps/tanstack-app/public/body-preview/*.task -text

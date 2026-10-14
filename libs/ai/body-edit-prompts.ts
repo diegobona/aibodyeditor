@@ -4,6 +4,7 @@ import {
   type BodyEditMode,
   type BodyEditIntensityInput,
 } from '../../config/body-editor';
+import { getBodyEditTargets } from '../../config/body-editor-targets';
 
 const PRESERVATION_INSTRUCTIONS =
   'Edit the provided photograph of the same adult. ' +
@@ -13,30 +14,27 @@ const PRESERVATION_INSTRUCTIONS =
   'Allow the outfit contour, fit and folds to adapt to the changed physique without changing its design. ' +
   'Keep the original image framing and aspect ratio; do not crop, stretch, or extend the canvas.';
 
-/** Interpolated visual guides, not measurable real-world size or weight promises. */
-function target(strength: number, light: number, dramatic: number): string {
-  return (light + ((strength - 1) / 99) * (dramatic - light)).toFixed(1);
-}
+const percent = (value: number) => value.toFixed(1);
 
 const MODE_INSTRUCTIONS: Record<BodyEditMode, (strength: number) => string> = {
   slim: (s) =>
     'Make the waist and upper-arm silhouette look slimmer, including the abdomen and visible thighs for a coherent slimmer physique. ' +
-    `Aim for approximately ${target(s, 2, 32)}% less waist silhouette width, ${target(s, 1, 20)}% less upper-arm thickness, and ${target(s, 1, 22)}% less visible thigh thickness relative to the original. ` +
+    `Aim for approximately ${percent(getBodyEditTargets(s).slim.waistReductionPercent)}% less waist silhouette width, ${percent(getBodyEditTargets(s).slim.upperArmReductionPercent)}% less upper-arm thickness, and ${percent(getBodyEditTargets(s).slim.thighReductionPercent)}% less visible thigh thickness relative to the original. ` +
     'Reduce abdominal fullness and adapt the same garments to the new outline. Preserve shoulder structure, bust size and leg length; leave unrelated body areas unchanged.',
   muscle: (s) =>
     'Add athletic muscle definition to the shoulders and arms, chest and visible core, with believable volume under the existing clothing. ' +
-    `Aim for approximately ${target(s, 3, 28)}% broader shoulder contours and ${target(s, 5, 65)}% greater upper-arm and chest muscle volume relative to the original. ` +
+    `Aim for approximately ${percent(getBodyEditTargets(s).muscle.shoulderIncreasePercent)}% broader shoulder contours and ${percent(getBodyEditTargets(s).muscle.volumeIncreasePercent)}% greater upper-arm and chest muscle volume relative to the original. ` +
     'Build rounded deltoids, fuller biceps and triceps, substantial pectorals and a defined athletic V-shaped torso. ' +
     'If the abdomen is already visible, add coherent abdominal muscle definition; otherwise preserve coverage and express the build through garment fit, never paint abs onto fabric. ' +
     'At high strength allow a powerful muscular or bodybuilder physique; preserve joints and limb lengths, avoiding exaggerated anatomical distortions.',
   proportions: (s) =>
     'Balance the shoulder, waist, and leg proportions toward a visibly longer-legged, defined-waist fashion silhouette within the original frame. ' +
-    `Aim for approximately ${target(s, 1, 40)}% greater leg-to-torso proportion and ${target(s, 2, 24)}% narrower waist silhouette relative to the original. ` +
+    `Aim for approximately ${percent(getBodyEditTargets(s).proportions.legTorsoIncreasePercent)}% greater leg-to-torso proportion and ${percent(getBodyEditTargets(s).proportions.waistReductionPercent)}% narrower waist silhouette relative to the original. ` +
     'Redistribute torso and leg proportions coherently, keeping head size, foot placement, stance and camera perspective consistent. ' +
     'Adapt garment seams, knees and hips to the new proportions; do not merely raise a waistband, change shoes or stretch the background. Preserve original bust size.',
   breast: (s) =>
     'On this adult, clothed subject only, make the bust silhouette appear fuller under the existing clothing. ' +
-    `Aim for approximately ${target(s, 5, 150)}% greater visible bust fullness and forward projection relative to the original. ` +
+    `Aim for approximately ${percent(getBodyEditTargets(s).breast.fullnessIncreasePercent)}% greater visible bust fullness and forward projection relative to the original. ` +
     'Increase the actual clothed bust contour and corresponding garment volume, not just shading, posture or neckline. ' +
     'Preserve clothing coverage, the original neckline, fabric, and outfit; use believable garment volume and folds. ' +
     'Keep the waist, shoulders and overall torso scale unchanged. Do not remove clothing, reveal skin that was covered, or change other body areas.',
