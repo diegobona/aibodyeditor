@@ -57,25 +57,15 @@ interface PageDefinition {
 }
 
 /**
- * SoftwareApplication with Offers built from lib/public-offer — the SAME data
- * the page renders, so structured-data prices always equal on-page prices.
+ * One SoftwareApplication shared by the homepage and topic guides. Offers
+ * describe configured credit packs only; a planned free edit is not an offer.
  * aggregateRating is only emitted when AGGREGATE_RATING holds real data.
  */
 function softwareApplicationJsonLd(
   t: Translations,
   url: string,
-  app: { name: string; description: string } = { name: SITE_NAME, description: t.home.metadata.description },
 ): JsonLd {
-  const offers: JsonLd[] = [
-    {
-      '@type': 'Offer',
-      name: t.home.pricing.free.name,
-      description: t.home.pricing.free.detail,
-      price: '0',
-      priceCurrency: 'USD',
-      url,
-    },
-  ]
+  const offers: JsonLd[] = []
   for (const pack of getCreditPacks()) {
     if (pack.price === null) continue
     offers.push({
@@ -91,13 +81,14 @@ function softwareApplicationJsonLd(
   const data: JsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: app.name,
+    '@id': `${SITE_URL}#editor`,
+    name: SITE_NAME,
     url,
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Web',
-    description: app.description,
-    offers,
+    description: t.home.metadata.description,
   }
+  if (offers.length) data.offers = offers
   if (AGGREGATE_RATING) {
     data.aggregateRating = {
       '@type': 'AggregateRating',
@@ -125,12 +116,20 @@ function breadcrumbJsonLd(items: Array<{ name: string; url: string }>): JsonLd {
 
 type ToolPageKey = 'bodyEditor' | 'skinnyFilter' | 'breastExpansion'
 
-/** JSON-LD for a tool page: SoftwareApplication(+Offer) + FAQPage + BreadcrumbList (Home > page). */
+/** Each topic page describes the same app and retains its own FAQ and breadcrumb. */
 function toolPageJsonLd(key: ToolPageKey) {
   return ({ t, lang, url }: PageContext): JsonLd[] => {
     const page = t.toolPages[key]
     return [
-      softwareApplicationJsonLd(t, url, { name: page.hero.title, description: page.metadata.description }),
+      softwareApplicationJsonLd(t, canonicalUrl('/', lang)),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: page.hero.title,
+        description: page.metadata.description,
+        url,
+        about: { '@id': `${SITE_URL}#editor` },
+      },
       faqPageJsonLd(page.faq.items),
       breadcrumbJsonLd([
         { name: t.toolPages.common.homeName, url: canonicalUrl('/', lang) },

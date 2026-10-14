@@ -6,7 +6,6 @@ dotenv.config();
 
 // 获取数据库连接字符串
 const connectionString = process.env.DATABASE_URL;
-console.log('connectionString', connectionString);
 if (!connectionString) {
   throw new Error("DATABASE_URL 环境变量未设置");
 }

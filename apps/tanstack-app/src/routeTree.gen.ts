@@ -16,6 +16,7 @@ import { Route as Char123LangChar125AdminRouteImport } from './routes/{-$lang}/a
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiOrdersRouteImport } from './routes/api/orders'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiBodyEditRouteImport } from './routes/api/body-edit'
 import { Route as Char123LangChar125rootRouteRouteImport } from './routes/{-$lang}/(root)/route'
 import { Route as Char123LangChar125authRouteRouteImport } from './routes/{-$lang}/(auth)/route'
 import { Route as Char123LangChar125AdminIndexRouteImport } from './routes/{-$lang}/admin/index'
@@ -43,6 +44,7 @@ import { Route as ApiPaymentCancelRouteImport } from './routes/api/payment/cance
 import { Route as ApiCreditsTransactionsRouteImport } from './routes/api/credits/transactions'
 import { Route as ApiCreditsStatusRouteImport } from './routes/api/credits/status'
 import { Route as ApiCreditsBalanceRouteImport } from './routes/api/credits/balance'
+import { Route as ApiBodyEditJobIdRouteImport } from './routes/api/body-edit/$jobId'
 import { Route as ApiBlogSlugRouteImport } from './routes/api/blog/$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAffiliateStatsRouteImport } from './routes/api/affiliate/stats'
@@ -75,6 +77,7 @@ import { Route as ApiPaymentWebhookAlipayRouteImport } from './routes/api/paymen
 import { Route as ApiPaymentVerifyStripeRouteImport } from './routes/api/payment/verify/stripe'
 import { Route as ApiPaymentVerifyCreemRouteImport } from './routes/api/payment/verify/creem'
 import { Route as ApiPaymentReturnPaypalRouteImport } from './routes/api/payment/return/paypal'
+import { Route as ApiBodyEditJobIdImageRouteImport } from './routes/api/body-edit/$jobId/image'
 import { Route as ApiAdminWithdrawalsIdRouteImport } from './routes/api/admin/withdrawals/$id'
 import { Route as ApiAdminStatsMonthlyRouteImport } from './routes/api/admin/stats/monthly'
 import { Route as ApiAdminPricingPlansReorderRouteImport } from './routes/api/admin/pricing-plans/reorder'
@@ -120,6 +123,11 @@ const ApiOrdersRoute = ApiOrdersRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBodyEditRoute = ApiBodyEditRouteImport.update({
+  id: '/api/body-edit',
+  path: '/api/body-edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char123LangChar125rootRouteRoute =
@@ -268,6 +276,11 @@ const ApiCreditsBalanceRoute = ApiCreditsBalanceRouteImport.update({
   id: '/api/credits/balance',
   path: '/api/credits/balance',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBodyEditJobIdRoute = ApiBodyEditJobIdRouteImport.update({
+  id: '/$jobId',
+  path: '/$jobId',
+  getParentRoute: () => ApiBodyEditRoute,
 } as any)
 const ApiBlogSlugRoute = ApiBlogSlugRouteImport.update({
   id: '/api/blog/$slug',
@@ -440,6 +453,11 @@ const ApiPaymentReturnPaypalRoute = ApiPaymentReturnPaypalRouteImport.update({
   path: '/api/payment/return/paypal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBodyEditJobIdImageRoute = ApiBodyEditJobIdImageRouteImport.update({
+  id: '/image',
+  path: '/image',
+  getParentRoute: () => ApiBodyEditJobIdRoute,
+} as any)
 const ApiAdminWithdrawalsIdRoute = ApiAdminWithdrawalsIdRouteImport.update({
   id: '/api/admin/withdrawals/$id',
   path: '/api/admin/withdrawals/$id',
@@ -508,6 +526,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/{-$lang}': typeof Char123LangChar125rootRouteRouteWithChildren
+  '/api/body-edit': typeof ApiBodyEditRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/api/upload': typeof ApiUploadRoute
@@ -519,6 +538,7 @@ export interface FileRoutesByFullPath {
   '/api/affiliate/stats': typeof ApiAffiliateStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
+  '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -549,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/pricing-plans/reorder': typeof ApiAdminPricingPlansReorderRoute
   '/api/admin/stats/monthly': typeof ApiAdminStatsMonthlyRoute
   '/api/admin/withdrawals/$id': typeof ApiAdminWithdrawalsIdRoute
+  '/api/body-edit/$jobId/image': typeof ApiBodyEditJobIdImageRoute
   '/api/payment/return/paypal': typeof ApiPaymentReturnPaypalRoute
   '/api/payment/verify/creem': typeof ApiPaymentVerifyCreemRoute
   '/api/payment/verify/stripe': typeof ApiPaymentVerifyStripeRoute
@@ -585,6 +606,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/{-$lang}': typeof Char123LangChar125rootIndexRoute
+  '/api/body-edit': typeof ApiBodyEditRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/api/upload': typeof ApiUploadRoute
@@ -595,6 +617,7 @@ export interface FileRoutesByTo {
   '/api/affiliate/stats': typeof ApiAffiliateStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
+  '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -624,6 +647,7 @@ export interface FileRoutesByTo {
   '/api/admin/pricing-plans/reorder': typeof ApiAdminPricingPlansReorderRoute
   '/api/admin/stats/monthly': typeof ApiAdminStatsMonthlyRoute
   '/api/admin/withdrawals/$id': typeof ApiAdminWithdrawalsIdRoute
+  '/api/body-edit/$jobId/image': typeof ApiBodyEditJobIdImageRoute
   '/api/payment/return/paypal': typeof ApiPaymentReturnPaypalRoute
   '/api/payment/verify/creem': typeof ApiPaymentVerifyCreemRoute
   '/api/payment/verify/stripe': typeof ApiPaymentVerifyStripeRoute
@@ -663,6 +687,7 @@ export interface FileRoutesById {
   '/{-$lang}': typeof Char123LangChar125RouteWithChildren
   '/{-$lang}/(auth)': typeof Char123LangChar125authRouteRouteWithChildren
   '/{-$lang}/(root)': typeof Char123LangChar125rootRouteRouteWithChildren
+  '/api/body-edit': typeof ApiBodyEditRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/api/upload': typeof ApiUploadRoute
@@ -674,6 +699,7 @@ export interface FileRoutesById {
   '/api/affiliate/stats': typeof ApiAffiliateStatsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
+  '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -704,6 +730,7 @@ export interface FileRoutesById {
   '/api/admin/pricing-plans/reorder': typeof ApiAdminPricingPlansReorderRoute
   '/api/admin/stats/monthly': typeof ApiAdminStatsMonthlyRoute
   '/api/admin/withdrawals/$id': typeof ApiAdminWithdrawalsIdRoute
+  '/api/body-edit/$jobId/image': typeof ApiBodyEditJobIdImageRoute
   '/api/payment/return/paypal': typeof ApiPaymentReturnPaypalRoute
   '/api/payment/verify/creem': typeof ApiPaymentVerifyCreemRoute
   '/api/payment/verify/stripe': typeof ApiPaymentVerifyStripeRoute
@@ -742,6 +769,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/{-$lang}'
+    | '/api/body-edit'
     | '/api/health'
     | '/api/orders'
     | '/api/upload'
@@ -753,6 +781,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/stats'
     | '/api/auth/$'
     | '/api/blog/$slug'
+    | '/api/body-edit/$jobId'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -783,6 +812,7 @@ export interface FileRouteTypes {
     | '/api/admin/pricing-plans/reorder'
     | '/api/admin/stats/monthly'
     | '/api/admin/withdrawals/$id'
+    | '/api/body-edit/$jobId/image'
     | '/api/payment/return/paypal'
     | '/api/payment/verify/creem'
     | '/api/payment/verify/stripe'
@@ -819,6 +849,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/{-$lang}'
+    | '/api/body-edit'
     | '/api/health'
     | '/api/orders'
     | '/api/upload'
@@ -829,6 +860,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/stats'
     | '/api/auth/$'
     | '/api/blog/$slug'
+    | '/api/body-edit/$jobId'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -858,6 +890,7 @@ export interface FileRouteTypes {
     | '/api/admin/pricing-plans/reorder'
     | '/api/admin/stats/monthly'
     | '/api/admin/withdrawals/$id'
+    | '/api/body-edit/$jobId/image'
     | '/api/payment/return/paypal'
     | '/api/payment/verify/creem'
     | '/api/payment/verify/stripe'
@@ -896,6 +929,7 @@ export interface FileRouteTypes {
     | '/{-$lang}'
     | '/{-$lang}/(auth)'
     | '/{-$lang}/(root)'
+    | '/api/body-edit'
     | '/api/health'
     | '/api/orders'
     | '/api/upload'
@@ -907,6 +941,7 @@ export interface FileRouteTypes {
     | '/api/affiliate/stats'
     | '/api/auth/$'
     | '/api/blog/$slug'
+    | '/api/body-edit/$jobId'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -937,6 +972,7 @@ export interface FileRouteTypes {
     | '/api/admin/pricing-plans/reorder'
     | '/api/admin/stats/monthly'
     | '/api/admin/withdrawals/$id'
+    | '/api/body-edit/$jobId/image'
     | '/api/payment/return/paypal'
     | '/api/payment/verify/creem'
     | '/api/payment/verify/stripe'
@@ -974,6 +1010,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   Char123LangChar125Route: typeof Char123LangChar125RouteWithChildren
+  ApiBodyEditRoute: typeof ApiBodyEditRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   ApiOrdersRoute: typeof ApiOrdersRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -1073,6 +1110,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/body-edit': {
+      id: '/api/body-edit'
+      path: '/api/body-edit'
+      fullPath: '/api/body-edit'
+      preLoaderRoute: typeof ApiBodyEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/{-$lang}/(root)': {
@@ -1263,6 +1307,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/credits/balance'
       preLoaderRoute: typeof ApiCreditsBalanceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/body-edit/$jobId': {
+      id: '/api/body-edit/$jobId'
+      path: '/$jobId'
+      fullPath: '/api/body-edit/$jobId'
+      preLoaderRoute: typeof ApiBodyEditJobIdRouteImport
+      parentRoute: typeof ApiBodyEditRoute
     }
     '/api/blog/$slug': {
       id: '/api/blog/$slug'
@@ -1488,6 +1539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentReturnPaypalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/body-edit/$jobId/image': {
+      id: '/api/body-edit/$jobId/image'
+      path: '/image'
+      fullPath: '/api/body-edit/$jobId/image'
+      preLoaderRoute: typeof ApiBodyEditJobIdImageRouteImport
+      parentRoute: typeof ApiBodyEditJobIdRoute
+    }
     '/api/admin/withdrawals/$id': {
       id: '/api/admin/withdrawals/$id'
       path: '/api/admin/withdrawals/$id'
@@ -1685,10 +1743,34 @@ const Char123LangChar125RouteChildren: Char123LangChar125RouteChildren = {
 const Char123LangChar125RouteWithChildren =
   Char123LangChar125Route._addFileChildren(Char123LangChar125RouteChildren)
 
+interface ApiBodyEditJobIdRouteChildren {
+  ApiBodyEditJobIdImageRoute: typeof ApiBodyEditJobIdImageRoute
+}
+
+const ApiBodyEditJobIdRouteChildren: ApiBodyEditJobIdRouteChildren = {
+  ApiBodyEditJobIdImageRoute: ApiBodyEditJobIdImageRoute,
+}
+
+const ApiBodyEditJobIdRouteWithChildren =
+  ApiBodyEditJobIdRoute._addFileChildren(ApiBodyEditJobIdRouteChildren)
+
+interface ApiBodyEditRouteChildren {
+  ApiBodyEditJobIdRoute: typeof ApiBodyEditJobIdRouteWithChildren
+}
+
+const ApiBodyEditRouteChildren: ApiBodyEditRouteChildren = {
+  ApiBodyEditJobIdRoute: ApiBodyEditJobIdRouteWithChildren,
+}
+
+const ApiBodyEditRouteWithChildren = ApiBodyEditRoute._addFileChildren(
+  ApiBodyEditRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   Char123LangChar125Route: Char123LangChar125RouteWithChildren,
+  ApiBodyEditRoute: ApiBodyEditRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   ApiOrdersRoute: ApiOrdersRoute,
   ApiUploadRoute: ApiUploadRoute,

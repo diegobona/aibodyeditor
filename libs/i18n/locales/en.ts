@@ -1245,6 +1245,8 @@ export const en: Locale = {
       },
       descriptions: {
         ai_chat: "AI Chat",
+        ai_body_edit: "AI Body Edit",
+        body_edit_trial: "Body Editor Trial Credits",
         ai_image_generation: "AI Image Generation",
         ai_video_generation: "AI Video Generation",
         image_generation: "Image Generation",
@@ -1508,17 +1510,90 @@ export const en: Locale = {
   },
   home: {
     metadata: {
-      title: "AI Body Editor — Reshape & Slim Your Body in Photos Online",
-      description: "Upload a photo and our AI body editor slims, adds muscle or adjusts body proportions in seconds. Try one edit free, no sign-up needed."
+      title: "AI Body Editor | Reshape & Slim Your Body in Photos",
+      description: "Edit clothed portraits with Slim, Muscle, Proportions or Breast. Choose an intensity, generate an AI photo edit, compare the result and download it."
     },
     nav: {
-      tryFree: "Try it free"
+      tryFree: "Edit a photo",
+      tools: "Tools",
+      toolsDescription: "Photo editing guides"
     },
     hero: {
-      badge: "1 free edit · no sign-up",
+      badge: "AI photo editing",
       title: "AI Body Editor",
-      subtitle: "Slim down, add muscle or rebalance your proportions in any photo. Upload a picture and the AI reshapes your body in seconds, while your face, clothes and background stay natural.",
-      note: "Clothed photos only · Adults 18+ · Uploads are deleted after 8 hours"
+      subtitle: "Choose a photo, an editing mode and an intensity. Generate your edit, compare it with the original and download the result.",
+      note: "Clothed adult photos only · Sign in to edit · Private results"
+    },
+    showcase: {
+      eyebrow: "Slim, Muscle & Proportions",
+      heroCta: "Edit a photo",
+      examplesCta: "See examples",
+      conceptLabel: "AI-generated concept",
+      conceptNotice: "Concept images illustrate editing directions. They are not results from this app.",
+      compareLabel: "Compare original and edited concepts",
+      compareHint: "Drag to compare",
+      before: "Original concept",
+      after: "Edited concept",
+      modesLabel: "Explore editing concepts",
+      sampleLabel: "Try a sample photo",
+      sampleNotice: "Samples are AI-generated concepts. Select Edit my photo to generate a new edit.",
+      clearSample: "Clear sample",
+      examplesTitle: "More editing concepts",
+      examplesSubtitle: "More portraits to help you picture each editing direction.",
+      previewTitle: "Edit your photo",
+      previewSubtitle: "Choose a photo, mode and intensity. Sign in to generate an edit, then compare and download the result.",
+      detailTitle: "Look beyond the silhouette",
+      detailSubtitle: "Check the surrounding details when you review a change to a portrait.",
+      detailFace: "Face and expression",
+      detailClothes: "Clothing and seams",
+      detailBackground: "Background lines",
+      detailNotice: "These concepts show details to review. Actual AI edits can change a face, clothing or background; compare the whole image before saving.",
+      closingTitle: "Start with a photo you like",
+      closingDescription: "Choose a photo and an editing direction. Sign in to generate, compare and download your result.",
+      pricingNote: "AI edits use credits. Each account gets trial credits for one edit; sign in to get started.",
+      modes: {
+        slim: {
+          label: "Slim",
+          title: "A subtle shift in silhouette",
+          description: "Explore a narrower outline in a clothed portrait, starting with a small change around the waist.",
+          cta: "Preview Slim",
+          beforeAlt: "Original Slim concept: adult woman in a cream T-shirt and dark brown trousers on a warm white terrace with green plants",
+          afterAlt: "Edited Slim concept: the woman in a cream T-shirt and dark brown trousers on the terrace with a subtly narrower waist and upper-arm silhouette",
+          secondaryBeforeAlt: "Original Slim concept: adult woman in a mauve long-sleeve top and indigo jeans on a leafy neighborhood street",
+          secondaryAfterAlt: "Edited Slim concept: the woman in a mauve top and jeans on the street with a subtly narrower waist and upper-arm silhouette"
+        },
+        muscle: {
+          label: "Muscle",
+          title: "A more defined athletic look",
+          description: "Explore more definition in the shoulders and arms while considering the pose and fit of the clothing.",
+          cta: "Preview Muscle",
+          beforeAlt: "Original Muscle concept: adult man in a forest-green athletic tank top and charcoal trousers in a gym lit by tall windows",
+          afterAlt: "Edited Muscle concept: the man in a green athletic tank top and charcoal trousers in the gym with more defined shoulders and upper arms",
+          secondaryBeforeAlt: "Original Muscle concept: adult man in a blue T-shirt and olive joggers on a riverside park path with trees and a stone railing",
+          secondaryAfterAlt: "Edited Muscle concept: the man in a blue T-shirt and olive joggers on the riverside path with more defined shoulders and upper arms"
+        },
+        proportions: {
+          label: "Proportions",
+          title: "A different balance",
+          description: "Explore how a small shift in torso and leg proportions changes the overall silhouette.",
+          cta: "Preview Proportions",
+          beforeAlt: "Original Proportions concept: adult woman in a navy jumpsuit in a studio with a terracotta wall and warm gray floor",
+          afterAlt: "Edited Proportions concept: the woman in a navy jumpsuit in the studio with subtly adjusted shoulder, waist and leg proportions",
+          secondaryBeforeAlt: "Original Proportions concept: adult woman in a sage-green knit top and rust trousers in a brick courtyard with shrubs and a bicycle",
+          secondaryAfterAlt: "Edited Proportions concept: the woman in a sage top and rust trousers in the courtyard with subtly adjusted shoulder, waist and leg proportions"
+        }
+      },
+      preparation: {
+        title: "Choose a clear starting photo",
+        description: "Use a clothed adult portrait with even lighting and space around the person.",
+        linkBefore: "For photo selection tips, read the ",
+        linkText: "Body Editor",
+        linkAfter: " guide."
+      },
+      privacy: {
+        title: "Photo processing and private results",
+        description: "Selecting a photo creates a local preview. When you submit an edit, your photo is sent to Rabbit API for processing. Results are stored privately for your account."
+      }
     },
     upload: {
       inputLabel: "Upload a photo to edit",
@@ -1528,7 +1603,8 @@ export const en: Locale = {
       modes: {
         slim: "Slim",
         muscle: "Muscle",
-        proportions: "Proportions"
+        proportions: "Proportions",
+        breast: "Breast"
       },
       submit: "Edit my photo",
       replace: "Choose another photo",
@@ -1537,86 +1613,139 @@ export const en: Locale = {
         type: "Please upload a JPG, PNG or WebP image.",
         size: "This photo is larger than 10 MB."
       },
-      comingSoon: "The editor is launching soon. Your photo has not been uploaded."
+      availability: "Choose a mode and intensity. Sign in to generate your edit.",
+      comingSoon: "Choose a mode and intensity, then sign in to edit your photo."
+    },
+    editing: {
+      intensityLabel: "Intensity",
+      intensities: {
+        subtle: "Subtle",
+        balanced: "Balanced",
+        noticeable: "Noticeable"
+      },
+      pending: "Editing your photo…",
+      resultTitle: "Your edited photo",
+      loadingResult: "Loading your edited photo…",
+      resultLoadError: "Your edit is saved, but the preview could not load. Reload the image to try again.",
+      reloadResult: "Reload image",
+      before: "Original",
+      after: "Edited",
+      beforeAlt: "Original photo selected for this edit",
+      afterAlt: "AI-edited result of your selected photo",
+      compareLabel: "Compare your original and edited photo",
+      compareHint: "Drag to compare",
+      download: "Download photo",
+      editAnother: "Edit another photo",
+      signinTitle: "Sign in to edit your photo",
+      signinDescription: "Your selected photo will stay here while you sign in.",
+      signinRequired: "Sign in to edit",
+      trialNote: "Each account gets 15 trial credits for one edit.",
+      costNote: "{credits} credits per edit.",
+      refunded: "The credits for this edit were returned.",
+      checkEdit: "Check edit status",
+      retry: "Try again",
+      errors: {
+        NOT_CONFIGURED: "Editing is unavailable right now. Please try later.",
+        INVALID_INPUT: "Choose a valid JPG, PNG or WebP photo up to 10 MB, a mode and an intensity.",
+        UNAUTHENTICATED: "Sign in to edit your photo.",
+        UNAUTHORIZED: "Sign in to edit your photo.",
+        FORBIDDEN: "You cannot access this edit.",
+        INVALID_ORIGIN: "Open the editor on this site to submit your photo.",
+        INSUFFICIENT_CREDITS: "You need more credits for this edit.",
+        CONFLICT: "This request belongs to a different photo or setting. Start a new edit.",
+        IDEMPOTENCY_CONFLICT: "This request belongs to a different photo or setting. Start a new edit.",
+        UPSTREAM_ERROR: "The image service could not finish this edit.",
+        TIMEOUT: "The edit took too long. Check its status before trying again.",
+        CANCELLED: "This edit was cancelled.",
+        INVALID_RESPONSE: "The image service returned an unusable result.",
+        OUTPUT_TOO_LARGE: "The generated image exceeded the size limit.",
+        ASYNC_RESPONSE: "The image service returned an unfinished task. Please check the edit status.",
+        RESULT_UNAVAILABLE: "The edited photo could not be saved or loaded.",
+        STORAGE_ERROR: "The edited photo could not be saved or loaded.",
+        NOT_FOUND: "This edit could not be found.",
+        UNKNOWN: "The edit could not be completed. Please try again.",
+        INTERNAL_ERROR: "The edit could not be completed. Please try again.",
+        NETWORK: "Connection lost. Check the edit status before trying again."
+      }
     },
     features: {
-      title: "What You Can Do",
-      subtitle: "Four edits, each with a strength slider, so your results stay believable.",
+      title: "Photo editing goals",
+      subtitle: "Choose a direction for your portrait and use the guides to prepare a clear starting photo.",
       items: [
         {
           key: "slim",
-          title: "Slim Body & Face",
-          description: "Trim your waist, arms, thighs or jawline. Clothing, skin texture and the background stay intact, so the photo still looks real.",
-          linkBefore: "Want a one-tap result? Try the ",
+          title: "A slimmer silhouette",
+          description: "Plan a subtle change to the overall outline. Clear body edges and some space around the person make a photo easier to assess.",
+          linkBefore: "For photo tips on a slimmer look, read the ",
           linkText: "skinny filter",
-          linkAfter: "."
+          linkAfter: " guide."
         },
         {
           key: "muscle",
-          title: "Add Muscle",
-          description: "Add definition to your abs, chest, shoulders and arms, from a lightly toned look to a full athletic build.",
-          linkBefore: "For control over each muscle group, open the ",
+          title: "More muscle definition",
+          description: "Choose Muscle for an athletic look under the original clothing. Review the pose, shoulders and arms when comparing the result.",
+          linkBefore: "For portrait choice and reshaping advice, read the ",
           linkText: "body editor",
-          linkAfter: "."
+          linkAfter: " guide."
         },
         {
           key: "proportions",
-          title: "Body Proportions",
-          description: "Lengthen legs, balance shoulders and hips or correct posture in full-body shots taken at awkward angles.",
-          linkBefore: "Only want to adjust the bust? Use ",
+          title: "Balanced proportions",
+          description: "Look at the full silhouette before deciding what to change. Camera position and clothing can affect how the shoulders, torso and legs appear.",
+          linkBefore: "For advice about bust proportions in clothed portraits, read the ",
           linkText: "AI breast expansion",
-          linkAfter: " on clothed photos."
+          linkAfter: " guide."
         },
         {
           key: "batch",
-          title: "Batch Processing",
-          description: "Apply the same edit to a whole set of photos in one go, ideal for a photoshoot or a dating profile gallery.",
-          linkBefore: "Batch mode also works in the ",
+          title: "Photo preparation",
+          description: "Choose a clear portrait with visible body edges, even lighting and room around the person. A good starting photo makes your goal easier to judge.",
+          linkBefore: "Find photo selection tips in the ",
           linkText: "body editor",
-          linkAfter: ", so the same area settings apply to every photo in the set."
+          linkAfter: " guide."
         }
       ]
     },
     howItWorks: {
-      title: "How It Works",
+      title: "Start with a photo",
       steps: [
         {
-          title: "Upload a photo",
-          description: "Choose a clear JPG, PNG or WebP photo of a clothed person, full-body or half-body."
+          title: "Choose your photo",
+          description: "Select a clear JPG, PNG or WebP photo of a clothed adult, up to 10 MB."
         },
         {
-          title: "Pick an edit and strength",
-          description: "Select slim, muscle or proportions and drag the slider until it looks right."
+          title: "Pick a mode",
+          description: "Choose Slim, Muscle, Proportions or Breast, then set Subtle, Balanced or Noticeable intensity."
         },
         {
-          title: "Download the result",
-          description: "Compare before and after, then save your edited photo in full resolution."
+          title: "Generate and compare",
+          description: "Sign in and select Edit my photo. Compare the result with your original, check the details and download the image."
         }
       ]
     },
     action: {
-      title: "See It in Action",
-      subtitle: "Before and after examples for each type of edit.",
+      title: "Editing concepts",
+      subtitle: "AI concept illustrations for the editing directions.",
       before: "Before",
       after: "After",
       items: [
         {
           key: "slim",
-          beforeAlt: "Before: woman in a floral summer dress standing on a beach, original photo",
-          afterAlt: "After: the same woman with a slimmer waist and arms, beach background unchanged",
-          caption: "Slim: waist and arms reduced, background untouched"
+          beforeAlt: "Placeholder illustration for Slim showing a simple body silhouette",
+          afterAlt: "Alternate placeholder illustration for Slim showing the same body silhouette",
+          caption: "Slim goal: a narrower body outline"
         },
         {
           key: "muscle",
-          beforeAlt: "Before: man in a white tank top in a gym, original photo",
-          afterAlt: "After: the same man with more defined arms, shoulders and chest, same gym lighting",
-          caption: "Muscle: arms and chest defined, lighting unchanged"
+          beforeAlt: "Placeholder illustration for Muscle showing a simple body silhouette",
+          afterAlt: "Alternate placeholder illustration for Muscle showing the same body silhouette",
+          caption: "Muscle goal: more upper body definition"
         },
         {
           key: "proportions",
-          beforeAlt: "Before: woman in jeans and a denim jacket, full-body street photo",
-          afterAlt: "After: the same woman with longer legs and balanced proportions, street unchanged",
-          caption: "Proportions: legs lengthened in a full-body shot"
+          beforeAlt: "Placeholder illustration for Proportions showing a simple body silhouette",
+          afterAlt: "Alternate placeholder illustration for Proportions showing the same body silhouette",
+          caption: "Proportions goal: balance the overall silhouette"
         }
       ]
     },
@@ -1627,25 +1756,25 @@ export const en: Locale = {
       title: "Why aibodyeditor.net",
       items: [
         {
-          title: "Try once, no sign-up",
-          description: "Your first edit is free and needs no account or card. Create an account only if you like the result."
+          title: "One editor, four modes",
+          description: "The homepage and guides use the same AI Body Editor with Slim, Muscle, Proportions and Breast choices."
         },
         {
-          title: "Natural, high-quality results",
-          description: "The AI keeps skin texture, fabric and lighting realistic and exports in full resolution, so edits don't look warped or filtered."
+          title: "Practical photo advice",
+          description: "Find help with portrait selection, body reshaping goals and details to check when reviewing an edit."
         },
         {
-          title: "Clothed photos only",
-          description: "We accept clothed photos of adults only: nude images are rejected automatically and photos of anyone under 18 are not allowed. Uploads are never shared and are deleted after 8 hours."
+          title: "Preview before sending",
+          description: "Selecting a photo stays local. Submitting an edit sends it for AI processing; your result is available through your signed-in account."
         }
       ]
     },
     pricing: {
       title: "Pricing",
-      subtitle: "No subscription. Buy credits once, they never expire, and each edit uses credits from your balance.",
+      subtitle: "Credit-based AI editing with one account trial. Sign in to see your balance and generate an edit.",
       free: {
-        name: "Free trial",
-        detail: "1 edit, no sign-up"
+        name: "Account trial",
+        detail: "One edit with trial credits · Sign-in required"
       },
       packs: {
         starter: "Starter",
@@ -1654,63 +1783,63 @@ export const en: Locale = {
       credits: "{credits} credits",
       neverExpire: "Credits never expire",
       comingSoon: "Price coming soon",
-      ctaFree: "Try it free",
+      ctaFree: "Edit a photo",
       ctaPack: "Get started"
     },
     faq: {
       title: "FAQ",
       items: [
         {
-          question: "Is there a free AI body editor?",
-          answer: "Yes. aibodyeditor.net lets you edit one photo for free without creating an account. After that, you buy a credit pack once and use the credits whenever you want."
+          question: "How do I edit a photo?",
+          answer: "Choose a JPG, PNG or WebP photo up to 10 MB, select Slim, Muscle, Proportions or Breast and choose an intensity. Sign in, generate the edit, then compare and download the result."
         },
         {
-          question: "How can I make my body look slimmer in a photo?",
-          answer: "Upload your photo, choose the Slim edit and drag the strength slider. The AI trims your waist, arms and thighs while keeping the background straight."
+          question: "Which mode is for a slimmer look?",
+          answer: "Choose Slim for a narrower waist and upper-arm silhouette. Subtle, Balanced and Noticeable describe the intended strength; the result depends on the starting photo."
         },
         {
-          question: "Can AI add muscle to a picture?",
-          answer: "Yes. The Muscle edit adds definition to your abs, chest, shoulders and arms. You control the strength, from a lightly toned look to an athletic build."
+          question: "What is Muscle mode for?",
+          answer: "Muscle adds athletic shoulder and arm definition under the original clothing. Choose an intensity and inspect the generated result for believable anatomy and garment details."
         },
         {
-          question: "Will the edited photo look natural?",
-          answer: "The AI body editor reshapes the body only and keeps skin texture, clothing and lighting realistic. Lower strength settings give the most natural results."
+          question: "How do I choose a photo for a natural looking edit?",
+          answer: "Use a sharp portrait with even lighting and space around the person. Visible clothing seams and background lines give you useful reference points when judging a change."
         },
         {
-          question: "Do I need a subscription?",
-          answer: "No. There are no subscriptions. You buy credits once, they never expire, and each edit deducts credits from your balance."
+          question: "How much does an edit cost?",
+          answer: "An edit uses 15 credits. Each signed-in account gets 15 trial credits once, enough for one edit. If an edit fails, its consumed credits are returned; generating again uses credits."
         },
         {
           question: "Can I edit several photos at once?",
-          answer: "Yes. Batch processing applies the same edit to a whole set of photos in one go. Each photo in the batch uses credits."
+          answer: "Edit one photo at a time. Choose another photo for the next edit. Video and batch editing are not supported."
         },
         {
-          question: "Is it safe to upload my photos?",
-          answer: "Your photos are never shared and are deleted from our servers after 8 hours. You must be 18 or older to use the site, and we accept clothed photos of adults only, automatically rejecting nude images."
+          question: "When is my photo uploaded?",
+          answer: "Choosing a photo creates a local preview. Submitting Edit my photo uploads it for processing by Rabbit API. The app stores the result privately for your account and does not persistently store your original upload."
         },
         {
-          question: "Does the AI body editor work on iPhone and Android?",
-          answer: "Yes. It runs in any modern mobile or desktop browser, so there is nothing to install."
+          question: "Can I edit on my phone?",
+          answer: "Yes. Choose a photo in your mobile browser, sign in and generate an edit. You can compare and download the result without installing an app."
         }
       ]
     },
     tools: {
-      title: "More AI Photo Tools",
+      title: "Photo editing guides",
       items: [
         {
           key: "bodyEditor",
           title: "Body Editor",
-          description: "Reshape any body area by hand with precise sliders."
+          description: "Choose a portrait, plan a body reshape and learn what to check."
         },
         {
           key: "skinnyFilter",
           title: "Skinny Filter",
-          description: "Slim your whole body in one tap."
+          description: "Photo choice and proportion tips for a subtler slim look."
         },
         {
           key: "breastExpansion",
           title: "AI Breast Expansion",
-          description: "Adjust bust proportions on clothed photos."
+          description: "Use Breast mode for a fuller clothed bust silhouette, with garment and proportion checks."
         }
       ]
     },
@@ -1725,332 +1854,333 @@ export const en: Locale = {
     common: {
       breadcrumbLabel: "Breadcrumb",
       homeName: "AI Body Editor",
-      relatedTitle: "Related Tools",
+      relatedTitle: "Related guides",
       homeLinkText: "AI body editor",
-      homeLinkDescription: "Ready-made slim, muscle and proportion edits for the whole body in one click."
+      homeLinkDescription: "Edit a photo in the same AI Body Editor and explore all four modes.",
+      editorIntro: "Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus three intensity choices."
     },
     bodyEditor: {
       keyword: "body editor",
       metadata: {
-        title: "Body Editor — Free Online AI Body Reshape Tool",
-        description: "Reshape your waist, hips, legs, arms or shoulders in any photo with an online body editor. Try one edit free, no sign-up needed."
+        title: "Body Editor | Photo Reshaping Guide and Portrait Tips",
+        description: "Use the body editor to reshape clothed portraits with four modes and three intensities. Generate an AI edit, compare the original and download the result."
       },
       breadcrumb: "Body Editor",
       hero: {
         title: "Body Editor",
-        subtitle: "Reshape your body in a photo one area at a time. Choose the waist, hips, legs, arms or shoulders, move a slider and watch the change, while walls and door frames behind you stay straight.",
-        note: "1 free edit, no sign-up · Clothed photos only · Uploads deleted after 8 hours"
+        subtitle: "Choose the right portrait, set a clear body reshaping goal and learn which details to check when reviewing a change.",
+        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
       },
       what: {
-        title: "What Is a Body Editor?",
+        title: "What is a body editor?",
         paragraphs: [
-          "A body editor is a photo tool that changes the shape of the person in a picture without changing anything else. Instead of putting one filter over the whole image, you choose a specific area, such as the waist, hips, thighs, arms or shoulders, and decide exactly how much it should move.",
-          "Most people reach for a body editor because the camera did not show them the way they look in real life. A wide-angle phone lens makes whatever is closest to it look larger, a low angle shortens the legs, and a slouch that lasted one second can end up in the only good shot from a wedding. Editing those areas back is often more honest than leaving the distortion in.",
-          "There are practical uses too. Personal trainers sketch a realistic goal physique to show a client what twelve weeks of work could look like. Online clothing sellers keep product photos consistent when models of different builds wear the same item.",
-          "Older body editing apps worked by stretching pixels, so every change bent the door frame, the tiled floor or the horizon next to the body. This body editor uses AI to find where the person ends and the background begins. It reshapes only the body and rebuilds the background behind it, so the edited photo still looks like a real photo."
+          "A body editor changes the way a person's silhouette appears in a photo. Common goals include a slimmer outline, more muscle definition or a different balance between the upper and lower body. Start with one clear aim: decide what bothers you about the picture and whether it comes from the pose, the outfit or the shape you want to explore.",
+          "Photo choice often matters more than the size of a planned change. A phone held close to the body, a twisted stance or a coat covering the waist can make proportions difficult to read. Compare the image with another portrait taken from a comfortable distance. If the issue is mainly the angle, taking a new picture can give you a better starting point than trying to reshape a poor one.",
+          "For an outfit portrait, you might want the silhouette to read more evenly while keeping the way the garment hangs. In a fitness portrait, the aim might be to explore a more defined appearance. Keep those goals specific to the photo. An edited image cannot show how a body will change through training, and it cannot establish how an item of clothing will fit.",
+          "On this site, the Body Editor guide and homepage use one AI Body Editor. Choose Slim, Muscle, Proportions or Breast, then set Subtle, Balanced or Noticeable intensity. Sign in and submit the original photo to generate an edit. Compare the result with your source image and download it only after reviewing the details. The advice below helps you choose a useful starting photo and assess the change."
         ],
-        linkBefore: "Prefer one click to manual control? Our ",
-        linkAfter: " applies ready-made slim, muscle and proportion edits to the whole body at once.",
+        linkBefore: "The ",
+        linkAfter: " homepage explains the product and offers the same photo editor.",
         sibling: {
           key: "skinnyFilter",
-          before: "Only after an overall slimmer look? The ",
-          after: " slims your face, arms, waist and legs together with one slider."
+          before: "If your goal is an overall slimmer silhouette, the ",
+          after: " guide has more advice about photo choice and subtle slimming."
         },
         figure: {
-          beforeAlt: "Before: woman in a black dress standing in a doorway, original full-body photo",
-          afterAlt: "After: the same woman with a narrower waist and hips, door frame behind her still straight",
-          caption: "Waist and hips adjusted with the body editor. The door frame behind her stays straight."
+          beforeAlt: "Body editor concept illustration showing a wide silhouette inside a rectangular frame",
+          afterAlt: "Body editor concept illustration showing a narrower silhouette inside the same frame",
+          caption: "Illustrated reshape concept: assess the body outline alongside visible background details."
         }
       },
       howTo: {
-        title: "How to Edit Your Body in a Photo",
+        title: "How to edit a body photo",
         steps: [
           {
-            title: "Upload a clear photo",
-            description: "Pick a well-lit JPG, PNG or WebP photo where the person is clothed and the area you want to change is fully visible."
+            title: "Choose a clear portrait",
+            description: "Pick a sharp JPG, PNG or WebP photo, up to 10 MB, with a clothed adult as the subject. A full body portrait is useful for overall proportions. A half body image can help you assess the torso and shoulders."
           },
           {
-            title: "Select the body area",
-            description: "Choose the waist, hips, legs, arms, shoulders or chest, or combine several areas in a single edit."
+            title: "Check the visible outline",
+            description: "Look for room around the person and clear separation from the background. Crossed arms, a bag against the waist or a tight crop can hide the shape you want to evaluate. Try another image if important edges are missing."
           },
           {
-            title: "Adjust the slider",
-            description: "Drag the strength slider and switch between before and after until the change looks natural."
+            title: "Choose your direction",
+            description: "Select Slim for a narrower waist and arms, Muscle for athletic definition, Proportions for overall balance or Breast for a fuller clothed bust silhouette. Choose an intensity: Subtle, Balanced or Noticeable. Start with a restrained change when clothing or background details are complex."
           },
           {
-            title: "Download your photo",
-            description: "Save the edited image in full resolution, ready for social media, a dating profile or a portfolio."
+            title: "Generate, compare and download",
+            description: "Sign in and select Edit my photo to send the original for AI processing. Wait for the result, then move the comparison control to inspect the face, hands, clothing and background. Download the edited image when you are satisfied. A generated result can vary from your intended change."
           }
         ]
       },
       tips: {
-        title: "Body Editor Tips",
+        title: "Body editor photo tips",
         items: [
           {
-            title: "Stay within 10–20% per area",
-            description: "Small changes read as natural. A large change to one area makes the rest of the body look out of proportion, so build up gradually and compare with the original often."
+            title: "Keep the pose readable",
+            description: "Choose a pose where the shoulders, waist and hips are easy to distinguish. A relaxed stance with some space between the arms and torso is easier to assess than a tightly folded pose. Keep the feet in frame when you want to judge leg proportions."
           },
           {
-            title: "Check straight lines next to the body",
-            description: "Look at walls, railings, stripes and clothing seams beside the area you edited. If any of them curve, lower the strength or select a slightly smaller area."
+            title: "Use details as reference points",
+            description: "Clothing seams, buttons, floor tiles and door frames can help you spot an awkward change. Review those details as well as the body. Watch for uneven patterns, bent lines or a hand that no longer sits naturally, especially when using a stronger intensity."
           },
           {
-            title: "Edit a photo set the same way",
-            description: "When you edit several photos from one shoot, use the same areas and strengths on every picture so the person looks consistent across the whole set."
+            title: "Keep your original",
+            description: "Save the source photo so you can compare any later edit with it. Judge the whole image at its normal viewing size, then inspect the edges more closely. Across a photo set, aim for a consistent appearance while allowing for differences in pose and camera angle."
           }
         ]
       },
       faq: {
-        title: "FAQ",
+        title: "Body editor FAQ",
         items: [
           {
-            question: "Is this body editor free?",
-            answer: "Yes, you can make one edit for free without signing up. After that, edits use credits, which you buy once and which never expire."
+            question: "Is Body Editor a different tool from the homepage?",
+            answer: "No. Both pages use the same AI Body Editor with Slim, Muscle, Proportions and Breast, plus three intensities. This page adds photo selection advice and body reshaping guidance."
           },
           {
-            question: "Can I edit my body in a photo without downloading an app?",
-            answer: "Yes. The body editor runs in your web browser on iPhone, Android and desktop, so there is nothing to install."
+            question: "Can I reshape my body with it now?",
+            answer: "Yes. Choose an original photo, a mode and an intensity, then sign in and select Edit my photo. The editor sends it for AI processing and shows a result you can compare and download."
           },
           {
-            question: "Which parts of the body can I reshape?",
-            answer: "You can adjust the waist, hips, legs, arms, shoulders and chest. Each area has its own slider, so you can change one part without affecting the others."
+            question: "Are there controls for individual body areas?",
+            answer: "Use Slim, Muscle, Proportions or Breast and one of three intensities. There are no separate waist, hip, arm or leg sliders, and intensity is an editing direction rather than an exact measurement."
           },
           {
-            question: "Will the background get distorted when I reshape my body?",
-            answer: "The AI separates the person from the background before reshaping and then fills in the area behind the body. Straight lines such as walls and door frames stay straight in most photos."
+            question: "Should I use a full body or half body portrait?",
+            answer: "Choose a full body photo when you want to assess leg length or the balance of the whole silhouette. A half body portrait is useful when your attention is on the torso or shoulders. Keep the area you care about fully visible."
           },
           {
-            question: "Does the body editor work on half-body photos?",
-            answer: "Yes. Half-body photos work well for the arms, shoulders and waist. For legs and overall proportions, use a full-body photo."
+            question: "What makes a body reshape look awkward?",
+            answer: "A changed outline can look out of place beside the original pose, clothing or background. Check the hands, garment seams and nearby straight lines when evaluating any edited image. Large changes can be harder to reconcile with those details."
           },
           {
-            question: "Can I edit a photo of someone else?",
-            answer: "Only edit photos of other people with their permission. The body editor accepts clothed photos only and rejects nude or explicit images."
+            question: "Can I use a photo of someone else?",
+            answer: "Use a photo of another adult only with their permission. Choose a clothed portrait and agree on the intended change before editing or sharing it."
           },
           {
-            question: "What happens to my photo after I edit it?",
-            answer: "Your photo is used only to create your edit. It is deleted from our servers after 8 hours."
+            question: "Where does my selected photo go?",
+            answer: "Selecting a photo creates a local preview. When you submit an edit, the app sends the original to Rabbit API for processing. The result is stored privately for your account; the app does not persistently store the original upload."
           }
         ]
       },
       related: {
-        description: "Reshape any body area by hand with its own slider."
+        description: "Portrait choice, reshaping goals and photo checks for the same editor."
       }
     },
     skinnyFilter: {
       keyword: "skinny filter",
       metadata: {
-        title: "Skinny Filter — Slim Your Whole Body in a Photo in One Tap",
-        description: "This skinny filter slims your face, arms, waist and legs in a photo with one slider, without warping the background. Try one edit free, no sign-up."
+        title: "Skinny Filter | Slim Photo Guide and Portrait Tips",
+        description: "Apply Slim in the AI body editor with three intensity choices. Use these skinny filter photo tips, compare the generated edit and download your result."
       },
       breadcrumb: "Skinny Filter",
       hero: {
         title: "Skinny Filter",
-        subtitle: "Slim your whole body in a photo with a single slider. The AI trims your face, arms, waist and legs together, so you look slimmer while your proportions and the background stay just as they were.",
-        note: "1 free edit, no sign-up · Clothed photos only · Uploads deleted after 8 hours"
+        subtitle: "Plan a slimmer silhouette with photo selection tips and advice for keeping the overall portrait believable.",
+        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
       },
       what: {
-        title: "What Is a Skinny Filter?",
+        title: "What is a skinny filter?",
         paragraphs: [
-          "A skinny filter is a one-step photo effect that makes a person look slimmer. Rather than asking you to work on each part of the body, it reduces the face, neck, arms, waist and legs at the same time and by the same amount. Because everything changes together, the person keeps their natural proportions and still looks like themselves.",
-          "Skinny filters became popular on social apps, where they run live on the camera feed. Most of those filters take a shortcut: they squeeze the middle of the frame. The person gets thinner, but so do the mirror, the window and the friend standing next to them. Bent doorways and oval clocks are the classic signs that a photo went through a skinny filter.",
-          "This skinny filter works on still photos and handles the person and the background separately. The AI traces the outline of the body, slims it with one strength setting and then rebuilds the part of the scene that was hidden behind it. Clothing keeps its folds and prints, the face keeps its features, and furniture and walls around you stay where they were.",
-          "A single control also makes it the quickest way to get an overall slimmer look, whether you are updating a profile picture, sharing holiday photos or fixing a portrait where a wide-angle phone lens added a few pounds."
+          "A skinny filter is a photo effect that makes a person's outline look slimmer. People use the term for several kinds of edits, from a light change to the torso to a narrower silhouette across the whole portrait. In this guide, the focus is on choosing a suitable picture and planning a modest change that still fits the person, pose and outfit.",
+          "Look at the starting image before deciding what needs to be slimmer. A seated pose folds clothing around the waist. An oversized coat can make the upper body look wider, while an arm pressed against the torso can hide the waist entirely. Another photo from the same session may show the outline more clearly and reduce the need for a change.",
+          "A useful slimming reference shows the body with some space around it. In a standing portrait, leave the hands and feet visible if possible. For a seated photo, look for a pose where the torso is easy to read and the clothing is not bunched up. Keep the original crop when comparing candidates so you can judge the full composition.",
+          "Slim is part of the AI Body Editor used on the homepage and every guide. It targets a narrower waist and upper-arm outline. Choose an original photo, set Subtle, Balanced or Noticeable intensity, then sign in to generate an edit. Compare the result with the whole original portrait before downloading. The other modes remain available in the same editor when your goal concerns muscle definition, overall proportions or a clothed bust silhouette."
         ],
-        linkBefore: "Looking for more than slimming, such as adding muscle or changing proportions? Head back to the ",
-        linkAfter: ".",
+        linkBefore: "For the product overview and the other mode choices, visit the ",
+        linkAfter: " homepage.",
         sibling: {
           key: "bodyEditor",
-          before: "Want to change just one area, like your waist or arms, and leave the rest alone? The ",
-          after: " gives each body area its own slider."
+          before: "For broader advice about body reshaping goals and choosing a portrait, read the ",
+          after: " guide."
         },
         figure: {
-          beforeAlt: "Before: man in a navy polo shirt sitting at a café table, original photo",
-          afterAlt: "After: the same man with a slimmer face, arms and waist, café chairs and window frame unchanged",
-          caption: "Skinny filter at medium strength: face, arms and waist slimmed together, background untouched."
+          beforeAlt: "Skinny filter concept illustration showing the original silhouette",
+          afterAlt: "Skinny filter concept illustration showing a narrower silhouette",
+          caption: "Illustrated slimming concept: compare the whole silhouette when planning a change."
         }
       },
       howTo: {
-        title: "How to Use a Skinny Filter on a Photo",
+        title: "How to apply the skinny filter",
         steps: [
           {
-            title: "Upload your photo",
-            description: "Add a clear photo of a clothed person in JPG, PNG or WebP. Close-up portraits and full-body shots both work."
+            title: "Choose a suitable portrait",
+            description: "Select a JPG, PNG or WebP photo up to 10 MB. Use a clothed adult portrait with a clear outline and enough space around the body to assess its proportions."
           },
           {
-            title: "Set the strength",
-            description: "Move the single strength slider. A low setting is usually enough for a slimmer look that still reads as natural."
+            title: "Choose Slim",
+            description: "Select Slim in the shared editor, then choose Subtle, Balanced or Noticeable intensity. The choice controls the intended strength in the AI instructions. Start with Subtle if you want to assess a small waist and upper-arm change before trying a stronger result."
           },
           {
-            title: "Compare before and after",
-            description: "Switch between the original and the filtered photo and check the face, hands and edges of the body."
+            title: "Read the pose and clothing",
+            description: "Inspect the waist and arms in context. A fold in a shirt or an arm covering the torso may explain the outline you see. Compare with another image if the intended change is hard to judge."
           },
           {
-            title: "Save and share",
-            description: "Download the slimmed photo in full resolution and post it wherever you like."
+            title: "Generate and keep a reference",
+            description: "Sign in and select Edit my photo. Once the result is ready, compare it with the original and inspect the face, hands and overall balance alongside the waist. Check garment seams and background lines, then download the result if the change suits the portrait."
           }
         ]
       },
       tips: {
-        title: "Skinny Filter Tips",
+        title: "Skinny filter photo tips",
         items: [
           {
-            title: "Use the lowest strength that works",
-            description: "A skinny filter changes the whole body at once, so even a low setting makes a clear difference. If people who know you would spot the change at a glance, turn it down."
+            title: "Leave room around the outline",
+            description: "A tight crop can remove the elbows or legs you need to judge the silhouette. Choose a wider portrait and assess the person within the whole scene. A small gap between the arms and torso helps you read the waist."
           },
           {
-            title: "Leave space around the body",
-            description: "Avoid tight crops where arms or legs touch the edge of the frame. The AI needs some visible background around the body to rebuild the edges cleanly."
+            title: "Check the face in context",
+            description: "A close portrait gives little information about overall body shape. If your goal is body slimming, choose a photo that includes the torso. When assessing the result, check that the face still fits the rest of the portrait and that nearby details remain coherent."
           },
           {
-            title: "Watch the face first",
-            description: "The face is where too much slimming shows soonest. If your face starts to look like someone else's, lower the strength before you touch anything else."
+            title: "Keep the change modest",
+            description: "Plan a change you can describe clearly, such as a slightly narrower overall outline. Avoid judging the image only by how thin one area looks. The pose, clothing and balance between the upper and lower body matter too."
           }
         ]
       },
       faq: {
-        title: "FAQ",
+        title: "Skinny filter FAQ",
         items: [
           {
-            question: "Is there a free skinny filter for photos?",
-            answer: "Yes. You can apply the skinny filter to one photo for free without creating an account. More edits use credits, which you buy once and which never expire."
+            question: "Can I apply the skinny filter now?",
+            answer: "Yes. Choose a photo, select Slim and an intensity, then sign in to generate a result. The same editor lets you compare the edited photo with the original and download it."
           },
           {
-            question: "How do I make myself look skinnier in a picture?",
-            answer: "Upload the photo, set the strength of the skinny filter and download the result. The filter slims your face, arms, waist and legs together, so your proportions stay balanced."
+            question: "How do I choose a photo for a slimmer look?",
+            answer: "Start with a clear portrait where the torso is visible and the clothing does not hide the outline. Leave room around the person and check whether the camera angle or pose explains the shape you want to change."
           },
           {
-            question: "Is this the same as the skinny filter on TikTok or Snapchat?",
-            answer: "No. Those filters run live on video and usually stretch the whole frame, which bends the background. This skinny filter works on still photos and slims only the person, so walls and furniture behind you stay straight."
+            question: "Is this a separate app from AI Body Editor?",
+            answer: "No. This guide uses the same AI Body Editor as the homepage. Its four modes are Slim, Muscle, Proportions and Breast, with three intensity choices."
           },
           {
-            question: "Can I use the skinny filter on a video?",
-            answer: "No, it works on photos only. If you have several photos to slim, batch processing applies the filter to all of them in one go."
+            question: "Can I use it on a video or a batch of photos?",
+            answer: "The editor accepts one JPG, PNG or WebP image at a time, up to 10 MB. It does not support video or batch editing. Choose another photo to start a separate edit."
           },
           {
-            question: "Will the skinny filter make my photo look fake?",
-            answer: "Not at low or medium strength. The AI keeps skin texture, clothing prints and the background intact, which avoids the usual signs of editing. Very high settings can look unnatural, so compare with the original before saving."
+            question: "Will a slimming edit always look natural?",
+            answer: "That depends on the source image and the change. Clothing patterns, body balance and background lines all affect how believable an edited portrait looks. Keep the original and compare the whole image."
           },
           {
-            question: "Does the skinny filter work for men?",
-            answer: "Yes. It works on any clothed person, whatever their gender or body type."
+            question: "Do these tips apply to men and women?",
+            answer: "Yes. Clear body edges, a readable pose and room around the person are useful for any clothed adult portrait. Choose a goal that suits the person in the photo."
           },
           {
-            question: "Can I upload nude photos?",
-            answer: "No. The skinny filter accepts clothed photos only and automatically rejects nude or explicit images. All uploads are deleted after 8 hours."
+            question: "Can I use nude photos?",
+            answer: "Use clothed adult portraits only. Choose an image you have permission to use and share."
           }
         ]
       },
       related: {
-        description: "Slim your whole body in a photo with one slider."
+        description: "Photo selection and subtle slimming advice for the shared editor's Slim mode."
       }
     },
     breastExpansion: {
       keyword: "AI breast expansion",
       metadata: {
-        title: "AI Breast Expansion — Balance Bust Proportions in Photos",
-        description: "Use AI breast expansion to adjust bust size and balance your silhouette in clothed photos, with fabric and fit kept realistic. Try one edit free, no sign-up."
+        title: "AI Breast Expansion | Clothed Photo Proportion Guide",
+        description: "Use Breast mode in the AI body editor for clothed bust silhouette edits. Choose an intensity, generate a result, compare details and download the photo."
       },
       breadcrumb: "AI Breast Expansion",
       hero: {
         title: "AI Breast Expansion",
-        subtitle: "Adjust bust size in a clothed photo to balance your proportions or preview how an outfit fits a fuller silhouette. The AI redraws the fabric to match, so seams, prints and necklines still look right.",
-        note: "1 free edit, no sign-up · Clothed photos only · Adults 18+ · Uploads deleted after 8 hours"
+        subtitle: "Understand bust proportions in clothed portraits, choose a useful starting photo and learn which garment details to check.",
+        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
       },
       what: {
-        title: "What Is AI Breast Expansion?",
+        title: "What is AI breast expansion?",
         paragraphs: [
-          "AI breast expansion is a photo edit that makes the bust look fuller in a picture of a clothed person and adjusts the clothing to match. It is a proportion tool: it changes the silhouette under a top or dress while keeping the fabric, neckline and fit believable, instead of inventing a different body.",
-          "The most common reason people use it is balance. A high camera angle, a loose top or a strong waist edit can leave the upper body looking flat next to the hips and shoulders. A small bust adjustment brings back the hourglass or pear-shaped outline the person actually has, or the one they want to show in a styled photo.",
-          "It also works as a fitting preview. Shoppers use it to see how a wrap dress or a tailored blazer would sit on a fuller bust before they order. Clothing brands use it to show one garment on several body shapes without booking another shoot, and some people use it privately to picture a cosmetic procedure they are considering before they speak to a surgeon.",
-          "Because only clothed photos are accepted, the real work for the AI is understanding fabric. It redraws how the material stretches, folds and casts shadows over a fuller bust, so a striped shirt keeps its stripes and a row of buttons stays in line. It never removes clothing, and photos without clothing or of anyone under 18 are rejected."
+          "AI breast expansion is a photo edit that makes the bust silhouette appear fuller under the existing clothing. The aim is to adjust garment volume while preserving the neckline, coverage and pose. This guide explains how to choose a useful portrait and judge those details. Select Breast in the shared AI Body Editor for this direction; Proportions remains available for a broader change to the overall silhouette.",
+          "Read the clothing before deciding on a change. A loose blouse may hide the body outline, while a structured jacket may hold its own shape. The neckline, seams and folds tell you how the garment sits in the original photo. Choose an image where those details are visible, so a later comparison has useful reference points.",
+          "A fuller outline also changes how the upper body relates to the shoulders, waist and hips in the picture. A portrait that includes the torso gives more context than a close crop around the chest. Keep the person's posture in view, and check whether the camera angle or drape of the fabric explains the appearance you want to adjust.",
+          "An edited portrait changes the image, not the body. It cannot predict a physical change or how clothing will fit in real life. Choose a clothed adult portrait you have permission to edit, select Breast and an intensity, then sign in to generate a result. Compare the whole image with the original before focusing on the bust outline, and check the neckline, fabric folds, hands and surrounding background."
         ],
-        linkBefore: "Want to adjust your waist, legs or overall shape at the same time? Start from the ",
-        linkAfter: ".",
+        linkBefore: "For the product overview and all four mode choices, visit the ",
+        linkAfter: " homepage.",
         sibling: {
           key: "bodyEditor",
-          before: "To reshape other individual areas, such as the hips or shoulders, use the ",
-          after: " and its per-area sliders."
+          before: "For help with the whole silhouette and portrait selection, read the ",
+          after: " guide. It uses the same editor."
         },
         figure: {
-          beforeAlt: "Before: woman in a striped knit top standing in a clothing store, original photo",
-          afterAlt: "After: the same woman with a fuller bust, the knit stripes following the new shape, store background unchanged",
-          caption: "Bust adjusted at low strength: the stripes of the top bend naturally with the new shape."
+          beforeAlt: "AI breast expansion concept illustration showing the original upper body silhouette",
+          afterAlt: "AI breast expansion concept illustration showing a fuller upper body silhouette",
+          caption: "Illustrated proportion concept: judge the upper body in the context of the whole portrait."
         }
       },
       howTo: {
-        title: "How to Use AI Breast Expansion on a Photo",
+        title: "How to edit a clothed bust silhouette",
         steps: [
           {
-            title: "Upload a clothed photo",
-            description: "Use a clear JPG, PNG or WebP photo of yourself, fully clothed, with your upper body facing the camera."
+            title: "Choose a clear clothed portrait",
+            description: "Use a JPG, PNG or WebP image up to 10 MB, showing a clothed adult. Include the shoulders and waist so you can judge the upper body in context. Avoid a crop that removes the edges of the garment."
           },
           {
-            title: "Set the size change",
-            description: "Move the slider to choose how much fuller the bust should look. Start low and increase in small steps."
+            title: "Inspect the garment",
+            description: "Look for visible seams, buttons or fabric folds. Fitted clothing can make the outline easier to read, while heavy layers may hide it. Use another photo if the shape is unclear."
           },
           {
-            title: "Check the clothing",
-            description: "Compare before and after and look at seams, buttons and the neckline to make sure the garment still fits naturally."
+            title: "Choose Breast and an intensity",
+            description: "Select Breast in the shared editor. Choose Subtle, Balanced or Noticeable intensity to describe the intended change. The AI instructions keep the subject clothed and retain the original neckline; inspect the result because preservation is not guaranteed."
           },
           {
-            title: "Download the result",
-            description: "Save the edited photo in full resolution for your own use."
+            title: "Generate and assess the result",
+            description: "Sign in and select Edit my photo. When the result is ready, compare the shoulders, waist and hips with the original. Check the neckline and garment seams for coherent folds, and make sure the hands and background still look plausible before downloading."
           }
         ]
       },
       tips: {
-        title: "AI Breast Expansion Tips",
+        title: "Clothed proportion photo tips",
         items: [
           {
-            title: "Pick fitted clothing",
-            description: "Fitted tops and dresses give the AI clear lines to follow. Very loose or layered clothing hides the silhouette and makes the change harder to judge."
+            title: "Use a readable neckline and seams",
+            description: "Choose a photo where the garment's structure is visible. A neckline or row of buttons gives you something concrete to compare. Dark shadows, scarves and several layers can make the starting silhouette difficult to read."
           },
           {
-            title: "Balance the whole silhouette",
-            description: "A fuller bust can make the shoulders look narrow or the hips look small. If the outfit starts to look top-heavy, adjust those areas as well so the proportions stay even."
+            title: "Keep the whole torso in view",
+            description: "Include the shoulders and waist when assessing bust proportions. A tight chest crop removes the context that helps you judge balance. Check the full portrait before concentrating on one detail."
           },
           {
-            title: "Stay within the person's frame",
-            description: "Sizes far beyond what the body and the garment could carry strain the fabric in ways that look edited. Small steps keep the clothing believable."
+            title: "Check fabric patterns",
+            description: "Stripes, prints and stitching can reveal an awkward change. In the generated result, follow the pattern across the garment and look for abrupt bends, missing details or folds that do not match the pose. Try a subtler intensity if the fabric looks distorted."
           }
         ]
       },
       faq: {
-        title: "FAQ",
+        title: "AI breast expansion FAQ",
         items: [
           {
-            question: "Is AI breast expansion free to try?",
-            answer: "Yes. Your first edit is free and needs no account. After that, each edit is paid with credits from a pack you buy once, and unused credits stay in your balance for good."
+            question: "Can I generate an AI breast expansion edit now?",
+            answer: "Yes. Select Breast and an intensity in the shared editor, choose a clothed adult portrait and sign in to generate an edit. Compare the result with the original and check the garment before downloading."
           },
           {
-            question: "How can I make my bust look bigger in a photo?",
-            answer: "Upload a clothed photo, set the size slider and compare before and after. The AI makes the bust fuller and redraws the clothing so the fit still looks natural."
+            question: "Which mode changes the bust silhouette?",
+            answer: "Choose Breast for a fuller bust outline under the original clothes. Choose Proportions for overall shoulder, waist and leg balance. Neither mode offers an exact cup size or a separate body-area slider."
           },
           {
-            question: "Does AI breast expansion work on nude photos?",
-            answer: "No. It accepts clothed photos only and automatically rejects nude or explicit images. It never removes clothing."
+            question: "Does this guide use a different editor?",
+            answer: "No. Every guide and the homepage use the same AI Body Editor. All four modes and three intensities are available; this guide adds advice about clothed bust silhouettes."
           },
           {
-            question: "Can I use it to preview a breast augmentation?",
-            answer: "It can give you a rough idea of how a fuller silhouette looks in your own clothes. It is not a medical simulation, so discuss realistic results with a qualified surgeon."
+            question: "Which clothes make proportions easier to assess?",
+            answer: "Choose a garment with a visible outline, neckline and seams. A fitted top often gives more context than bulky layers. Keep enough of the torso in the photo to see how the outfit sits."
           },
           {
-            question: "Is it okay to edit a friend's photo?",
-            answer: "Only with their clear permission. Photos of anyone under 18 are not allowed, and editing other people's photos without consent is against our rules."
+            question: "Can an edited image predict a physical change?",
+            answer: "A photo edit changes an image. It cannot predict a physical change to the body or show how a garment will fit after one. Use it as a visual concept."
           },
           {
-            question: "Will the clothes still look real after the edit?",
-            answer: "Yes, at moderate settings. The AI follows the garment's seams, prints and shadows, so patterns bend with the new shape instead of breaking."
+            question: "Can I use someone else's photo?",
+            answer: "Use a clothed adult portrait only with the person's permission. Agree on the intended change and how the image will be used before editing or sharing it."
           },
           {
-            question: "How long do you keep my photo?",
-            answer: "Only as long as it takes to finish your edit. Every upload is removed automatically 8 hours later."
+            question: "When is my selected photo uploaded?",
+            answer: "Selecting a photo only previews it locally. Submitting an edit sends the original to Rabbit API for processing. Your result is stored privately for your account; the app does not persistently store the original upload."
           }
         ]
       },
       related: {
-        description: "Balance bust proportions in clothed photos."
+        description: "Clothing and silhouette tips for planning a bust proportion edit."
       }
     }
   },

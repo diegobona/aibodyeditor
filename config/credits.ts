@@ -12,6 +12,8 @@ export type FixedConsumptionConfig = number | {
   models?: Record<string, number>;
 };
 
+export const BODY_EDIT_CREDIT_COST = 15;
+
 export const creditsConfig = {
   /**
    * Public offer shown on the site (homepage pricing, FAQ, JSON-LD Offer).
@@ -25,10 +27,10 @@ export const creditsConfig = {
    * paid Offer is emitted.
    */
   publicOffer: {
-    /** Free edits for visitors without an account. */
+    /** One trial edit per signed-in account, granted through the credit ledger. */
     freeTrialEdits: 1,
     /** Credits deducted per photo edit. null = not decided yet. */
-    creditsPerEdit: null as number | null,
+    creditsPerEdit: BODY_EDIT_CREDIT_COST as number | null,
     packs: [
       { key: 'starter', planId: null as string | null },
       { key: 'pro', planId: null as string | null },
@@ -70,7 +72,8 @@ export const creditsConfig = {
         'reve/2.1/text-to-image': 12,
         'bytedance/seedream/v5/pro/text-to-image': 12,
         'fal-ai/flux-2-pro': 10,
-        'gpt-image-2': 15,
+        'gpt-image-2': BODY_EDIT_CREDIT_COST,
+        'gpt-image-2.5-1k': BODY_EDIT_CREDIT_COST,
         'gemini-3.1-flash-image-preview': 10,
         'gemini-3-pro-image-preview': 15,
       },

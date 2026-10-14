@@ -33,6 +33,8 @@
 - [23. 推荐佣金支付全流程测试](#23-推荐佣金支付全流程测试)
 - [24. 管理员动态定价管理测试](#24-管理员动态定价管理测试)
 - [25. Waffo 支付流程测试](#25-waffo-支付流程测试)
+- [26. 同一编辑器的首页与专题入口](#26-同一编辑器的首页与专题入口)
+- [27. 视觉优先首页与概念照片交互](#27-视觉优先首页与概念照片交互)
 
 ### 待实现 (Backlog)
 - [19. 支付宝支付流程测试](#19-支付宝支付流程测试)
@@ -1029,16 +1031,180 @@ Stripe 发送 webhook → stripe listen 转发到 /api/payment/webhook/stripe
 
 ---
 
+## 26. 同一编辑器的首页与专题入口
+
+**文件：** `specs/editor-entrypoints.spec.ts` ｜ **优先级：** P1 ｜ **无需登录或数据库写入**
+
+**状态：** Green（2026-10-14，TanStack / Chromium：8 通过、0 失败）
+
+| # | 测试名称 | 验收场景 |
+|---|---------|---------|
+| 1 | 桌面工具分组 | 首页顶栏使用 Tools 分组；打开后可访问 Body Editor、Skinny Filter、AI Breast Expansion；进入专题后菜单关闭 |
+| 2 | 移动端导航 | 小屏幕展开主菜单，工具链接在 Tools 分组下；点击 Body Editor 后导航收起，页面标题可见 |
+| 3 | 同一编辑入口 | 首页与 Body Editor 均提供相同的 Slim / Muscle / Proportions 模式和照片预览；明确编辑尚未上线；不提供虚构的逐部位滑杆或批量功能 |
+| 4 | 专题内容定位 | 首页保留产品功能与价格总览；Body Editor 保留至少 400 英文词的原创身体重塑指导（照片选择建议、教程及 FAQ），并说明使用同一产品 |
+| 5 | 本地照片预览 | 选择有效 PNG 可看到预览和替换入口；切换模式可见选中状态；提交显示尚未上线且照片未上传的提示 |
+| 6 | SEO 不回退 | 四个可索引页均返回 200；首页与 Body Editor 的 H1、不同 title/canonical、专题内容存在于服务端 HTML；Tools 关闭时原始 `<header>` 仍含三个正确关键词的工具链接；JSON-LD 指向同一 AI Body Editor，不声明尚未上线的免费编辑 Offer；两页继续出现在 sitemap |
+
+仅测试当前唯一应用 TanStack。运行时设置 `E2E_SKIP_CLEANUP=true`，不触发数据库测试用户清理。
+
+验证顺序：先记录场景 → 实现 → 内置浏览器走查（桌面、768px 与 390px 手机、PNG 预览）→ 按真实 DOM 编写 E2E → 8/8 通过。当前环境未提供 `agent-browser` CLI，走查使用 Codex 内置浏览器。
+
+类型检查、新鲜 Cloudflare 构建与 SEO 自查通过。Wrangler 本地 7002 预览中 `/` 和 `/body-editor` 均返回 200，含完整 SSR 标题、工具导航及预览提示；验证后关闭临时预览服务。构建保留已有的部分分块大于 500 kB 提示。
+
+---
+
+## 27. 视觉优先首页与概念照片交互
+
+**文件：** `specs/visual-homepage.spec.ts` ｜ **优先级：** P1 ｜ **无需登录或数据库写入**
+
+**状态：** Green（2026-10-14，TanStack / Chromium：本节 10 通过、0 失败；相关入口回归 8 通过、0 失败，整组 18/18）
+
+| # | 测试名称 | 验收场景 |
+|---|---------|---------|
+| 1 | 首屏照片与概念说明 | 访问英文首页 `/` → 首屏保留唯一 `AI Body Editor` H1，主体照片在桌面和手机早期可见且可解码；照片、前后说明与描述实际人物的非空 alt 存在于服务端 HTML；展示清楚的 AI-generated concept 标识，说明图片用于表达目标，不声称为本产品已生成的真实结果 |
+| 2 | 三个展示模式 | 首页默认展示 Slim → 依次切换 Muscle、Proportions 和 Slim → 模式有可识别的选中状态，主照片、标题与说明同步更新；切换不触发生成或上传请求 |
+| 3 | 原生照片对比操作 | 前后对比使用有可访问名称的原生 range → 键盘方向键可改变对比位置且焦点可见；手机触摸可以改变位置；移动分界时两侧主体保持同一尺寸和位置，Before / After 说明仍清楚，不新增虚构的逐部位身体编辑滑杆 |
+| 4 | 六个原始概念样例 | 滚动到模式卡片、样例与近景区 → 六张不同的原始概念资源均可加载并解码，每个样例都有描述实际人物或构图的 alt 和概念标识；模式卡片与补充样例能辨认 Slim / Muscle / Proportions，图片不存在拉伸或错误半图裁切 |
+| 5 | 选择样例同步编辑器 | 点击各模式的样例入口 → 到达 `#try` 共享编辑器，显示所选样例预览并选中对应 Slim / Muscle / Proportions 模式；可继续切换模式和重新选样例；编辑器仍明确 AI editing is coming soon |
+| 6 | 样例与自选照片替换 | 从样例预览开始选择有效 PNG → 样例状态被清除，自选文件以本地 blob 预览；再选文件可替换预览，再选概念样例可回到样例状态；提交仍显示尚未上线、照片未上传的提示；整个流程不发送 POST / PUT / PATCH / DELETE，不消耗积分或创建任务 |
+| 7 | 主要入口到达编辑器 | 顶栏、首屏、模式卡片和末尾主要编辑入口均指向或滚动到首页 `#try`；到达后模式选择与照片选择可操作，页面没有要求先登录的新增阻碍；Body Editor 等专题仍使用现有共享编辑器 |
+| 8 | 响应式无溢出 | 在 320 / 390 / 768 / 1280 px 宽度分别检查首屏、模式控制、对比组件、样例、编辑器、FAQ 与末尾入口 → 文档无横向溢出，内容与按钮不互相遮挡；图片保持比例，移动端控制可触摸操作，主要照片与概念说明可见 |
+| 9 | SSR 与 SEO 回归 | 首页 HTTP 返回 200；服务端 HTML 包含唯一 H1、主体文案、照片 alt、概念标识、`#try` 和关键词内链；canonical 为 `https://aibodyeditor.net`，无查询、尾斜杠或 meta keywords；闭合 Tools 中保留 Body Editor / Skinny Filter / AI Breast Expansion 正确链接；首页与专题 sitemap 和同一产品 JSON-LD 身份不回退 |
+| 10 | 可用状态诚实呈现 | 首页功能、编辑器、价格与 FAQ 的文案继续区分本地预览和计划中的 AI 编辑；不声明 AI 生成已上线，不虚构用户评价、效果保证、批量编辑或可用的免费编辑 Offer；英文根路径不受 Accept-Language 影响，`/en` 重定向到 `/`；中文镜像字典结构由类型检查验证，当前不开放中文 URL |
+
+仅测试当前唯一应用 TanStack。运行时设置 `E2E_SKIP_CLEANUP=true`，拦截写请求以防止预览回归意外上传或写入；不使用真实人物上传、不注册测试用户、不触发数据库清理。首屏与全部六张资源的解码分开检查，惰性图片在滚动到相应区块后检查。
+
+验证顺序：场景定义 → 实现 → Codex 内置浏览器桌面与手机走查 → 按真实 DOM 编写 `visual-homepage.spec.ts`，必要时调整第 26 节已有布局断言 → 运行相关 E2E 并更新本节状态及结果表。第 26 节已记录的 8/8 结果保留为此前入口改动的历史。
+
+实测命令：`E2E_SKIP_CLEANUP=true npx --yes pnpm@9.4.0 exec playwright test --config=tests/e2e/playwright.config.ts visual-homepage.spec.ts editor-entrypoints.spec.ts`。整组 18/18 通过（52.0s），包含真实 Chromium 触摸手势、range 键盘与焦点、六张图片滚动解码、样例 → 本地文件 → 样例、无写请求、四个断点和原始服务端 HTML 断言。首次调试的两处测试预期已按真实行为修正：`/en` 的 Location 使用绝对 URL，顶栏入口文案为 Try photo preview。
+
+桌面 1280×900 与手机 390×844 首屏截图保存为 `test-results/visual-homepage/home-desktop.png`、`home-mobile.png`；改成首屏截图后补跑该用例 1/1 通过（2.7s）。本节仅记录 E2E 的实测结果；类型检查、构建和 Workers 预览由本次实现的交付报告另行记录。
+
+---
+
+## 28. 兔子 API 身体编辑接入准备
+
+**文件：** `tests/unit/ai/body-edit-prompts.test.ts`、`tests/unit/ai/body-edit.test.ts`、`tests/unit/ai/body-edit-smoke.test.ts`；公共页面回归继续使用 `visual-homepage.spec.ts` 和 `editor-entrypoints.spec.ts`。
+
+**状态：** Preparation Green（2026-10-14：114/114 模拟单元/CLI 测试、18/18 公共 E2E；用户尚未配置兔子 API Key，真实渠道访问与编辑质量待验收）
+
+| # | 验收场景 |
+|---|----------|
+| 1 | 四种服务模式 Slim / Muscle / Proportions / Breast 有独立目标，三档强度由服务端模板解释；保留同一人物、脸部、姿势、衣服与场景的共同约束，输出单张编辑照片，不承诺精确百分比或尺寸 |
+| 2 | 指定 `gpt-image-2.5-1k`，复用服务端 OPENAI_API_KEY / OPENAI_BASE_URL，向 `/v1/images/edits` 发 multipart 原图与固定模板；不把模式、强度、input_fidelity 当作上游参数，不把密钥放入客户端 |
+| 3 | PNG / JPEG / WebP 原图、输入限制、无效模式/强度、无密钥在请求前验证；请求有超时/取消且不隐式重试，避免重复计费 |
+| 4 | 按实际字段处理 URL 或 Base64；验证 Base64 输出的签名格式与大小，URL 仅验证 HTTPS 地址、不下载其字节；空输出、异常协议、异步-only 响应、HTTP错误有稳定错误码；不记录密钥或完整上游响应 |
+| 5 | 本地脚本默认 dry-run，不联网；只有显式 --execute 才使用配置的密钥发请求；测试均使用 mock，不产生付费调用 |
+| 6 | 原有首页和指南仍如实说明预览/计划编辑状态，三模式展示、六图、共享预览和 SEO 行为不回退；相关公共 E2E 通过 |
+
+此阶段仅准备共享服务端接入层和开发验证入口，不开放新的用户 API 或收费流程。具体渠道型号的访问权限、价格、真实编辑效果与延迟需在配置密钥后单独验收。
+
+验证记录：提示词 34 例、HTTP 契约 72 例、CLI 子进程 8 例，共 114/114（1.78s）。提示词与适配器先对未实现版本验证 Red，再 Green；独立审查发现清理流的 `cancel()` 可能无限等待，新增 5 例先 Red 后 Green，确认清理不会拖住超时/取消/错误返回。CLI 测试隔离 `.env` 读取并拦截真实联网，验证默认 dry-run 零请求、单次 mock multipart、按真实输出格式写文件以及拒绝覆盖。
+
+公共 E2E 为 `visual-homepage.spec.ts` + `editor-entrypoints.spec.ts`，18/18（48.6s），`E2E_SKIP_CLEANUP=true`，无数据库写入。`pnpm typecheck --force` 通过（无缓存），新增 shared/script/test 文件的独立严格 TypeScript 检查通过；`pnpm build --force` 通过（79.7s，无缓存），保留已有的分块体积提示。基于该构建的本地 Wrangler/Workers 7003 预览 `/` 和 `/body-editor` 返回 HTTP 200，含正确 SSR 内容，已关闭临时服务；不依赖已配置数据库或真实 AI Key。
+
+日志：`test-results/body-edit-unit.log`、`body-edit-public-e2e.log`、`body-edit-typecheck.log`、`body-edit-build.log`、`body-edit-cf-preview.log`；本地 dry-run 输出为 `body-edit-dry-run.log`。本轮不新增或修改公开页面、用户文案、积分规则或 sitemap。
+
+---
+
+<!-- Comparison asset correction acceptance, recorded before changing the live asset. -->
+
+## 29. 概念对比方向与 Slim 样例修正
+
+**状态：** Green（2026-10-14，新增方向/资源回归 2/2；整组 TanStack / Chromium 20/20）
+
+| # | 验收场景 |
+|---|----------|
+| 1 | 对照完整原始 diptych 与组件裁切，确认每个模式 Original concept 使用实际原始半图、Edited concept 使用编辑半图；不能只按生成提示词判断素材内容 |
+| 2 | Slim 首屏、功能卡片、近景与所选样例使用同一已复核资源；编辑侧的腰部和上臂变化清楚、自然，服装、人物、姿势与背景保持一致，不出现其他身体部位反向变宽造成方向混淆 |
+| 3 | range 两个端点分别显示完整编辑侧/原始侧，标签与 alt 和裁切方向一致；键盘、触摸、三模式切换、原图样例预览、SSR 与响应式行为不回退 |
+| 4 | 新素材保留 AI-generated concept 说明，记录生成/编辑来源与实际视觉复核结果；相关 E2E、typecheck 与 build 通过 |
+
+根因核对：CSS 对应关系没有反向；原始 Slim 图右腰更收，但局部轮廓变化混杂，在 50% 叠图下容易误读。使用内置 image_gen 编辑项目原始概念图，保存 `slim-editorial-v2.webp` 并更新唯一 manifest；左侧原始、右侧腰部/上臂/上段裤型自然同向收窄。旧图保留溯源。range 为 0 时隐藏 Original 标签，100 时隐藏 Edited 标签，50 时保留两标签。
+
+验证顺序：先记录场景 → 查看原始双图和共享 CSS、独立视觉复核 → 修改素材与端点标签 → Codex 内置浏览器检查实际 Home/End/50 状态和原/编辑半图 → 按真实 DOM 扩展 `visual-homepage.spec.ts`。该 spec 12/12，`editor-entrypoints.spec.ts` 8/8，整组 20/20（48.7s）；E2E_SKIP_CLEANUP=true，无数据库写入。
+
+无缓存 `pnpm typecheck --force` 与 `pnpm build --force` 通过（25.0s / 71.1s）；新 spec 独立 TypeScript 检查通过；构建保留已有分块体积提示。本地 Workers 7003 预览首页 HTTP 200，SSR 引用新版 Slim 图，图片 HTTP 200 且 SHA-256 与源文件一致；临时预览已停止。
+
+截图：`test-results/concept-direction/home-desktop.png`、`home-mobile.png`、`slim-original.png`、`slim-edited.png`、`slim-compare.png`。日志：`test-results/concept-direction-e2e.log`、`concept-direction-typecheck.log`、`concept-direction-build.log`、`concept-direction-cf-preview.log`。实际编辑提示词记录在 `docs/implementation/homepage-image-prompts.md` 的新版 Slim 小节。
+
+---
+
+## 30. 上传优先首屏
+
+**文件：** `specs/visual-homepage.spec.ts`；入口回归 `specs/editor-entrypoints.spec.ts`。
+
+**状态：** Green（2026-10-14：上传优先新增 3/3，visual-homepage 15/15 + editor-entrypoints 8/8，整组 23/23）
+
+| # | 验收场景 |
+|---|----------|
+| 1 | 桌面首屏左侧显示短小可见 H1 与可操作上传器，右侧为现有概念对比图；两栏顶部对齐，无大标题、长介绍和重复上传入口；320/390/768 px 手机/平板首先看到上传操作与模式/提交控件，比较图位于其后，无横向溢出 |
+| 2 | 仅一个 #try 与一个文件输入，处于 #home-hero 内；JPG/PNG/WebP 本地预览、替换、模式切换、coming-soon 提示与不上传/不计费行为保持一致 |
+| 3 | 顶栏、功能卡片、定价与末尾入口继续到顶部 #try；下方 #samples 选择样例也跳回顶部并显示对应原始半图，样例/文件/模式切换不重挂载上传器或丢失当前文件 |
+| 4 | 右侧概念图的标签/对比方向、三模式切换及概念披露保持正确；SSR 保留唯一 H1、图片 alt、关键词内链、既有 head/canonical/sitemap；相关 E2E、typecheck 与 build 通过 |
+
+实现：唯一 #try/UploadDropzone 移入首屏左栏，短 H1 保留；桌面右侧概念对比图，手机先上传再展示图。移除首屏长介绍、重复 CTA/徽标和模式长描述。原上传区改为 #samples，其真实链接选择原始样例并返回顶部同一个上传器。未新增公开文案或收费/API行为，所有显示文本仍来自已有 EN/ZH 字典。
+
+验证顺序：场景 → 布局实现 → Codex 内置浏览器 1280/390 px 与样例返回走查 → 按真实 DOM 更新现有场景和新增 3 例 → 整组 23/23（1.3m）。第一次适配中的两个测试代码问题（samples 变量作用域、smooth-scroll 的等待范围）已修正，完整重跑通过；未发现 production 故障。E2E_SKIP_CLEANUP=true，拦截写请求，不注册或清理数据库用户。
+
+无缓存 `pnpm typecheck --force`（23.7s）、`pnpm build --force`（77.8s）通过；新 spec 独立 TypeScript 检查通过。SEO audit 四个索引页及 noindex/404/重定向自查通过。Workers 7003 预览首页 HTTP 200，SSR 的唯一 H1/上传器位于 hero 内，概念图及下方 samples 存在；临时预览已停止。构建保留已有分块体积提示，浏览器临时 viewport 已恢复。
+
+截图：`test-results/upload-first-homepage/home-desktop.png`、`home-mobile.png`。日志：`test-results/upload-first-homepage-e2e.log`、`upload-first-typecheck.log`、`upload-first-build.log`、`upload-first-seo.log`、`upload-first-cf-preview.log`。
+
+---
+
+## 31. 实际 AI 身体编辑
+
+**状态：** Green（2026-10-14；实际接入 gpt-image-2.5-1k，本地可用；生产部署配置另行完成）
+
+| # | 验收场景 |
+|---|----------|
+| 1 | 首页和三个指南的同一个编辑器支持 Slim/Muscle/Proportions/Breast 及三档强度；选本地原图或概念样例的原始半图，提交真正 POST 图片和模式至服务端；固定服务端模板调用兔子 images/edits，不由客户端指定密钥/模型/自由提示词 |
+| 2 | 未登录提示登录并保留当前原图；登录用户获得已配置的一次账户试用；明确积分成本，生成中禁用重复操作，成功显示真实原图/结果、对比与下载，可换图继续编辑；失败显示可理解的本地化错误，不继续展示 coming soon |
+| 3 | API 登录/禁用用户/同源/owner 权限一致；10MB/MIME/签名/枚举/requestId 在扣费前验证；Key 或存储未配置不扣费；用户 A 不可读取或下载用户 B 结果 |
+| 4 | 同一用户请求 UUID 和输入 hash 支持幂等：processing 不重发提供商请求，成功可取缓存结果，不同 payload 复用 UUID 被拒绝；并发余额原子检查，试用 bonus 仅一次；失败/超时退款只一次且有 canonical 账本记录，stale/迟到结果不覆盖退款状态 |
+| 5 | Base64 生成结果私有存储于本地开发目录/Workers R2，下载通过登录 owner API，不暴露原图；URL 输出处理遵循已核实协议，禁止任意服务端下载、泄露密钥或 raw provider error；结果可在响应丢失后按 job 查询，尚未收到 job ID 时按账户与请求 UUID 恢复，刷新不重复付费生成 |
+| 6 | 所有页面移除核心 AI 编辑 coming-soon 声明，更新隐私、指南和FAQ；概念营销图仍清楚标识不作为实际结果，SSR/H1/head/canonical/关键词内链/sitemap不回退；新核心 E2E、现有公共回归、typecheck/build/SEO/Workers 验证通过 |
+| 7 | 使用已配置兔子 Key 和一张项目虚构成人原图做一次真实 canary；记录实际 endpoint/model/result 字段及视觉检查，不把 mock 当真实效果，不输出密钥或执行批量收费测试 |
+
+验证记录：共享单元测试 246/246（八个 suite，含真实 SQLite 事务与模拟 provider/API/storage）；相关 E2E 34/34（1.6m，body-editing 11 + visual-homepage 15 + editor-entrypoints 8）。E2E 使用模拟登录与生成响应、禁用全局数据库清理，不执行注册邮件或重复付费生成。已在浏览器走查真实页面并查看最新桌面/手机截图。覆盖四模式上传、强度、私有图片下载、重复点击、202 轮询、500 不确定响应复用 UUID、刷新前尚无 job ID 的恢复、失败退款提示与新请求、余额不足保留文件、原始样例半图、登录弹窗保留选择。
+
+真实调用：仅一次 `POST https://api.tu-zi.com/v1/images/edits`，模型 `gpt-image-2.5-1k`，Slim/Balanced，使用项目虚构着装成人原图。返回 `data[].url`，下载器仅允许已核实的 `apioss8.sydney-ai.com/ximg/`，保存 1086×1448、2,001,365 bytes PNG 到 `test-results/body-edit-live-result.png`。目视确认腰部/上臂收窄，同时存在姿态/背景变化，不承诺像素或身份完全保留。其余模式经提示词与接口测试，未逐一发起付费实测。
+
+新鲜 typecheck、Cloudflare build（44.097s）、SEO audit 与 diff whitespace 检查通过；构建保留已有大分块提示。Neon 仅应用新增任务表的 `0006_body_image_edit.sql`，未重放旧迁移或修改现有数据。7001 开发服务配置接口返回 available=true、costCredits=15、freeTrialEdits=1。临时 Workers 7003 首页/配置接口均 HTTP 200，无 SSR 错误；未配置部署密钥/数据库时正确返回 available=false。验证后关闭临时 Workers 服务、保留 7001。Workers 实际生图及线上部署未执行，仍需真实 Hyperdrive、密钥和私有 R2 配置。
+
+日志：`test-results/live-edit-unit.log`、`live-edit-e2e.log`、`live-edit-typecheck.log`、`live-edit-build.log`、`live-edit-seo.log`、`live-edit-cf-runtime.log`；最新首屏截图在 `test-results/upload-first-homepage`。
+
+---
+
 ### Backlog 优先级汇总
 
 | 优先级 | 编号 | 测试名称 | 前置条件 | 预计用例数 |
 |--------|------|----------|----------|-----------|
 | P2 | 19 | 支付宝支付流程 | 支付宝沙盒 App ID/密钥 + 沙盒买家账号 | 3 |
 | ✅ | 20 | 博客功能 | blog_post 表已创建 + 管理员账号 | 11 |
+| ✅ | 27 | 视觉优先首页与概念照片交互 | TanStack 首页与原始概念照片实现、浏览器走查完成 | 10 |
+| ✅ | 28 | 兔子 API 接入准备（模拟验收） | 共享适配器、四模式模板与本地试跑；真实调用待 Key | 114 单元/CLI + 18 公共回归 |
+| ✅ | 29 | 概念对比方向与 Slim 样例修正 | 新版原创 Slim 图与共享端点标签实现、浏览器走查完成 | 2 新增 + 18 回归 |
+| ✅ | 30 | 上传优先首屏 | 唯一上传器移入首屏、桌面/手机与样例返回走查完成 | 3 新增 + 20 回归 |
+| ✅ | 31 | 实际 AI 身体编辑 | 真实兔子单次调用、四模式编辑器、任务/积分/私有结果及恢复链路 | 246 单元 + 34 E2E |
 
 ---
 
 ## 测试结果追踪
+
+2026-10-14 结果破图恢复验收（Green）：实际根因是 Nitro dev 中间件将 `Sec-Fetch-Dest: image` 误分流到静态资源处理，私有动态图片接口返回 404；相同请求使用 `empty` 则正常进入路由（未登录401），直接文档导航也可读取 owner 的图片。原组件又没有稳定高度和加载错误处理，导致破图后区域塌成24px。修改为带同源凭证的 fetch → 校验 MIME/大小 → blob URL 展示；手机/桌面保持320/420px，有限两次自动 GET 重试，持续失败提供手动重载。结果解码后才出现比较控件，重载不 POST 生图、不扣积分；四模式正常流程增加 naturalWidth/naturalHeight 断言。
+
+已在用户真实页面验证原有成功结果解码为1329×1183，320px预览区域正常，无新增生成调用；截图 `test-results/body-edit-result-display-fixed.png`。回归先复现 Red：原 img 请求失败后 naturalWidth 为0；模拟 Nitro 对直接 image 请求404后依旧 Red，带凭证 fetch 修复后进入验证。开发热更新期间还遇到 createStartHandler 模块失效，已重启本任务7001服务；未更改依赖或访问其他项目端口。
+
+最终编辑 E2E 14/14（36.0s）通过，包含图片 GET 短暂失败自动恢复、持续错误有界重试及手动重载、慢图片稳定布局和四模式实际解码/下载。首轮暴露两个测试文本匹配歧义及开发环境废弃 effect 的重复 GET；已使用 exact 文案定位，并让废弃 effect 在开始联网前清理，整组重跑通过。新鲜 typecheck（25.074s）、build（1m19.261s）通过，保留已有大分块及混合动态/静态导入提示。证据：`test-results/body-edit-display-e2e-confirm.log`、`body-edit-display-typecheck.log`、`body-edit-display-build.log`。
+
+最终 Workers 本地7003首页/配置接口均200，无SSR错误；部署密钥未配置时正确返回 unavailable。记录在 `test-results/body-edit-display-cf.log`，临时服务验证后关闭，7001保留；whitespace检查通过。
+
+2026-10-14 返回图片节点修复验收（Green）：真实增肌请求返回 `apioss28.sydney-ai.com/ximg/`，旧实现只允许 apioss8，复现 INVALID_RESPONSE。已接受供应商 `apioss<数字>.sydney-ai.com` 节点，继续拒绝相似域名、其他子域、非 HTTPS、非标准端口和重定向。新增用例先 Red（四项失败）再 Green；相关八个单元 suite 256/256，通过错误原因/安全日志与退款断言。同一已生成结果成功下载为 2,020,304-byte PNG，无第二次生成；结果已目视检查。失败日志只含任务/型号/阶段/安全原因，不含密钥、完整图片 URL 或原始响应。
+
+本轮编辑 E2E 首次与构建并行时有一项在提交前等待初始化按钮启用超过 5 秒；构建结束后整组独立重跑 11/11（24.7s）通过，无重试付费调用。新鲜 typecheck（30.718s）、build（1m9.394s）和 whitespace 检查通过；保留既有大分块警告。Workers 7003 的首页和配置接口均 200，无 SSR 错误，未配置生产密钥时 editing=false；临时服务已关闭，7001 开发服务保留。证据：`test-results/body-edit-diagnostic.log`、`body-edit-cdn-live.log`、`body-edit-cdn-unit.log`、`body-edit-cdn-e2e-confirm.log`、`body-edit-cdn-typecheck.log`、`body-edit-cdn-build.log`、`body-edit-cdn-cf.log`。
 
 每次运行后在此记录结果：
 
@@ -1082,5 +1248,17 @@ Stripe 发送 webhook → stripe listen 转发到 /api/payment/webhook/stripe
 | 2026-08-30 | TanStack | 163 | 0 | 1 | **前台重设计分支全量回归 (PG)** — 全部通过（13.4m）；支付 spec 适配 provider tab |
 | 2026-08-30 | Next.js | 163 | 0 | 1 | **前台重设计分支全量回归 (PG)** — 全部通过（12.6m） |
 | 2026-08-30 | Nuxt.js | 163 | 0 | 1 | **前台重设计分支全量回归 (PG)** — 全部通过（11.5m）；creem 重试防冷路由 flaky |
+| 2026-10-14 | TanStack | 8 | 0 | 0 | 首页与专题统一入口（editor-entrypoints.spec.ts）；公共页、无数据库写入；typecheck / fresh CF build / SEO audit / Workers SSR preview 通过 |
+| 2026-10-14 | TanStack | 16 | 2 | 0 | 视觉首页相关 spec 首轮调试；修正新 spec 的绝对重定向 URL 与顶栏 CTA 文案预期 |
+| 2026-10-14 | TanStack | 18 | 0 | 0 | visual-homepage.spec.ts 10/10 + editor-entrypoints.spec.ts 8/8（52.0s）；公共页、无写请求、跳过数据库清理 |
+| 2026-10-14 | TanStack | 1 | 0 | 0 | 视觉首页首屏截图用例补跑（2.7s）；保存 1280×900 桌面与 390×844 手机截图 |
+| 2026-10-14 | Shared / CLI | 114 | 0 | 0 | 兔子 API 准备：prompt 34 + transport 72 + CLI 8（1.78s）；全 mock，无真实提供商调用 |
+| 2026-10-14 | TanStack | 18 | 0 | 0 | 兔子 API 准备的公共回归（48.6s）；无写请求、跳过数据库清理；fresh typecheck / build / Workers SSR preview 通过 |
+| 2026-10-14 | TanStack | 20 | 0 | 0 | 概念方向修正：visual-homepage.spec.ts 12/12 + editor-entrypoints.spec.ts 8/8（48.7s）；无写请求、跳过清理；fresh typecheck / build / Workers SSR 新图验证通过 |
+| 2026-10-14 | TanStack | 21 | 2 | 0 | 上传优先测试首轮适配；修正测试变量作用域及 smooth-scroll 等待范围，非 production 故障 |
+| 2026-10-14 | TanStack | 23 | 0 | 0 | 上传优先：首页 15/15 + 入口 8/8（1.3m）；无写请求、跳过清理；fresh typecheck / build / SEO / Workers SSR 通过 |
+| 2026-10-14 | Shared / TanStack | 280 | 0 | 0 | 实际编辑：246 单元 + 34 E2E（生成/登录 mock）；另一次真实 Slim/Balanced 成功；fresh typecheck/build/SEO/Workers SSR 与配置检查通过，本地 Neon 增量建表完成 |
+| 2026-10-14 | Shared / TanStack | 267 | 0 | 0 | CDN 节点修复：256 单元 + 11 核心 E2E；真实 apioss28 返回结果下载成功；fresh typecheck/build/Workers SSR 与配置检查通过 |
+| 2026-10-14 | TanStack | 14 | 0 | 0 | 结果破图修复：带登录态 fetch/blob 展示、稳定高度、有限自动重试/手动重载；真实已生成图片恢复，未新增付费调用；fresh typecheck/build通过 |
 
 _每次测试运行后更新此表。_

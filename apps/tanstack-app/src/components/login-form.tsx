@@ -14,17 +14,20 @@ import { ResendVerificationDialog } from "./resend-verification-dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import { config } from "@config";
 import { Link } from "@tanstack/react-router";
-import { localizedPath } from '@/lib/i18n-path'
+import { localizedPath } from "@/lib/i18n-path";
 
 export function LoginForm({
   className,
+  onSuccess,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLDivElement> & {
+  onSuccess?: () => void | Promise<void>;
+}) {
   const { t, locale, langParam, tWithParams } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [errorCode, setErrorCode] = useState('');
-  const [userEmail, setUserEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorCode, setErrorCode] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [showResendDialog, setShowResendDialog] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileKey, setTurnstileKey] = useState(0);
@@ -36,11 +39,11 @@ export function LoginForm({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: '', password: '', remember: true },
-    mode: 'onBlur',
+    defaultValues: { email: "", password: "", remember: true },
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: FormData) => {
@@ -50,39 +53,45 @@ export function LoginForm({
     }
 
     setLoading(true);
-    setErrorMessage('');
-    setErrorCode('');
+    setErrorMessage("");
+    setErrorCode("");
     setUserEmail(data.email);
 
     const params = new URLSearchParams(window.location.search);
-    const returnTo = params.get('returnTo');
-    const callbackURL = returnTo || localizedPath('/', locale);
+    const returnTo = params.get("returnTo");
+    const callbackURL = returnTo || localizedPath("/", locale);
 
     const { error } = await authClientReact.signIn.email({
       email: data.email,
       password: data.password,
-      callbackURL,
+      ...(onSuccess ? {} : { callbackURL }),
       ...(data.remember ? { rememberMe: true } : {}),
-      ...(config.captcha.enabled && turnstileToken ? {
-        fetchOptions: {
-          headers: { "x-captcha-response": turnstileToken },
-        }
-      } : {})
+      ...(config.captcha.enabled && turnstileToken
+        ? {
+            fetchOptions: {
+              headers: { "x-captcha-response": turnstileToken },
+            },
+          }
+        : {}),
     });
 
     if (error) {
       if (error.code) {
-        const authErrorMessage = t.auth.authErrors[error.code as keyof typeof t.auth.authErrors] || t.auth.authErrors.UNKNOWN_ERROR;
+        const authErrorMessage =
+          t.auth.authErrors[error.code as keyof typeof t.auth.authErrors] ||
+          t.auth.authErrors.UNKNOWN_ERROR;
         setErrorMessage(authErrorMessage);
         setErrorCode(error.code);
       } else {
         setErrorMessage(t.auth.signin.errors.invalidCredentials);
-        setErrorCode('UNKNOWN_ERROR');
+        setErrorCode("UNKNOWN_ERROR");
       }
       if (config.captcha.enabled) {
         setTurnstileToken(null);
-        setTurnstileKey(prev => prev + 1);
+        setTurnstileKey((prev) => prev + 1);
       }
+    } else {
+      await onSuccess?.();
     }
 
     setLoading(false);
@@ -111,7 +120,7 @@ export function LoginForm({
               <Input
                 id="email"
                 type="email"
-                {...register('email')}
+                {...register("email")}
                 placeholder={t.auth.signin.emailPlaceholder}
                 className={cn(errors.email && "border-destructive")}
                 aria-invalid={errors.email ? "true" : "false"}
@@ -130,6 +139,8 @@ export function LoginForm({
               <Link
                 to="/{-$lang}/forgot-password"
                 params={{ lang: langParam }}
+                target={onSuccess ? "_blank" : undefined}
+                rel={onSuccess ? "noopener noreferrer" : undefined}
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 {t.auth.signin.forgotPassword}
@@ -139,7 +150,7 @@ export function LoginForm({
               <Input
                 id="password"
                 type="password"
-                {...register('password')}
+                {...register("password")}
                 className={cn(errors.password && "border-destructive")}
                 aria-invalid={errors.password ? "true" : "false"}
                 autoComplete="current-password"
@@ -163,24 +174,37 @@ export function LoginForm({
             <input
               type="checkbox"
               id="remember"
-              {...register('remember')}
+              {...register("remember")}
               className="border-primary text-primary ring-offset-background focus-visible:ring-ring h-4 w-4 rounded border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             />
-            <label htmlFor="remember" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              htmlFor="remember"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
               {t.auth.signin.rememberMe}
             </label>
           </div>
           <Button
             type="submit"
             className="w-full"
-            disabled={loading || isSubmitting || (config.captcha.enabled && !turnstileToken)}
+            disabled={
+              loading ||
+              isSubmitting ||
+              (config.captcha.enabled && !turnstileToken)
+            }
           >
             {loading ? t.auth.signin.submitting : t.auth.signin.submit}
           </Button>
         </div>
         <div className="text-center text-sm">
           {t.auth.signin.noAccount}{" "}
-          <Link to="/{-$lang}/signup" params={{ lang: langParam }} className="underline underline-offset-4">
+          <Link
+            to="/{-$lang}/signup"
+            params={{ lang: langParam }}
+            target={onSuccess ? "_blank" : undefined}
+            rel={onSuccess ? "noopener noreferrer" : undefined}
+            className="underline underline-offset-4"
+          >
             {t.auth.signin.signupLink}
           </Link>
         </div>

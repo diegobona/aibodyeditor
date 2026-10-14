@@ -43,6 +43,13 @@
       "when": 1787817720732,
       "tag": "0005_smooth_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791957529566,
+      "tag": "0006_body_image_edit",
+      "breakpoints": true
     }
   ]
 }

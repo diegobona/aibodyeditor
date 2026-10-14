@@ -9,8 +9,8 @@
  */
 
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
-import { Menu, X, Check, Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Menu, X, Check, Globe, ChevronDown } from "lucide-react";
 import { Button } from "@libs/react-shared/ui/button";
 import { authClientReact } from "@libs/auth/authClient";
 import {
@@ -89,8 +89,26 @@ function TryFreeCta({ className, onClick }: { className: string; onClick?: () =>
 
 export default function Header({ className }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const toolsMenuRef = useRef<HTMLDetailsElement>(null);
   const navigate = useNavigate();
   const { t, locale: currentLocale, langParam } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+    if (toolsMenuRef.current) toolsMenuRef.current.open = false;
+  }, [pathname]);
+
+  useEffect(() => {
+    const closeToolsOnOutsideClick = (event: PointerEvent) => {
+      const menu = toolsMenuRef.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
+    };
+    document.addEventListener("pointerdown", closeToolsOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeToolsOnOutsideClick);
+  }, []);
 
   const { data: session, isPending } = authClientReact.useSession();
   const user = session?.user;
@@ -115,13 +133,41 @@ export default function Header({ className }: HeaderProps) {
             {t.toolPages.common.homeName}
           </Link>
 
-          {/* Main nav: one link per published tool page, anchor = its core keyword (lib/tools.ts). */}
-          <nav aria-label={t.home.footer.siteNavLabel} className="hidden items-center gap-8 md:flex">
-            {TOOL_PAGES.map((tool) => (
-              <Link key={tool.key} to={tool.to} params={{ lang: langParam }} className={navLinkClass}>
-                {t.toolPages[tool.key].hero.title}
-              </Link>
-            ))}
+          {/* Native disclosure keeps every keyword link in the server HTML. */}
+          <nav aria-label={t.home.footer.siteNavLabel} className="hidden items-center md:flex">
+            <details
+              ref={toolsMenuRef}
+              className="group relative"
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.currentTarget.open = false;
+                  event.currentTarget.querySelector("summary")?.focus();
+                }
+              }}
+            >
+              <summary className={`${navLinkClass} flex cursor-pointer list-none items-center gap-2 rounded-full px-4 py-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden`}>
+                {t.home.nav.tools}
+                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <div className="absolute left-1/2 top-full z-50 mt-2 w-80 -translate-x-1/2 rounded-2xl border border-border bg-background p-3 shadow-lg">
+                <p className="px-3 pb-2 pt-1 text-xs font-medium text-muted-foreground">{t.home.nav.toolsDescription}</p>
+                <ul className="space-y-1">
+                  {TOOL_PAGES.map((tool) => (
+                    <li key={tool.key} className="rounded-xl px-3 py-2 hover:bg-muted">
+                      <Link
+                        to={tool.to}
+                        params={{ lang: langParam }}
+                        onClick={() => { if (toolsMenuRef.current) toolsMenuRef.current.open = false; }}
+                        className={`${navLinkClass} block py-1 text-foreground`}
+                      >
+                        {t.toolPages[tool.key].hero.title}
+                      </Link>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{t.toolPages[tool.key].related.description}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
@@ -187,6 +233,8 @@ export default function Header({ className }: HeaderProps) {
       {isMenuOpen && (
         <div className="border-t border-border bg-background md:hidden">
           <nav aria-label={t.home.footer.siteNavLabel} className="container flex flex-col gap-1 px-4 py-3">
+            <p className="px-3 pt-1 text-base font-semibold">{t.home.nav.tools}</p>
+            <p className="px-3 pb-2 text-sm text-muted-foreground">{t.home.nav.toolsDescription}</p>
             {TOOL_PAGES.map((tool) => (
               <Link
                 key={tool.key}

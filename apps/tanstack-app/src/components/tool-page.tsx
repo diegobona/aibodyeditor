@@ -52,7 +52,10 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug: 
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
             {page.hero.subtitle}
           </p>
-          <UploadDropzone className="mt-10 w-full max-w-2xl text-left" />
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {common.editorIntro}
+          </p>
+          <UploadDropzone defaultMode={toolKey === 'breastExpansion' ? 'breast' : 'slim'} className="mt-10 w-full max-w-2xl text-left" />
           <p className="mt-5 text-sm text-muted-foreground">{page.hero.note}</p>
         </div>
       </section>

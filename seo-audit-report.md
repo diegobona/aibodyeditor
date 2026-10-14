@@ -1,24 +1,24 @@
 # SEO 自查报告
 
 - 站点：`http://localhost:7001`（canonical 域 `https://aibodyeditor.net`）
-- 时间：2026-10-13T13:58:09.861Z
+- 时间：2026-10-14T07:00:35.261Z
 - 结论：✅ 全部通过
 
 ## 1. 内容页（= sitemap 白名单）
 
 | 路径 | 状态 | title | h1 | canonical | 正文内链（指向内容页） | footer 导航 | 正文词数 | JSON-LD | 进 sitemap |
 |---|---|---|---|---|---|---|---|---|---|
-| `/` | 200 | AI Body Editor — Reshape & Slim Your Body in Photos Online | AI Body Editor | https://aibodyeditor.net | **7**<br>/skinny-filter "skinny filter"×1<br>/body-editor "body editor"×2<br>/breast-expansion "AI breast expansion"×1<br>/body-editor "Body Editor"×1<br>/skinny-filter "Skinny Filter"×1<br>/breast-expansion "AI Breast Expansion"×1 | 4 条 | 743 | WebSite, Organization, SoftwareApplication, FAQPage | ✅ |
-| `/body-editor` | 200 | Body Editor — Free Online AI Body Reshape Tool | Body Editor | https://aibodyeditor.net/body-editor | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/skinny-filter "skinny filter"×2<br>/breast-expansion "AI breast expansion"×1 | 4 条 | 824 | SoftwareApplication, FAQPage, BreadcrumbList | ✅ |
-| `/skinny-filter` | 200 | Skinny Filter — Slim Your Whole Body in a Photo in One Tap | Skinny Filter | https://aibodyeditor.net/skinny-filter | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/body-editor "body editor"×2<br>/breast-expansion "AI breast expansion"×1 | 4 条 | 852 | SoftwareApplication, FAQPage, BreadcrumbList | ✅ |
-| `/breast-expansion` | 200 | AI Breast Expansion — Balance Bust Proportions in Photos | AI Breast Expansion | https://aibodyeditor.net/breast-expansion | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/body-editor "body editor"×2<br>/skinny-filter "skinny filter"×1 | 4 条 | 841 | SoftwareApplication, FAQPage, BreadcrumbList | ✅ |
+| `/` | 200 | AI Body Editor | Reshape & Slim Your Body in Photos | AI Body Editor | https://aibodyeditor.net | **4**<br>/body-editor "Body Editor"×2<br>/skinny-filter "Skinny Filter"×1<br>/breast-expansion "AI Breast Expansion"×1 | 4 条 | 812 | WebSite, Organization, SoftwareApplication, FAQPage | ✅ |
+| `/body-editor` | 200 | Body Editor | Photo Reshaping Guide and Portrait Tips | Body Editor | https://aibodyeditor.net/body-editor | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/skinny-filter "skinny filter"×2<br>/breast-expansion "AI breast expansion"×1 | 4 条 | 1104 | SoftwareApplication, WebPage, FAQPage, BreadcrumbList | ✅ |
+| `/skinny-filter` | 200 | Skinny Filter | Slim Photo Guide and Portrait Tips | Skinny Filter | https://aibodyeditor.net/skinny-filter | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/body-editor "body editor"×2<br>/breast-expansion "AI breast expansion"×1 | 4 条 | 1027 | SoftwareApplication, WebPage, FAQPage, BreadcrumbList | ✅ |
+| `/breast-expansion` | 200 | AI Breast Expansion | Clothed Photo Proportion Guide | AI Breast Expansion | https://aibodyeditor.net/breast-expansion | **6**<br>/ "AI Body Editor"×1<br>/ "AI body editor"×2<br>/body-editor "body editor"×2<br>/skinny-filter "skinny filter"×1 | 4 条 | 1031 | SoftwareApplication, WebPage, FAQPage, BreadcrumbList | ✅ |
 
 ### description
 
-- `/`（134 字符）：Upload a photo and our AI body editor slims, adds muscle or adjusts body proportions in seconds. Try one edit free, no sign-up needed.
-- `/body-editor`（128 字符）：Reshape your waist, hips, legs, arms or shoulders in any photo with an online body editor. Try one edit free, no sign-up needed.
-- `/skinny-filter`（147 字符）：This skinny filter slims your face, arms, waist and legs in a photo with one slider, without warping the background. Try one edit free, no sign-up.
-- `/breast-expansion`（157 字符）：Use AI breast expansion to adjust bust size and balance your silhouette in clothed photos, with fabric and fit kept realistic. Try one edit free, no sign-up.
+- `/`（148 字符）：Edit clothed portraits with Slim, Muscle, Proportions or Breast. Choose an intensity, generate an AI photo edit, compare the result and download it.
+- `/body-editor`（154 字符）：Use the body editor to reshape clothed portraits with four modes and three intensities. Generate an AI edit, compare the original and download the result.
+- `/skinny-filter`（151 字符）：Apply Slim in the AI body editor with three intensity choices. Use these skinny filter photo tips, compare the generated edit and download your result.
+- `/breast-expansion`（152 字符）：Use Breast mode in the AI body editor for clothed bust silhouette edits. Choose an intensity, generate a result, compare details and download the photo.
 
 ### 头部导航
 
@@ -29,7 +29,7 @@
 
 ### 其他内链（导航锚点 / CTA，非关键词锚文本，仅供参考）
 
-- `/`：/signup "Get started"
+- `/`：无
 - `/body-editor`：无
 - `/skinny-filter`：无
 - `/breast-expansion`：无

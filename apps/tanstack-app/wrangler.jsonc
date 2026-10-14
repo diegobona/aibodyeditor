@@ -31,6 +31,11 @@
 		{
 			"binding": "R2_BUCKET",
 			"bucket_name": "aibodyeditor"
+		},
+		{
+			// Private generated results; do not enable a public domain or r2.dev URL.
+			"binding": "BODY_EDIT_RESULTS_BUCKET",
+			"bucket_name": "aibodyeditor-private-results"
 		}
 	]
 	// Custom domain: route aibodyeditor.net to this Worker, then in the Cloudflare

@@ -29,6 +29,13 @@ export {
   getVideoDurationsForProvider,
 } from './video';
 
+// Server-side original-photo edits; separate from text-to-image generation.
+export { editBodyImage, materializeBodyImageResult, prepareBodyImageEdit, BodyImageEditError } from './body-edit';
+export type { BodyImageEditOptions, BodyEditConnection, BodyImageEditResult, BodyImageEditErrorCode } from './body-edit';
+export { buildBodyEditPrompt } from './body-edit-prompts';
+export { createBodyEditorService, BodyEditorServiceError } from './body-editor-service';
+export type { BodyEditorService, SubmitBodyEdit, BodyEditOutcome } from './body-editor-service';
+
 // Re-export image config from config folder
 export { aiImageConfig } from '../../config/aiImage';
 
