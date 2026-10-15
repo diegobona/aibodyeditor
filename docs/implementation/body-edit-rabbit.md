@@ -1,6 +1,6 @@
 # Rabbit API body photo editing
 
-The homepage and published guides use one authenticated AI editing flow. Users choose an original photo, one of four modes and a continuous intensity from 1 to 100 (default 70), then explicitly generate a result to compare and download. Moving the slider makes no provider call. Promotional concept photos remain labeled as illustrations rather than outputs from this editor.
+The homepage and published guides share one AI editing flow. Guests get one successful edit per browser without signing in; signed-in edits require existing credits. Users choose an original photo, one of four modes and a continuous intensity from 1 to 100 (default 70), then explicitly generate a result to compare and download. Moving the slider makes no provider call. Promotional concept photos remain labeled as illustrations rather than outputs from this editor. See [guest trial implementation](body-guest-trial.md) for ownership, limits and migration details.
 
 ## Configuration and protocol
 
@@ -21,7 +21,7 @@ On 2026-10-14, `GET /v1/models` confirmed access to the exact alias, and one rea
 
 - `libs/ai/body-edit.ts` constructs the fixed prompt and multipart request, validates signatures and enums, bounds provider responses and materializes supported results.
 - `libs/ai/body-editor-service.ts` coordinates input hashing, job reservation, generation, private result storage and terminal transitions through injected dependencies.
-- `libs/credits/body-edit-repository.ts` owns atomic trial grants, debit/refund, persistent jobs and idempotency. PostgreSQL uses transactions and user/job locks; local SQLite uses an immediate transaction. D1 is not activated for this flow.
+- `libs/credits/body-edit-repository.ts` owns account debit/refund, persistent jobs and idempotency. New body edits pass zero trial credits. `body-guest-repository.ts` separately reserves free guest jobs without auth users or credit transactions. PostgreSQL uses transactions and locks; local SQLite uses an immediate transaction. D1 is not activated for this flow.
 - `libs/storage/body-edit-results.ts` stores generated results privately in Node development or the dedicated Worker R2 binding.
 - `apps/tanstack-app/src/lib/body-edit-api.ts` validates HTTP requests and exposes safe DTOs. `body-edit-server.ts` resolves server authentication, database and storage dependencies per request. Route files are thin adapters.
 
@@ -31,16 +31,17 @@ Uploaded originals are passed to the image provider for the requested edit and a
 
 | Request | Behavior |
 | --- | --- |
-| `GET /api/body-edit` | Public availability, `costCredits` and `freeTrialEdits`; no credentials |
-| `GET /api/body-edit?requestId=<UUID>` | Authenticated owner lookup when the initial response was lost before a job ID was received |
-| `POST /api/body-edit` | Authenticated, same-origin multipart `image`, `mode`, `intensity`, `requestId` |
-| `GET /api/body-edit/{jobId}` | Authenticated owner status and result links |
-| `GET /api/body-edit/{jobId}/image` | Authenticated owner image bytes, with private no-store headers |
+| `GET /api/body-edit` | Public availability, `costCredits`, `freeTrialEdits: 0`, `guestTrialEdits: 1`; no credentials |
+| `POST /api/body-edit/guest-session` | Same-origin initialization of an opaque HttpOnly guest cookie and remaining allowance; no generation |
+| `GET /api/body-edit?requestId=<UUID>` | Account/guest owner lookup when the initial response was lost before a job ID was received |
+| `POST /api/body-edit` | Account or guest, same-origin multipart `image`, `mode`, `intensity`, `requestId`, optional `instructions` |
+| `GET /api/body-edit/{jobId}` | Account/guest owner status and result links |
+| `GET /api/body-edit/{jobId}/image` | Owner-checked image bytes, with private no-store headers |
 | `GET /api/body-edit/{jobId}/image?download=1` | The same owner-checked bytes with an attachment filename |
 
-Submission accepts one nonempty PNG, JPEG or WebP image up to 10 MB. MIME must match its signature. Signature checks identify the container; they do not fully decode the photo, verify its subject or guarantee usable anatomy. The multipart body has a separate bounded overhead allowance. Mode and intensity are validated before credit reservation. Client fields cannot override the model, credentials or fixed prompt.
+Submission accepts one nonempty PNG, JPEG or WebP image up to 10 MB. MIME must match its signature. Signature checks identify the container; they do not fully decode the photo, verify its subject or guarantee usable anatomy. The multipart body has a separate bounded overhead allowance. Mode, intensity and optional instructions are validated before credit reservation. Instructions may specify the body-change target within server-owned preservation/output rules; client fields cannot override the model or credentials. See [optional instructions](body-edit-instructions.md) for normalization, precedence and limits.
 
-`requestId` is a client-generated UUID. Reusing it for the same account and identical image, MIME, mode and intensity returns the existing job; a different payload is rejected. A processing duplicate returns HTTP 202 with `jobId`, `status: "processing"`, `retryAfterSeconds` and `Retry-After`. Success returns `jobId`, `status: "succeeded"`, private result/download paths, mode, intensity, charged credits, balance and `reused`.
+`requestId` is a client-generated UUID. Reusing it for the same owner and identical image, MIME, mode, intensity and normalized instructions returns the existing job; a different payload is rejected. Blank instructions retain the historical hash format. A processing duplicate returns HTTP 202 with `jobId`, `status: "processing"`, `retryAfterSeconds` and `Retry-After`. Success returns `jobId`, `status: "succeeded"`, private result/download paths, mode, intensity, charged credits, balance and `reused`; raw instructions are not included.
 
 Errors use `error.code` and, when known, `jobId` and `error.refunded`. Status and image access resolve the current account, reject banned users and verify the owner before reading result bytes. Responses do not expose storage keys, another account's result, credentials or raw provider errors.
 
@@ -48,9 +49,9 @@ Before submission, the browser saves the request UUID and account ID in session 
 
 ## Credits and job lifecycle
 
-Application cost is `BODY_EDIT_CREDIT_COST` in `config/credits.ts`: currently 15 credits per edit. This policy is separate from Rabbit's cash price. Each authenticated account can receive one configured trial of 15 credits, enough for one edit. There is no anonymous free edit.
+Application cost is `BODY_EDIT_CREDIT_COST` in `config/credits.ts`: currently 15 credits per signed-in edit. This policy is separate from Rabbit's cash price. The browser guest allowance provides one free successful edit. Signing in grants no additional body-edit trial; existing account balances are preserved.
 
-Reservation records the job and debit atomically, with a one-time trial bonus when eligible. Canonical descriptions are `ai_body_edit` for consumption and `body_edit_trial` for the trial bonus; EN/ZH labels are in `dashboard.credits.descriptions`. A failed edit returns consumed app credits once. A refunded trial edit leaves those credits available for a later attempt without granting another bonus.
+Account reservation records the job and debit atomically. The canonical consumption description is `ai_body_edit`; historical `body_edit_trial` labels remain readable. A failed account edit returns consumed credits once. Guest reservations cost zero credits and use a separate table; a failed guest edit restores its opportunity subject to retry limits.
 
 Persistent states are `processing`, `succeeded` and `failed`. Duplicates do not start a second provider call or charge again. A processing job past its deadline is failed and refunded when reconciled. A late result cannot turn an already failed/refunded job into success; newly stored late output is removed. The deadline combines provider timeout, result-fetch timeout and storage allowance.
 

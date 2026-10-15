@@ -38,6 +38,7 @@ export { withdrawal } from './schema/withdrawal'
 export { blogPost } from './schema/blog-post'
 export { pricingPlan } from './schema/pricing-plan'
 export { bodyImageEdit } from './schema/body-image-edit'
+export { bodyGuestEdit } from './schema/body-guest-edit'
 export type { BodyImageEdit } from './schema/pg/body-image-edit'
 
 // Build a schema object for drizzle() initialization from proxy exports.
@@ -52,12 +53,13 @@ import { withdrawal as _withdrawal } from './schema/withdrawal'
 import { blogPost as _blogPost } from './schema/blog-post'
 import { pricingPlan as _pricingPlan } from './schema/pricing-plan'
 import { bodyImageEdit as _bodyImageEdit } from './schema/body-image-edit'
+import { bodyGuestEdit as _bodyGuestEdit } from './schema/body-guest-edit'
 
 const _schema = {
   user: _user, account: _account, session: _session, verification: _verification,
   order: _order, subscription: _subscription, creditTransaction: _creditTransaction,
   commission: _commission, withdrawal: _withdrawal,
-  blogPost: _blogPost, pricingPlan: _pricingPlan, bodyImageEdit: _bodyImageEdit,
+  blogPost: _blogPost, pricingPlan: _pricingPlan, bodyImageEdit: _bodyImageEdit, bodyGuestEdit: _bodyGuestEdit,
 }
 
 // ---------------------------------------------------------------------------

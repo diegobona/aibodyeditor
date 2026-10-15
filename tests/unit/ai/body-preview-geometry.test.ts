@@ -7,7 +7,7 @@ import { buildBodyEditPrompt } from '../../../libs/ai/body-edit-prompts';
 const modes = ['slim', 'muscle', 'proportions', 'breast'] as const;
 function analysis(): BodyPhotoAnalysis {
   const landmarks = Array.from({ length: 33 }, () => ({ x: .5, y: .15, visibility: 1 }));
-  for (const [index, x, y] of [[11,.35,.25],[12,.65,.25],[13,.25,.45],[14,.75,.45],[23,.4,.55],[24,.6,.55],[25,.4,.75],[26,.6,.75],[27,.4,.95],[28,.6,.95]]) {
+  for (const [index, x, y] of [[11,.35,.25],[12,.65,.25],[13,.25,.45],[14,.75,.45],[15,.26,.62],[16,.74,.62],[23,.4,.55],[24,.6,.55],[25,.4,.75],[26,.6,.75],[27,.4,.95],[28,.6,.95]]) {
     landmarks[index] = { x, y, visibility: 1 };
   }
   // Contour includes head, shoulder, chest, waist, hip, leg and foot samples.
@@ -26,6 +26,75 @@ const displacement = (original: string, target: string) => {
 };
 
 describe('real-photo target contour', () => {
+  test('the fallback chest ellipse follows strength without scaling its saved alignment', () => {
+    const photo = { ...analysis(), landmarks: [] };
+    const initial = buildBodyContourPreview(photo, 'breast', 70);
+    const adjusted = { ...initial.region, x: initial.region.x + .03, y: initial.region.y + .02 };
+    let previousX = 0, previousY = 0;
+    for (let strength = 1; strength <= 100; strength++) {
+      const result = buildBodyContourPreview(photo, 'breast', strength, adjusted);
+      expect(result.guideRegion.radiusX).toBeGreaterThan(previousX);
+      expect(result.guideRegion.radiusY).toBeGreaterThan(previousY);
+      expect(result.guideRegion.x).toBe(adjusted.x);
+      expect(result.guideRegion.y).toBe(adjusted.y);
+      expect(result.region).toEqual(adjusted);
+      expect(result.targetAvailable).toBe(false);
+      expect(result.targetPath).toBe(result.originalPath);
+      previousX = result.guideRegion.radiusX;
+      previousY = result.guideRegion.radiusY;
+    }
+    expect(initial.guideRegion).toEqual(initial.region);
+  });
+
+  test('breast keeps upper-arm edges fixed while changing visible torso edges', () => {
+    const photo = analysis();
+    // An outer arm edge lies inside the old radial chest deformation field.
+    photo.contours[0].splice(4, 0, { x: .3, y: .34 });
+    const result = buildBodyContourPreview(photo, 'breast', 100);
+    const before = coordinates(result.originalPath), after = coordinates(result.targetPath);
+    expect(after[4]).toEqual(before[4]);
+    expect(displacement(result.originalPath, result.targetPath)).toBeGreaterThan(1);
+    expect(result.targetAvailable).toBe(true);
+  });
+
+  test('breast does not infer a chest target from low-confidence or missing pose anchors', () => {
+    for (const landmarks of [[], analysis().landmarks.map(p => ({ ...p, visibility: .2 }))]) {
+      const result = buildBodyContourPreview({ ...analysis(), landmarks }, 'breast', 100);
+      expect(result.targetAvailable).toBe(false);
+      expect(result.targetPath).toBe(result.originalPath);
+    }
+  });
+
+  test('breast leaves a covered torso unchanged instead of expanding nearby arms', () => {
+    const photo = analysis();
+    photo.contours = [[
+      { x:.5, y:.05 }, { x:.43, y:.2 }, { x:.3, y:.25 },
+      { x:.3, y:.34 }, { x:.24, y:.42 }, { x:.35, y:.55 },
+      { x:.34, y:.95 }, { x:.66, y:.95 }, { x:.65, y:.55 },
+      { x:.76, y:.42 }, { x:.7, y:.34 }, { x:.7, y:.25 }, { x:.57, y:.2 },
+    ]];
+    const result = buildBodyContourPreview(photo, 'breast', 100);
+    expect(result.targetAvailable).toBe(false);
+    expect(result.targetPath).toBe(result.originalPath);
+  });
+
+  test('breast protects forearms crossing a visible chest edge', () => {
+    const photo = analysis();
+    photo.landmarks[13] = { x:.24, y:.34, visibility:1 };
+    photo.landmarks[15] = { x:.7, y:.34, visibility:1 };
+    const result = buildBodyContourPreview(photo, 'breast', 100);
+    const before = coordinates(result.originalPath), after = coordinates(result.targetPath);
+    expect(after[7]).toEqual(before[7]);
+  });
+
+  test('moving off visible chest edges keeps the region but does not claim a target deformation', () => {
+    const initial = buildBodyContourPreview(analysis(), 'breast', 100);
+    const moved = buildBodyContourPreview(analysis(), 'breast', 100, { ...initial.region, y: 1 });
+    expect(moved.targetPath).toBe(moved.originalPath);
+    expect(moved.targetAvailable).toBe(false);
+    expect(moved.region.y).toBe(1);
+  });
+
   test.each(modes)('%s uses the detected contour and preserves its image coordinate system', mode => {
     const photo = analysis();
     const result = buildBodyContourPreview(photo, mode, 70);

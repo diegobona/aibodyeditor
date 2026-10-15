@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { editBodyImage, BodyImageEditError, type BodyImageEditOptions } from '../../../libs/ai/body-edit';
+import { editBodyImage, prepareBodyImageEdit, BodyImageEditError, type BodyImageEditOptions } from '../../../libs/ai/body-edit';
+import { buildBodyEditPrompt } from '../../../libs/ai/body-edit-prompts';
 
 const PNG = new Uint8Array(readFileSync(resolve('apps/tanstack-app/public/favicon-32x32.png')));
 const PNG_B64 = Buffer.from(PNG).toString('base64');
@@ -58,6 +59,24 @@ afterEach(() => {
 });
 
 describe('body image edit HTTP contract', () => {
+  test('prepares and posts the same normalized user request inside the server-owned multipart prompt', async () => {
+    const raw = ' \r\nOnly slim my waist.\rKeep my arms.\r\n ';
+    const normalized = 'Only slim my waist.\nKeep my arms.';
+    const prepared = prepareBodyImageEdit(options({ intensity: 73, instructions: raw }));
+    expect(prepared.instructions).toBe(normalized);
+    expect(prepared.prompt).toBe(buildBodyEditPrompt({ mode: 'slim', intensity: 73, instructions: normalized }));
+    const fetchMock = vi.fn<typeof fetch>(async () => imageResponse());
+    const result = await editBodyImage(options({ intensity: 73, instructions: raw }), { apiKey: TEST_KEY, fetch: fetchMock });
+    const form = fetchMock.mock.calls[0][1]?.body as FormData;
+    expect([...form.keys()].sort()).toEqual(['image', 'model', 'n', 'prompt']);
+    expect(form.get('prompt')).toBe(prepared.prompt);
+    expect(form.get('prompt')).toContain(JSON.stringify(normalized));
+    expect(form.get('prompt')).not.toContain('less upper-arm thickness');
+    expect(form.get('model')).toBe(MODEL);
+    expect(form.get('n')).toBe('1');
+    expect(result).not.toHaveProperty('instructions');
+  });
+
   test('posts the original image as multipart data and returns a validated PNG data URL', async () => {
     const fetchMock = vi.fn<typeof fetch>(async (url, init) => {
       expect(String(url)).toBe('https://api.tu-zi.com/v1/images/edits');
@@ -170,6 +189,12 @@ describe('body image edit HTTP contract', () => {
 });
 
 describe('body image edit validation before network', () => {
+  test.each([null, 12, false, {}, [], 'x'.repeat(501), 'waist\0', '\vwaist', 'waist\u007f'])('rejects invalid instructions without sending an image', async (instructions) => {
+    const fetchMock = vi.fn<typeof fetch>();
+    await expectFailure(editBodyImage(options({ instructions: instructions as string }), { apiKey: TEST_KEY, fetch: fetchMock }), 'INVALID_INSTRUCTIONS');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test.each(['', '   ', 'your_openai_api_key', 'your-api-key', 'sk-your-openai-key'])('rejects an absent or placeholder environment key (%s)', async (key) => {
     vi.stubEnv('OPENAI_API_KEY', key);
     const fetchMock = vi.fn<typeof fetch>();

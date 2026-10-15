@@ -32,3 +32,17 @@ The mask is an estimated visible-person segmentation, not a body measurement. Th
 worker traces its actual foreground edges; it does not fabricate a silhouette
 from pose points. Unsupported devices, unreadable images, and missing usable
 torso detections return an error so ordinary photo editing can remain available.
+
+Breast target geometry additionally requires reliable shoulder/hip anchors,
+uses torso-relative side bounds and excludes detected upper-arm/forearm paths.
+If the current field produces no measurable chest-side contour change, the UI
+displays the original outline plus a purple approximate chest-area guide with a
+localized explanation. The guide's horizontal and vertical radii scale continuously
+with intensity using the shared fullness-to-width square-root conversion, with
+the existing size at the default intensity of 70 as the reference. Stored region
+radii remain unscaled, so repeated slider or alignment changes do not accumulate
+scaling. Alignment and reset remain available even in this state; changing
+intensity preserves the aligned center. The guide indicates requested strength
+without claiming to predict an exact edited silhouette. Alignment affects only
+the local preview. This does not replace or retrain the model, reveal hidden
+anatomy, or alter generation inputs.

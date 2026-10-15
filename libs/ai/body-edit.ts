@@ -8,12 +8,14 @@ import {
   type BodyEditIntensityInput,
 } from "../../config/body-editor";
 import { buildBodyEditPrompt } from "./body-edit-prompts";
+import { normalizeBodyEditInstructions } from "./body-edit-instructions";
 import { getApiKey, getBaseUrl } from "./config";
 
 type ImageMime = (typeof bodyEditConfig.allowedMimeTypes)[number];
 type OutputFormat = "png" | "jpeg" | "webp";
 export type BodyImageEditErrorCode =
   | "INVALID_INPUT"
+  | "INVALID_INSTRUCTIONS"
   | "NOT_CONFIGURED"
   | "INVALID_CONFIGURATION"
   | "UPSTREAM_ERROR"
@@ -43,6 +45,7 @@ export interface BodyImageEditOptions {
   sourceImage: { bytes: Uint8Array; mimeType: ImageMime; fileName?: string };
   mode: BodyEditMode;
   intensity?: BodyEditIntensityInput;
+  instructions?: string;
   signal?: AbortSignal;
 }
 
@@ -132,6 +135,9 @@ export function prepareBodyImageEdit(
   let intensity: BodyEditIntensity;
   try { intensity = normalizeBodyEditIntensity(options.intensity); }
   catch { throw new BodyImageEditError('INVALID_INPUT', 'Provide an integer editing intensity from 1 to 100.'); }
+  let instructions: string;
+  try { instructions = normalizeBodyEditInstructions(options.instructions); }
+  catch { throw new BodyImageEditError('INVALID_INSTRUCTIONS', 'Provide valid body edit instructions within the text limit.'); }
   const fileName =
     source.fileName
       ?.split(/[\\/]/)
@@ -145,7 +151,8 @@ export function prepareBodyImageEdit(
     model: bodyEditConfig.model,
     mode: options.mode,
     intensity,
-    prompt: buildBodyEditPrompt({ mode: options.mode, intensity }),
+    instructions,
+    prompt: buildBodyEditPrompt({ mode: options.mode, intensity, instructions }),
     inputBytes: source.bytes.byteLength,
     mimeType: source.mimeType,
     fileName: fileName.slice(-128),

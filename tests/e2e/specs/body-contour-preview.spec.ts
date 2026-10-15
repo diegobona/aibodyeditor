@@ -17,11 +17,12 @@ async function openEditor(page: Page) {
   let posts = 0;
   await page.route('**/api/auth/**', route => route.fulfill({ json: null }));
   await page.route('**/api/body-edit**', route => {
+    if (route.request().url().endsWith('/guest-session')) return route.fulfill({ json: { ownerId: 'guest:contour', remaining: 0 } });
     if (route.request().method() === 'POST') posts++;
     return route.fulfill({ json: { available: true, costCredits: 15, freeTrialEdits: 1 } });
   });
   await page.goto('/');
-  await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+  await expect(editor(page).getByRole('button', { name: 'Sign in to continue', exact: true })).toBeEnabled();
   return () => posts;
 }
 
@@ -55,6 +56,15 @@ test.describe('Live local body contour preview', () => {
         await editor(page).getByText(mode, { exact: true }).click();
         const slider = editor(page).getByRole('slider', { name: 'Intensity', exact: true });
         await slider.fill('20');
+        if (mode === 'Breast' && await target(page).count() === 0) {
+          await expect(page.locator('[data-contour-area]')).toBeVisible();
+          await expect(editor(page).getByRole('button', { name: 'Adjust outline alignment', exact: true })).toBeVisible();
+          await slider.fill('90');
+          await expect(page.locator('[data-contour-area], [data-contour-target]')).toBeVisible();
+          await expect(page.locator('[data-contour-original]')).toHaveAttribute('d', original!);
+          values.push(await target(page).count() ? (await target(page).getAttribute('d'))! : original!);
+          continue;
+        }
         const low = await target(page).getAttribute('d');
         await slider.fill('90');
         await expect(target(page)).not.toHaveAttribute('d', low!);
@@ -68,6 +78,69 @@ test.describe('Live local body contour preview', () => {
       await page.locator('[data-body-contour-preview]').screenshot({ path: `test-results/contour-real-${asset}.png` });
     });
   }
+
+  test('a covered or uncertain chest keeps a visible area guide with alignment and reset', async ({ page }) => {
+    let workers = 0;
+    page.on('request', request => { if (request.url().endsWith('/body-preview/worker.js')) workers++; });
+    const unclear = { ...fixture, landmarks: fixture.landmarks.map(point => ({ ...point, visibility: .2 })) };
+    await mockAnalysis(page, `self.onmessage=()=>self.postMessage({type:'result',analysis:${JSON.stringify(unclear)}});`);
+    const posts = await openEditor(page);
+    await editor(page).getByText('Breast', { exact: true }).click();
+    await selectPhoto(page);
+    await expect(page.locator('[data-contour-original]')).toBeVisible();
+    await expect(target(page)).toHaveCount(0);
+    const area = page.locator('[data-contour-area]');
+    await expect(area).toBeVisible();
+    await expect(editor(page).getByRole('status').filter({ hasText: 'Approximate chest area' })).toBeVisible();
+    const original = await page.locator('[data-contour-original]').getAttribute('d');
+    const slider = editor(page).getByRole('slider', { name: 'Intensity', exact: true });
+    await slider.fill('1');
+    const lowX = Number(await area.getAttribute('rx')), lowY = Number(await area.getAttribute('ry'));
+    await slider.fill('100');
+    const highX = Number(await area.getAttribute('rx')), highY = Number(await area.getAttribute('ry'));
+    expect(highX).toBeGreaterThan(lowX);
+    expect(highY).toBeGreaterThan(lowY);
+    const initialY = await area.getAttribute('cy');
+    const initialX = await area.getAttribute('cx');
+    await editor(page).getByRole('button', { name: 'Adjust outline alignment', exact: true }).click();
+    const handle = page.getByRole('button', { name: 'Outline alignment: drag or use arrow keys', exact: true });
+    await handle.press('ArrowDown');
+    await expect(area).not.toHaveAttribute('cy', initialY!);
+    await handle.locator('circle').hover();
+    const center = await handle.locator('circle').boundingBox();
+    await page.mouse.move(center!.x + center!.width / 2, center!.y + center!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(center!.x + center!.width / 2 + 15, center!.y + center!.height / 2);
+    await page.mouse.up();
+    await expect(area).not.toHaveAttribute('cx', initialX!);
+    const alignedX = await area.getAttribute('cx'), alignedY = await area.getAttribute('cy');
+    await slider.fill('1');
+    await expect(area).toHaveAttribute('rx', String(lowX));
+    await expect(area).toHaveAttribute('ry', String(lowY));
+    await expect(area).toHaveAttribute('cx', alignedX!);
+    await expect(area).toHaveAttribute('cy', alignedY!);
+    await slider.fill('100');
+    await expect(area).toHaveAttribute('rx', String(highX));
+    await expect(area).toHaveAttribute('ry', String(highY));
+    await editor(page).getByRole('button', { name: 'Reset alignment', exact: true }).click();
+    await expect(area).toHaveAttribute('cx', initialX!);
+    await expect(area).toHaveAttribute('cy', initialY!);
+    await expect(area).toHaveAttribute('rx', String(highX));
+    await expect(page.locator('[data-contour-original]')).toHaveAttribute('d', original!);
+    await editor(page).getByRole('button', { name: 'Done adjusting', exact: true }).click();
+    await expect(area).toBeVisible();
+    await expect(editor(page).getByRole('button', { name: 'Sign in to continue', exact: true })).toBeEnabled();
+    await editor(page).getByRole('button', { name: 'Hide outline', exact: true }).click();
+    await expect(area).toHaveCount(0);
+    await editor(page).getByRole('button', { name: 'Show outline', exact: true }).click();
+    await expect(page.locator('[data-contour-original]')).toBeVisible();
+    await expect(target(page)).toHaveCount(0);
+    await expect(area).toBeVisible();
+    await editor(page).getByText('Slim', { exact: true }).click();
+    await expect(target(page)).toBeVisible();
+    expect(workers).toBe(1);
+    expect(posts()).toBe(0);
+  });
 
   test('hide, align with keyboard/pointer and reset reuse analysis and never open the file picker', async ({ page }) => {
     let workers = 0, pickers = 0;
@@ -111,14 +184,14 @@ test.describe('Live local body contour preview', () => {
     ['NO_PERSON', 'No clear body outline found. Try a clearer photo, or continue to generate.'],
     ['UNAVAILABLE', 'Outline preview is unavailable. You can still generate your edit.'],
   ]) {
-    test(`${code} keeps photo and normal generation available`, async ({ page }) => {
+    test(`${code} keeps photo and exhausted-guest sign-in available`, async ({ page }) => {
       await mockAnalysis(page, `self.onmessage=()=>self.postMessage({type:'error',code:'${code}'});`);
       const posts = await openEditor(page);
       await selectPhoto(page);
       await expect(editor(page).getByText(copy, { exact: true })).toBeVisible();
       await expect(target(page)).toHaveCount(0);
       await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
-      await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+      await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(posts()).toBe(0);
     });

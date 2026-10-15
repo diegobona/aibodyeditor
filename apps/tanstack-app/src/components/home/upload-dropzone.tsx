@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { Download, ImageUp, LoaderCircle, RefreshCw } from "lucide-react";
+import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw } from "lucide-react";
 import { authClientReact } from "@libs/auth/authClient";
 import { Button } from "@libs/react-shared/ui/button";
+import { Textarea } from "@libs/react-shared/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -88,13 +89,15 @@ export function UploadDropzone({
   const copy = t.home.upload,
     editCopy = t.home.editing;
   const session = authClientReact.useSession();
-  const editing = useBodyEdit(session.data?.user?.id);
+  const editing = useBodyEdit(session.data?.user?.id, session.isPending);
   const inputId = useId(),
     inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
   const [intensity, setIntensity] = useState<BodyEditIntensity>(BODY_EDIT_INTENSITY.default);
+  const [instructions, setInstructions] = useState("");
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [error, setError] = useState(""),
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),
@@ -144,6 +147,7 @@ export function UploadDropzone({
     setFile(null);
     setPreviewUrl(null);
     setError("");
+    setInstructions("");
     editing.reset();
     setLoadingSample(true);
     if (inputRef.current) inputRef.current.value = "";
@@ -154,7 +158,7 @@ export function UploadDropzone({
     return () => { active = false; };
   }, [sample]);
   useEffect(() => {
-    if (code === "UNAUTHENTICATED") setSigninOpen(true);
+    if (code === "UNAUTHENTICATED" || code === "TRIAL_EXHAUSTED") setSigninOpen(true);
   }, [code]);
   const pickFile = (candidate: File | undefined) => {
     if (!candidate || locked) return;
@@ -172,6 +176,7 @@ export function UploadDropzone({
     }
     setError("");
     editing.reset();
+    setInstructions("");
     setFile(candidate);
     onSampleClear?.();
   };
@@ -186,7 +191,7 @@ export function UploadDropzone({
       inputRef.current?.click();
       return;
     }
-    if (!session.data?.user) {
+    if (!session.data?.user && editing.guestRemaining === 0) {
       setSigninOpen(true);
       return;
     }
@@ -198,7 +203,7 @@ export function UploadDropzone({
     setPreparing(true);
     setError("");
     try {
-      await editing.submit(file, mode, intensity);
+      await editing.submit(file, mode, intensity, instructions);
     } catch {
       setError(editCopy.errors.INVALID_INPUT);
     } finally {
@@ -256,6 +261,8 @@ export function UploadDropzone({
               className="rounded-full"
               onClick={() => {
                 editing.reset();
+                setInstructions("");
+                setInstructionsOpen(false);
                 setFile(null);
                 onSampleClear?.();
               }}
@@ -398,6 +405,41 @@ export function UploadDropzone({
                 description={editCopy.intensityDescriptions[mode]}
                 hint={editCopy.intensityHint}
               />
+              <div className="mt-2 min-w-0">
+                <button
+                  type="button"
+                  disabled={locked}
+                  aria-expanded={instructionsOpen}
+                  aria-controls={inputId + "-instructions-panel"}
+                  onClick={() => setInstructionsOpen(value => !value)}
+                  className="flex min-h-8 max-w-full items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
+                >
+                  <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", instructionsOpen && "rotate-180")} aria-hidden="true" />
+                  {editCopy.instructionsToggle}
+                </button>
+                <div id={inputId + "-instructions-panel"} hidden={!instructionsOpen} className="min-w-0 space-y-1.5 pt-1">
+                  <label htmlFor={inputId + "-instructions"} className="text-xs font-semibold">{editCopy.instructionsLabel}</label>
+                  <Textarea
+                    id={inputId + "-instructions"}
+                    value={instructions}
+                    onChange={event => { setInstructions(event.currentTarget.value); editing.reset(); }}
+                    disabled={locked}
+                    maxLength={bodyEditConfig.maxInstructionsLength}
+                    rows={2}
+                    placeholder={editCopy.instructionsPlaceholder}
+                    aria-invalid={code === "INVALID_INSTRUCTIONS" || undefined}
+                    aria-describedby={inputId + "-instructions-hint " + inputId + "-instructions-counter" + (code === "INVALID_INSTRUCTIONS" ? " " + inputId + "-error" : "")}
+                    className="min-h-20 resize-y rounded-xl"
+                  />
+                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <p>{editCopy.instructionsExample}</p>
+                    <span id={inputId + "-instructions-counter"} className="ml-auto shrink-0 tabular-nums">
+                      {editCopy.instructionsCounter.replace("{count}", String(instructions.length)).replace("{max}", String(bodyEditConfig.maxInstructionsLength))}
+                    </span>
+                  </div>
+                  <p id={inputId + "-instructions-hint"} className="text-xs leading-relaxed text-muted-foreground">{editCopy.instructionsHint}</p>
+                </div>
+              </div>
             </div>
             <Button
               type="button"
@@ -420,7 +462,7 @@ export function UploadDropzone({
                   aria-hidden="true"
                 />
               )}
-              {unresolved ? editCopy.checkEdit : copy.submit}
+              {unresolved ? editCopy.checkEdit : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
             </Button>
           </div>
         </>
@@ -428,17 +470,19 @@ export function UploadDropzone({
       {(error || editError) && (
         <p
           role="alert"
+          id={inputId + "-error"}
           className="mt-3 px-2 text-sm font-medium text-destructive"
         >
           {error || editError}
           {editing.error?.refunded && (
-            <span className="mt-1 block">{editCopy.refunded}</span>
+            <span className="mt-1 block">{editing.error.guest ? editCopy.guestRetryNote : editCopy.refunded}</span>
           )}
         </p>
       )}
       <p className="mt-3 px-2 text-xs leading-relaxed text-muted-foreground">
-        {editCopy.costNote.replace("{credits}", String(cost))}{" "}
-        {editCopy.trialNote}
+        {editing.isGuest
+          ? editing.guestRemaining === 0 ? editCopy.guestUsedNote : editCopy.trialNote
+          : editCopy.costNote.replace("{credits}", String(cost))}
       </p>
       <p className="mt-1 px-2 pb-1 text-xs leading-relaxed text-muted-foreground">
         {copy.availability}

@@ -9,6 +9,8 @@ export interface BodyContourPreviewCopy {
   analyzing: string;
   unavailable: string;
   noPerson: string;
+  chestUnclear: string;
+  area: string;
   original: string;
   target: string;
   note: string;
@@ -66,6 +68,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
   const region = adjustment?.file === file && adjustment.mode === mode ? adjustment.region : undefined;
   const contour = useMemo(() => analysis ? buildBodyContourPreview(analysis, mode, intensity, region) : undefined,
     [analysis, mode, intensity, region]);
+  const targetAvailable = contour?.targetAvailable !== false;
   const setRegion = (next: PreviewRegion) => setAdjustment({ file, mode, region: next });
 
   const photoPoint = (clientX: number, clientY: number) => {
@@ -106,23 +109,28 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
         <img src={previewUrl} alt={alt} className="absolute inset-0 h-full w-full object-contain" />
         {analysis && contour && visible && (
           <svg ref={svgRef} viewBox={`0 0 ${analysis.width} ${analysis.height}`} preserveAspectRatio="xMidYMid meet"
-            className="absolute inset-0 h-full w-full" aria-label={copy.target} data-contour-overlay>
+            className="absolute inset-0 h-full w-full" aria-label={targetAvailable ? copy.target : copy.area} data-contour-overlay>
             <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" aria-hidden="true">
               <path d={contour.originalPath} stroke="white" strokeWidth="4" vectorEffect="non-scaling-stroke" opacity="0.8" />
               <path d={contour.originalPath} stroke="#64748b" strokeWidth="1.5" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" data-contour-original />
-              <path d={contour.targetPath} stroke="white" strokeWidth="4.5" vectorEffect="non-scaling-stroke" opacity="0.9" />
-              <path d={contour.targetPath} stroke="#7047eb" strokeWidth="2.5" vectorEffect="non-scaling-stroke" data-contour-target />
+              {targetAvailable && <>
+                <path d={contour.targetPath} stroke="white" strokeWidth="4.5" vectorEffect="non-scaling-stroke" opacity="0.9" />
+                <path d={contour.targetPath} stroke="#7047eb" strokeWidth="2.5" vectorEffect="non-scaling-stroke" data-contour-target />
+              </>}
             </g>
-            {adjusting && (
-              <g role="button" tabIndex={disabled ? -1 : 0} aria-label={copy.alignmentHandle} aria-disabled={disabled}
-                className="cursor-move touch-none rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring" data-contour-alignment
+            {(adjusting || !targetAvailable) && (
+              <g role={adjusting ? 'button' : undefined} tabIndex={adjusting ? disabled ? -1 : 0 : undefined}
+                aria-label={adjusting ? copy.alignmentHandle : undefined} aria-disabled={adjusting ? disabled : undefined}
+                className={cn('rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring', adjusting ? 'cursor-move touch-none' : 'pointer-events-none')}
+                data-contour-alignment={adjusting ? '' : undefined}
                 onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={() => { dragRef.current = undefined; }}
                 onPointerCancel={() => { dragRef.current = undefined; }} onLostPointerCapture={() => { dragRef.current = undefined; }} onKeyDown={nudge}>
                 <ellipse cx={contour.region.x * analysis.width} cy={contour.region.y * analysis.height}
-                  rx={contour.region.radiusX * analysis.width} ry={contour.region.radiusY * analysis.height}
-                  fill="#7047eb" fillOpacity="0.09" stroke="#7047eb" strokeWidth="1.5" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-                <circle cx={contour.region.x * analysis.width} cy={contour.region.y * analysis.height}
-                  r={Math.min(analysis.width, analysis.height) * 0.024} fill="white" stroke="#7047eb" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  rx={contour.guideRegion.radiusX * analysis.width} ry={contour.guideRegion.radiusY * analysis.height}
+                  fill="#7047eb" fillOpacity="0.09" stroke="#7047eb" strokeWidth="2" strokeDasharray="4 4" vectorEffect="non-scaling-stroke"
+                  data-contour-area={!targetAvailable ? '' : undefined} />
+                {adjusting && <circle cx={contour.region.x * analysis.width} cy={contour.region.y * analysis.height}
+                  r={Math.min(analysis.width, analysis.height) * 0.024} fill="white" stroke="#7047eb" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
               </g>
             )}
           </svg>
@@ -139,7 +147,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
                 <span className="inline-flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-slate-500" />{copy.original}</span>
-                <span className="inline-flex items-center gap-1.5 text-primary"><span className="w-4 border-t-2 border-primary" />{copy.target}</span>
+                <span className="inline-flex items-center gap-1.5 text-primary"><span className={cn('w-4 border-t-2 border-primary', !targetAvailable && 'border-dashed')} />{targetAvailable ? copy.target : copy.area}</span>
               </div>
               <button type="button" disabled={disabled} onClick={() => { setVisible(!visible); setAdjusting(false); }}
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-1 text-xs font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
@@ -158,7 +166,9 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
                   <RotateCcw className="size-3" aria-hidden="true" />{copy.reset}
                 </button>}
               </>}
-              <p className="min-w-0 flex-1 text-xs leading-relaxed text-muted-foreground">{adjusting && visible ? copy.alignmentHint : copy.note}</p>
+              <p className="min-w-0 flex-1 text-xs leading-relaxed text-muted-foreground" role={!targetAvailable ? 'status' : undefined}>
+                {adjusting && visible ? copy.alignmentHint : !targetAvailable ? copy.chestUnclear : copy.note}
+              </p>
             </div>
           </>
         ) : <p className="text-xs leading-relaxed text-muted-foreground" role="status">{error ? error === 'NO_PERSON' ? copy.noPerson : copy.unavailable : copy.note}</p>}

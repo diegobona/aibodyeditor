@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createBodyEditorService } from '../../../libs/ai/body-editor-service';
+import { createBodyEditorService, type SubmitBodyEdit } from '../../../libs/ai/body-editor-service';
 import { BodyImageEditError } from '../../../libs/ai/body-edit';
 import type { BodyEditJob, BodyEditRepository, BodyEditResultStore, ReserveBodyEdit } from '../../../libs/credits/body-edit-types';
 
@@ -8,7 +8,7 @@ const id = '12345678-1234-4234-8234-123456789012';
 afterEach(() => vi.restoreAllMocks());
 function setup() {
   const jobs = new Map<string, BodyEditJob>();
-  let balance = 0;
+  let balance = 15; // An existing prepaid balance; new account trials are no longer granted.
   let trial = false;
   const repo: BodyEditRepository = {
     reserve: vi.fn(async (input: ReserveBodyEdit) => {
@@ -45,6 +45,58 @@ function setup() {
 }
 
 describe('body editor domain', () => {
+  test.each([null, 1, {}, 'x'.repeat(501), 'waist\0', '\vwaist', 'waist\u007f'])('rejects invalid instructions before checking readiness or reserving credits', async (instructions) => {
+    const { service, repo, edit, available, input } = setup();
+    await expect(service.submit({ ...input, instructions } as SubmitBodyEdit)).rejects.toMatchObject({ code: 'INVALID_INSTRUCTIONS', status: 400 });
+    expect(available).not.toHaveBeenCalled();
+    expect(repo.reserve).not.toHaveBeenCalled();
+    expect(edit).not.toHaveBeenCalled();
+  });
+
+  test('normalizes instructions once for the provider and request hash without persisting the text', async () => {
+    const { service, repo, edit, input } = setup();
+    await service.submit({ ...input, instructions: ' \r\nWaist only.\rKeep arms.\r\n ' });
+    expect(edit).toHaveBeenCalledWith(expect.objectContaining({ instructions: 'Waist only.\nKeep arms.' }));
+    const first = vi.mocked(repo.reserve).mock.calls[0][0];
+    expect(first).not.toHaveProperty('instructions');
+    expect(JSON.stringify(first)).not.toContain('Waist only.');
+    await service.submit({ ...input, requestId: '87654321-1234-4234-8234-123456789012', instructions: 'Waist only.\nKeep arms.' });
+    expect(vi.mocked(repo.reserve).mock.calls[1][0].inputHash).toBe(first.inputHash);
+    await service.submit({ ...input, requestId: '87654321-1234-4234-8234-123456789013', instructions: 'Hips fuller.' });
+    expect(vi.mocked(repo.reserve).mock.calls[2][0].inputHash).not.toBe(first.inputHash);
+  });
+
+  test('hashes the entire encoded instruction prefix and original photo even when it exceeds 128 bytes', async () => {
+    const { service, repo, edit, input } = setup();
+    const instructions = '腰'.repeat(500);
+    await service.submit({ ...input, instructions });
+    await service.submit({ ...input, requestId: '87654321-1234-4234-8234-123456789012', instructions: `${'腰'.repeat(499)}臀` });
+    await service.submit({ ...input, requestId: '87654321-1234-4234-8234-123456789013', instructions,
+      image: { ...input.image, bytes: new Uint8Array([...PNG, 1]) } });
+    const hashes = vi.mocked(repo.reserve).mock.calls.map(([value]) => value.inputHash);
+    expect(new Set(hashes).size).toBe(3);
+    expect(edit).toHaveBeenCalledTimes(3);
+  });
+
+  test.each([70, 'balanced'] as const)('keeps the old %s request hash for blank instructions', async (intensity) => {
+    const { service, repo, input } = setup();
+    for (const instructions of [undefined, '', ' \t\r\n ']) await service.submit({ ...input, intensity, instructions });
+    const prefix = new TextEncoder().encode(`slim\0${intensity}\0image/png\0`);
+    const bytes = new Uint8Array(prefix.length + PNG.length);
+    bytes.set(prefix); bytes.set(PNG, prefix.length);
+    const hash = Buffer.from(await crypto.subtle.digest('SHA-256', bytes)).toString('hex');
+    for (const [reserved] of vi.mocked(repo.reserve).mock.calls) expect(reserved.inputHash).toBe(hash);
+  });
+
+  test('does not log instructions when a custom request fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { service, edit, input } = setup();
+    edit.mockRejectedValue(new BodyImageEditError('UPSTREAM_ERROR', 'Private request: waist only.'));
+    await service.submit({ ...input, instructions: 'Private request: waist only.' });
+    expect(warn).toHaveBeenCalled();
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('Private request: waist only.');
+  });
+
   test('keeps numeric strength in the job, prompt options and request fingerprint', async () => {
     const { service, repo, edit, input } = setup();
     await service.submit({ ...input, intensity: 73 });
@@ -72,7 +124,7 @@ describe('body editor domain', () => {
     const { service, repo, edit, store, input } = setup();
     const first = await service.submit(input);
     expect(first).toMatchObject({ job: { status: 'succeeded', costCredits: 15 }, balance: 0, reused: false });
-    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ trialCredits: 15, costCredits: 15, inputHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ trialCredits: 0, costCredits: 15, inputHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
     expect(store.put).toHaveBeenCalledWith(id, PNG, 'image/png');
     expect(await service.submit(input)).toMatchObject({ job: { status: 'succeeded' }, reused: true });
     expect(edit).toHaveBeenCalledTimes(1);

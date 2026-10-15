@@ -3,15 +3,18 @@ import { bodyEditConfig } from '../../../../config/body-editor';
 import { BODY_EDIT_CREDIT_COST, creditsConfig } from '../../../../config/credits';
 import { getApiKey, getBaseUrl } from '../../../../libs/ai/config';
 import { createBodyEditorService } from '../../../../libs/ai/body-editor-service';
-import { prepareBodyImageEdit } from '../../../../libs/ai/body-edit';
+import { prepareBodyImageEdit, type BodyImageEditOptions } from '../../../../libs/ai/body-edit';
 import { createBodyEditRepository } from '../../../../libs/credits/body-edit-repository';
+import { createBodyGuestRepository } from '../../../../libs/credits/body-guest-repository';
+import { guestIdentity, guestNetworkHash } from '../../../../libs/ai/body-guest-session';
+import { bodyGuestConfig } from '../../../../config/body-guest';
 import { BodyEditError, type BodyEditResultStore } from '../../../../libs/credits/body-edit-types';
 import { createNodeBodyEditStore, createR2BodyEditStore } from '../../../../libs/storage/body-edit-results';
 import { createBodyEditHandlers } from './body-edit-api';
 import { withCfDb } from './with-request-db';
 
 /** Bind server-owned dependencies per request so Workers bindings never cross request contexts. */
-export async function getBodyEditHandlers() {
+export async function getBodyEditHandlers(request?: Request) {
   const database = await import('@libs/database');
   const dialect = database.getDialect();
   let storage: BodyEditResultStore | undefined;
@@ -33,19 +36,30 @@ export async function getBodyEditHandlers() {
     } catch { return false; }
   };
   const missing = async (): Promise<never> => { throw new BodyEditError('NOT_CONFIGURED', 503); };
-  const repository = dialect === 'd1' ? { reserve: missing, get: missing, getByRequest: missing, succeed: missing, fail: missing }
-    : dialect === 'sqlite' ? createBodyEditRepository({ dialect: 'sqlite', sqlite: database.sqliteInstance })
-      : createBodyEditRepository({ dialect: 'pg', pool: database.pool, withFresh: database.withFreshRequestClient });
-  const service = createBodyEditorService({ repository, storage: storage ?? { put: missing, get: missing, delete: missing },
+  const dbOptions = dialect === 'sqlite' ? { dialect: 'sqlite' as const, sqlite: database.sqliteInstance }
+    : { dialect: 'pg' as const, pool: database.pool, withFresh: database.withFreshRequestClient };
+  const repository = dialect === 'd1' ? { reserve: missing, get: missing, getByRequest: missing, succeed: missing, fail: missing } : createBodyEditRepository(dbOptions);
+  const networkHash = request ? await guestNetworkHash(request, process.env.BETTER_AUTH_SECRET ?? '', database.isWorkersRuntime) : undefined;
+  const guestRepository = dialect === 'd1' ? undefined : createBodyGuestRepository({ ...dbOptions, networkHash });
+  const pipeline = { storage: storage ?? { put: missing, get: missing, delete: missing },
     checkAvailable: available,
-    editImage: async (options) => {
+    editImage: async (options: BodyImageEditOptions) => {
       const { editBodyImage, materializeBodyImageResult } = await import('../../../../libs/ai/body-edit');
       return materializeBodyImageResult(await editBodyImage(options));
     },
-  });
+  };
+  const service = createBodyEditorService({ ...pipeline, repository });
   return createBodyEditHandlers({
     service,
-    getConfig: async () => ({ available: await available(), costCredits: BODY_EDIT_CREDIT_COST, freeTrialEdits: creditsConfig.publicOffer.freeTrialEdits }),
+    getConfig: async () => ({ available: await available(), costCredits: BODY_EDIT_CREDIT_COST, freeTrialEdits: creditsConfig.publicOffer.freeTrialEdits, guestTrialEdits: bodyGuestConfig.freeEdits }),
+    ...(guestRepository ? { guest: {
+      service: createBodyEditorService({ ...pipeline, repository: guestRepository }),
+      getIdentity: async (req: Request, create: boolean) => {
+        if (create && !networkHash) throw new BodyEditError('NOT_CONFIGURED', 503);
+        return guestIdentity(req, create);
+      },
+      allowance: (id: string, now: Date) => guestRepository.allowance(id, now),
+    } } : {}),
     getUser: async (request) => {
       const { auth } = await import('@libs/auth');
       const session = await auth.api.getSession({ headers: new Headers(request.headers) });

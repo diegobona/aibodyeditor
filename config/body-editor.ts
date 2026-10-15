@@ -35,6 +35,7 @@ export const bodyEditConfig = {
   maxInputBytes: 10 * 1024 * 1024,
   maxOutputBytes: 10 * 1024 * 1024,
   maxResponseBytes: 20 * 1024 * 1024,
+  maxInstructionsLength: 500,
   timeoutMs: 180_000,
   resultTimeoutMs: 30_000,
   // Rabbit rotates numbered CDN nodes (observed apioss8 and apioss28).

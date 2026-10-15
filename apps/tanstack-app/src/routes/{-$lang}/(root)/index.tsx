@@ -109,9 +109,6 @@ function HomePage() {
                     </a>
                   ))}
                 </div>
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                  {copy.sampleNotice}
-                </p>
               </section>
             </div>
           </div>
@@ -167,9 +164,6 @@ function HomePage() {
                   {active.title}
                 </p>
               </div>
-              <p className="mx-auto max-w-sm text-[11px] leading-relaxed text-muted-foreground">
-                {copy.conceptNotice}
-              </p>
             </div>
           </div>
         </div>

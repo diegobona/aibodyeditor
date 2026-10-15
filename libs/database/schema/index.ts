@@ -9,3 +9,4 @@ export * from './withdrawal';
 export * from './blog-post';
 export * from './pricing-plan';
 export * from './body-image-edit';
+export * from './body-guest-edit';

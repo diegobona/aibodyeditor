@@ -12,9 +12,9 @@ const TOOLS = [
   { path: '/breast-expansion', name: 'AI Breast Expansion' },
 ] as const;
 const INDEXABLE_PAGES = [{ path: '/', name: 'AI Body Editor' }, ...TOOLS];
-const AVAILABILITY = 'Choose a mode and intensity. Sign in to generate your edit.';
+const AVAILABILITY = 'Choose a mode and intensity. Your first guest edit is free without signing in.';
 const SHARED_EDITOR_INTRO = 'Every guide uses the same AI Body Editor with Slim, Muscle, Proportions and Breast modes, plus a continuous intensity slider.';
-const PREVIEW_NOTICE = 'Your selected photo will stay here while you sign in.';
+const PREVIEW_NOTICE = 'Sign in to continue with account credits. Your selected photo will stay here.';
 const PREVIEW_PNG = readFileSync(resolve(__dirname, '../../../apps/tanstack-app/public/favicon-32x32.png'));
 
 async function visit(page: Page, path: string) {
@@ -116,6 +116,9 @@ test.describe('One editor, homepage and topic entry points', () => {
       // Block mutations so a regression cannot upload a fixture or write data.
       await page.route('**/*', async (route) => {
         const request = route.request();
+        if (new URL(request.url()).pathname === '/api/body-edit/guest-session') {
+          return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ownerId: 'guest:entrypoint', remaining: 0 }) });
+        }
         if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) {
           mutationRequests.push(`${request.method()} ${request.url()}`);
           await route.abort('blockedbyclient');
@@ -153,7 +156,7 @@ test.describe('One editor, homepage and topic entry points', () => {
       await expect(preview).not.toHaveAttribute('src', originalPreviewUrl!);
       await expect(preview).toHaveAttribute('src', /^blob:/);
       await expect.poll(() => preview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-      await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+      await editor.getByRole('button', { name: 'Sign in to continue', exact: true }).click();
       await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
       expect(mutationRequests, 'Preview selection, replacement and submission must not send mutations').toEqual([]);

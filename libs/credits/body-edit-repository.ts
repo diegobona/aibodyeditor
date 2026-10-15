@@ -13,6 +13,7 @@ interface PgOptions {
   withFresh?: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 type Options = PgOptions | { dialect: 'sqlite'; sqlite: Database.Database };
+export type BodyEditRepositoryOptions = Options;
 const trialId = (userId: string) => `body_edit_trial:${userId}`;
 function record(row: any, sqlite: boolean): BodyEditJob {
   return { id: row.id, userId: row.user_id, requestId: row.request_id, inputHash: row.input_hash,

@@ -27,8 +27,8 @@ export const creditsConfig = {
    * paid Offer is emitted.
    */
   publicOffer: {
-    /** One trial edit per signed-in account, granted through the credit ledger. */
-    freeTrialEdits: 1,
+    /** Account editing requires credits; the browser guest trial is configured separately. */
+    freeTrialEdits: 0,
     /** Credits deducted per photo edit. null = not decided yet. */
     creditsPerEdit: BODY_EDIT_CREDIT_COST as number | null,
     packs: [

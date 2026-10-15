@@ -8,8 +8,7 @@ const SITE_URL = 'https://aibodyeditor.net';
 const CONCEPT_LABEL = 'AI-generated concept';
 const CONCEPT_NOTICE = 'Concept images illustrate editing directions. They are not results from this app.';
 const SAMPLE_NOTICE = 'Samples are AI-generated concepts. Select Edit Photo to generate a new edit.';
-const AVAILABILITY = 'Choose a mode and intensity. Sign in to generate your edit.';
-const PREVIEW_NOTICE = 'Your selected photo will stay here while you sign in.';
+const AVAILABILITY = 'Choose a mode and intensity. Your first guest edit is free without signing in.';
 const COMPARE_LABEL = 'Compare original and edited concepts';
 const PREVIEW_PNG = readFileSync(resolve(__dirname, '../../../apps/tanstack-app/public/favicon-32x32.png'));
 const MODES = [
@@ -50,12 +49,12 @@ async function expectUploadControlsInViewport(page: Page) {
   const viewport = page.viewportSize()!;
   const header = (await page.locator('header').boundingBox())!;
   const controls = [
-    editor.getByRole('heading', { level: 1 }), editor.locator('label[for]'),
+    editor.getByRole('heading', { level: 1 }), editor.getByRole('button', { name: 'Upload a photo to edit', exact: true }),
     ...await editor.locator('fieldset label').all(),
     editor.getByRole('button', { name: 'Edit Photo', exact: true }),
     editor.getByText(AVAILABILITY, { exact: true }),
   ];
-  expect(controls).toHaveLength(11);
+  expect(controls).toHaveLength(8);
   for (const control of controls) {
     await expect(control).toBeVisible();
     const box = (await control.boundingBox())!;
@@ -70,6 +69,7 @@ async function preventMutations(page: Page) {
   const requests: string[] = [];
   await page.route('**/*', async (route) => {
     const request = route.request();
+    if (new URL(request.url()).pathname === '/api/body-edit/guest-session') return route.fulfill({ json: { ownerId: 'guest:preview', remaining: 1 } });
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) {
       requests.push(`${request.method()} ${request.url()}`);
       await route.abort('blockedbyclient');
@@ -141,6 +141,9 @@ async function expectComparisonDirection(comparison: Locator, source: string, sc
 }
 
 test.describe('Upload-first homepage and honest local previews', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/api/body-edit/guest-session', route => route.fulfill({ json: { ownerId: 'guest:preview', remaining: 1 } }));
+  });
   test('SSR contains the primary photo, original alt, concepts and SEO links', async ({ page, request }) => {
     const response = await request.get('/?campaign=preview', {
       headers: { 'Accept-Language': 'zh-CN,zh;q=0.9' },
@@ -175,10 +178,11 @@ test.describe('Upload-first homepage and honest local previews', () => {
     expect(rendered.canonical).toEqual([SITE_URL]);
     expect(rendered.keywords).toBe(0);
     expect(rendered.hero).toContain(CONCEPT_LABEL);
-    expect(rendered.hero).toContain(CONCEPT_NOTICE);
+    expect(rendered.hero).not.toContain(CONCEPT_NOTICE);
+    expect(rendered.hero).not.toContain(SAMPLE_NOTICE);
     expect(rendered.hero).toContain(AVAILABILITY);
     expect(rendered.editor).toContain(AVAILABILITY);
-    expect(rendered.pricing).toContain('AI edits use credits. Each account gets trial credits for one edit; sign in to get started.');
+    expect(rendered.pricing).toContain('Try one guest edit free without signing in. Further edits require an account with credits.');
     expect(rendered.faq).not.toContain('coming soon');
     expect(rendered.faq).toContain('compare and download');
     expect(rendered.heroImages).toHaveLength(2);
@@ -334,11 +338,9 @@ test.describe('Upload-first homepage and honest local previews', () => {
       await expect(sample.getByRole('img')).toHaveAttribute('src', mode.primarySource);
       await expectPhotoHalf(sample.getByRole('img'), 'original');
       await sample.click();
-      const preview = page.locator('#try label[for] img');
-      await expect(preview).toHaveAttribute('src', mode.primarySource);
-      await expect(preview).toHaveAttribute('alt', new RegExp(`^Original ${mode.label} concept:`));
+      const preview = page.locator('#try').getByRole('img', { name: 'Preview of the photo you selected', exact: true });
+      await expect(preview).toHaveAttribute('src', /^blob:/);
       await expectDecoded(preview);
-      await expectPhotoHalf(preview, 'original');
     }
     for (const mode of [MODES[0], MODES[1]]) {
       const original = page.locator(`#details img[alt^="Original ${mode.label} concept:"]`);
@@ -441,7 +443,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
   test('samples and local files can replace one another without uploads', async ({ page }) => {
     const requests = await preventMutations(page);
     await visit(page);
-    const editor = page.locator('#try');
+    const editor = page.locator('#try [data-body-editor]');
     const samples = page.locator('#samples');
     const input = editor.getByLabel('Upload a photo to edit', { exact: true });
     const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
@@ -463,9 +465,6 @@ test.describe('Upload-first homepage and honest local previews', () => {
     await expect(preview).toHaveAttribute('src', sampleBlob!);
     await expect(clear).toHaveCount(0);
     await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-    await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
-    await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
 
     await input.setInputFiles({ name: 'local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
     await expect(preview).toHaveAttribute('alt', 'Preview of the photo you selected');
@@ -478,9 +477,6 @@ test.describe('Upload-first homepage and honest local previews', () => {
     await expect(preview).not.toHaveAttribute('src', firstBlob!);
     await expect(preview).toHaveAttribute('src', /^blob:/);
     await expectDecoded(preview);
-    await editor.getByRole('button', { name: 'Edit Photo', exact: true }).click();
-    await expect(page.getByText(PREVIEW_NOTICE, { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Close', exact: true }).click();
 
     const uploadedBlob = await preview.getAttribute('src');
     await samples.getByRole('link', { name: 'Preview Muscle', exact: true }).click();
@@ -491,7 +487,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
     await expect(clear).toHaveCount(0);
     await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
     await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
-    await expect(samples.getByText(SAMPLE_NOTICE, { exact: true })).toBeVisible();
+    await expect(samples.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
     expect(requests, 'Concept and file previews must never upload or create an edit task').toEqual([]);
   });
 
@@ -506,7 +502,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       await expect(page).toHaveURL(/\/#try$/);
       await expect(page.locator('#try').getByRole('heading', { level: 1 })).toBeVisible();
       await expect(page.locator('#try').getByLabel('Upload a photo to edit', { exact: true })).toBeAttached();
-      await expect(page.locator('#try').getByRole('radio')).toHaveCount(7);
+      await expect(page.locator('#try').getByRole('radio')).toHaveCount(4);
     }
   });
 
@@ -543,7 +539,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
     await expect(page.locator('#try')).toHaveCount(1);
     await expect(page.locator('input[type="file"]')).toHaveCount(1);
     await expect(page.locator('#home-hero #try input[type="file"]')).toHaveCount(1);
-    await expect(page.locator('#home-hero h2')).toHaveCount(0);
+    await expect(page.locator('#home-hero h2')).toHaveText('Try a sample photo');
     await expectUploadControlsInViewport(page);
     const editor = (await page.locator('#try').boundingBox())!;
     const concept = (await page.locator('#hero-showcase').boundingBox())!;
@@ -576,7 +572,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       await visit(page);
       const editor = page.locator('#try');
       const input = editor.getByLabel('Upload a photo to edit', { exact: true });
-      const preview = editor.locator('label[for] img');
+      const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
       await input.setInputFiles({ name: 'keep-local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
       await expectDecoded(preview);
       const blob = await preview.getAttribute('src');
@@ -596,7 +592,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
         await expect(page).toHaveURL(/\/#try$/);
         await expect(link).toHaveAttribute('aria-current', 'true');
         await expect(page.locator('#samples a[aria-current="true"]')).toHaveCount(1);
-        await expect(preview).toHaveAttribute('src', mode.primarySource);
+        await expect(preview).toHaveAttribute('src', /^blob:/);
         await expect(input).toHaveValue('');
         await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
         const header = (await page.locator('header').boundingBox())!;

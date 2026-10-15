@@ -41,7 +41,10 @@ export function buildBodyContourPreview(
   const pixels = (point: PreviewPoint): PreviewPoint => ({ x: clamp(point.x) * width, y: clamp(point.y) * height });
   const contours = analysis.contours.map(points => points.filter(finitePoint).map(pixels)).filter(points => points.length >= 3);
   const points = contours.flat();
-  if (!points.length) return { originalPath: '', targetPath: '', region: { x: .5, y: .5, radiusX: .25, radiusY: .25 } };
+  if (!points.length) {
+    const region = { x: .5, y: .5, radiusX: .25, radiusY: .25 };
+    return { originalPath: '', targetPath: '', targetAvailable: false, region, guideRegion: region };
+  }
   const xs = points.map(point => point.x), ys = points.map(point => point.y);
   const minX = Math.min(...xs), maxX = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
   const centerX = (minX + maxX) / 2;
@@ -77,6 +80,51 @@ export function buildBodyContourPreview(
   });
   const base = normalizeRegion(defaultRegions[mode], defaultRegions[mode]);
   const region = normalizeRegion(adjustedRegion ?? base, base);
+  // Retain the default-strength size, using the same fullness-to-width scale as
+  // the contour. Keep this display size out of saved alignment to avoid drift.
+  const guideScale = mode === 'breast'
+    ? volumeIncreaseToWidthScale(targets.breast.fullnessIncreasePercent)
+      / volumeIncreaseToWidthScale(getBodyEditTargets().breast.fullnessIncreasePercent)
+    : 1;
+  const guideRegion = { ...region, radiusX: region.radiusX * guideScale, radiusY: region.radiusY * guideScale };
+
+  // A person mask includes arms and occluders; chest height alone does not make
+  // an edge a visible torso boundary. Breast never uses guessed pose anchors.
+  const trusted = (index: number, minimum = .6) => {
+    const point = analysis.landmarks[index];
+    return finitePoint(point) && (point.visibility ?? 0) >= minimum;
+  };
+  const axis = { x: hip.x - shoulder.x, y: hip.y - shoulder.y };
+  const axisLength = Math.hypot(axis.x, axis.y);
+  const along = { x: axis.x / Math.max(axisLength, 1), y: axis.y / Math.max(axisLength, 1) };
+  const across = { x: along.y, y: -along.x };
+  const halfWidth = (pair: PreviewPoint[]) => Math.abs((pair[1].x - pair[0].x) * across.x + (pair[1].y - pair[0].y) * across.y) / 2;
+  const shoulderHalfWidth = halfWidth(shoulders), hipHalfWidth = halfWidth(hips);
+  const chestPoseReliable = [11, 12, 23, 24].every(index => trusted(index)) && axis.y > bodyHeight * .08
+    && axisLength > bodyHeight * .12 && shoulderHalfWidth > axisLength * .12 && hipHalfWidth > axisLength * .08;
+  const chestCoordinates = (point: PreviewPoint) => {
+    const vx = point.x - shoulder.x, vy = point.y - shoulder.y;
+    return { t: (vx * along.x + vy * along.y) / Math.max(axisLength, 1), side: vx * across.x + vy * across.y };
+  };
+  const nearArm = (point: PreviewPoint) => [[11, 13], [13, 15], [12, 14], [14, 16]].some(([start, end]) => {
+    if (!trusted(start, .45) || !trusted(end, .45)) return false;
+    const a = pixels(analysis.landmarks[start]), b = pixels(analysis.landmarks[end]);
+    const vx = b.x - a.x, vy = b.y - a.y, lengthSquared = vx * vx + vy * vy;
+    if (lengthSquared < 1) return false;
+    const t = clamp(((point.x - a.x) * vx + (point.y - a.y) * vy) / lengthSquared);
+    return distance(point, mix(a, b, t)) < torsoWidth * .13;
+  });
+  const chestEdgeWeight = (point: PreviewPoint) => {
+    if (!chestPoseReliable || nearArm(point)) return 0;
+    const local = chestCoordinates(point);
+    if (local.t < .08 || local.t > .6) return 0;
+    const half = shoulderHalfWidth + (hipHalfWidth - shoulderHalfWidth) * local.t;
+    const ratio = Math.abs(local.side) / half;
+    // Restrict changes to the observed torso sides, not distant arms or small
+    // segmentation loops inside the torso. Taper the outer margin smoothly.
+    if (ratio < .65 || ratio >= 1.18) return 0;
+    return clamp((ratio - .65) / .2) * bell(Math.max(0, ratio - 1) / .18);
+  };
 
   /** Radial limb-width changes taper to zero at both joints. */
   const limbDelta = (point: PreviewPoint, start: PreviewPoint, end: PreviewPoint, scale: number): PreviewPoint => {
@@ -129,16 +177,24 @@ export function buildBodyContourPreview(
       dy += shift * verticalWeight;
     }
     if (mode === 'breast') {
-      // Only enlarge the observed chest silhouette. A 2D mask cannot measure
-      // forward projection, so this cross-section proxy is explicitly a guide.
+      // Only a visible torso side may move. Covered edges and the arm capsules
+      // remain fixed even when they fall inside the draggable radial field.
       const scale = volumeIncreaseToWidthScale(targets.breast.fullnessIncreasePercent);
-      const yWeight = bell((p.y - chest.y) / (torsoHeight * .32));
-      dx += (p.x - chest.x) * (scale - 1) * yWeight * torsoWeight;
+      const local = chestCoordinates(p);
+      const delta = local.side * (scale - 1) * bell((local.t - .3) / .32) * chestEdgeWeight(point);
+      dx += across.x * delta;
+      dy += across.y * delta;
     }
     const jointWeight = mode === 'muscle' || mode === 'slim'
       ? [...elbows, ...knees].reduce((weight, joint) => weight * clamp(distance(point, joint) / (torsoWidth * .12)), 1)
       : 1;
     return { x: clamp(point.x + dx * xScale * regionWeight * jointWeight, 0, width), y: clamp(point.y + dy * yScale * regionWeight * jointWeight, 0, height) };
   };
-  return { originalPath: path(contours), targetPath: path(contours.map(contour => contour.map(deform))), region };
+  const deformed = contours.map(contour => contour.map(deform));
+  const originalPath = path(contours), targetPath = path(deformed);
+  // An eligible edge elsewhere in the mask is not evidence of a target in the
+  // current region. If nothing moves, the UI must show an adjustable area guide
+  // instead of two coincident paths presented as a predicted contour change.
+  const targetAvailable = mode !== 'breast' || targetPath !== originalPath;
+  return { originalPath, targetPath, targetAvailable, region, guideRegion };
 }

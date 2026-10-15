@@ -14,6 +14,43 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const WIRE_LIMIT = MAX_IMAGE_BYTES + 64 * 1024;
 const PRIVATE_ERROR = 'sk-private-unit-only upstream-detail private/storage-path';
 
+test('optional body instructions are normalized and forwarded without client prompt/model overrides', async () => {
+  const { handlers, service } = setup();
+  const response = await handlers.submit(formRequest({ instructions: '  Only slim my waist.\r\nLeave my arms unchanged.  ', prompt: 'raw override', model: 'other-model' }));
+  expect(response.status).toBe(200);
+  expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ instructions: 'Only slim my waist.\nLeave my arms unchanged.' }));
+  expect(service.submit.mock.calls[0][0]).not.toHaveProperty('prompt');
+  expect(service.submit.mock.calls[0][0]).not.toHaveProperty('model');
+  expect(await response.text()).not.toContain('Only slim');
+});
+
+test.each([null, '', ' \r\n\t '])('blank or omitted instructions %j keep the existing submission contract', async instructions => {
+  const { handlers, service } = setup();
+  expect((await handlers.submit(formRequest({ instructions }))).status).toBe(200);
+  expect(service.submit.mock.calls[0][0].instructions ?? '').toBe('');
+});
+
+test('accepts exactly 500 instruction code units', async () => {
+  const { handlers, service } = setup();
+  expect((await handlers.submit(formRequest({ instructions: 'x'.repeat(500) }))).status).toBe(200);
+  expect(service.submit).toHaveBeenCalledWith(expect.objectContaining({ instructions: 'x'.repeat(500) }));
+});
+
+test.each(['x'.repeat(501), 'waist\0only', 'waist\u0007only'])('rejects invalid instructions before executing', async instructions => {
+  const { handlers, service } = setup();
+  await expectError(await handlers.submit(formRequest({ instructions })), 400, 'INVALID_INSTRUCTIONS');
+  expect(service.submit).not.toHaveBeenCalled();
+});
+
+test.each(['duplicate', 'file'])('rejects a %s instructions field before executing', async kind => {
+  const { handlers, service } = setup();
+  const body = await formRequest().formData();
+  if (kind === 'duplicate') { body.append('instructions', 'one'); body.append('instructions', 'two'); }
+  else body.set('instructions', new Blob(['not text'], { type: 'text/plain' }), 'instructions.txt');
+  await expectError(await handlers.submit(new Request(API_URL, { method: 'POST', headers: { Origin: ORIGIN }, body })), 400, 'INVALID_INSTRUCTIONS');
+  expect(service.submit).not.toHaveBeenCalled();
+});
+
 test.each(['1', '37', '73', '100'])('HTTP intensity %s reaches the service as an exact number', async (value) => {
   const { handlers, service } = setup();
   const response = await handlers.submit(formRequest({ intensity: value }));

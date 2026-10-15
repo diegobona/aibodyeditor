@@ -14,5 +14,10 @@ export interface PreviewRegion extends PreviewPoint { radiusX: number; radiusY: 
 export interface BodyContourPreview {
   originalPath: string;
   targetPath: string;
+  /** False when the current region produces no measurable chest-side change. */
+  targetAvailable: boolean;
+  /** Unscaled deformation field saved by manual alignment. */
   region: PreviewRegion;
+  /** Display area; the breast ellipse scales with intensity around its center. */
+  guideRegion: PreviewRegion;
 }

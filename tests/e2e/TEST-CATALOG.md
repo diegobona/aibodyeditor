@@ -1,5 +1,69 @@
 # E2E 测试流程目录
 
+## Breast area guide follows intensity — verified (2026-10-16)
+
+- The fallback chest ellipse grows continuously as Intensity increases and shrinks when it decreases. Its default-strength size remains the same.
+- Manual alignment retains the chosen center across slider changes. Repeated adjustment does not compound the radius scaling; reset restores the center while retaining the current intensity size.
+- Original photo/contour, inference count and generation count remain unchanged while moving the slider. Verify the focused area-guide flow, typecheck/build and local Workers SSR only.
+
+Verification: all 28 geometry tests passed. Local browser walkthrough using the prior supplied-photo analysis confirmed visible size changes at strengths 1 and 100 (both radii increased by about 54%), a stable aligned center, and reset without generation requests; both endpoint screenshots were inspected. Three focused browser cases passed: the expanded area-guide case plus existing alignment and mobile cases. The pointer test now hovers the handle before measuring drag coordinates so slider-induced scrolling has settled. Typecheck passed (24.133s), one build passed (1m20.957s; existing chunk-size warning), and local Workers SSR returned 200 with the heading and editor. No paid generation or broad review.
+
+## Covered-chest preview remains visible and adjustable — verified (2026-10-16)
+
+- Reproduce the original-only regression using locally detected contours from the supplied screenshot. Its shoulder/hip detections are reliable; the visible chest-height silhouette belongs to the arms.
+- When no visible chest-side target can be computed, show a purple approximate chest-area guide and localized explanation. Keep alignment, keyboard/pointer adjustment, hide/show and reset reachable; do not deform the arms or claim the area guide predicts the result.
+- Clear chest-side contours retain their target outline. Other modes and generation inputs remain unchanged. Verify the supplied screenshot locally, the focused browser regression, typecheck/build and a Workers SSR smoke; no paid generation or broad review.
+
+Verification: local inference on the supplied screenshot returned reliable shoulder/hip landmarks, but the old availability check reported a target despite zero actual contour displacement. Availability now follows the computed paths. The browser walkthrough using that analysis confirmed the visible area guide, keyboard movement and reset with zero generation POSTs; its screenshot was visually inspected. All 27 geometry tests and three focused E2E cases passed (7.1s), including fallback-area pointer/keyboard adjustment, reset, hide/show, normal controls and mobile layout. Typecheck passed (25.87s), one build passed (1m13.782s; existing chunk-size warning), and local Workers SSR returned 200 with the heading and editor. This verifies preview behavior on a diagnostic screenshot, not precise reconstruction of occluded anatomy or generated-image quality.
+
+## Breast preview excludes arm edges — previous verification (2026-10-15)
+
+The original-only fallback and hidden alignment controls below caused the reported usability regression and are superseded by the 2026-10-16 area-guide behavior above. These earlier checks did not establish an improvement in real-photo chest recognition.
+
+- Breast targets only plausible visible torso-side edges localized by reliable shoulder/hip points, keeping upper-arm and forearm contours fixed. Tilted torsos use body-relative coordinates.
+- When no reliable visible chest-side edge is available (occlusion/uncertain pose), show the original outline and a localized explanation, keep normal generation available, and do not invent a target contour or ineffective alignment controls.
+- Other modes, local inference, source pixels, provider prompts and credit paths stay unchanged. Verify targeted geometry tests and one browser regression plus the required typecheck/build; no paid generation, model replacement or broad audit.
+
+Verification: 27 geometry tests passed, including the reproduced upper-arm/forearm expansion, missing/low-confidence pose, covered torso and recoverable manual alignment. A browser walkthrough and three focused E2E cases passed (4.5s): uncertain-chest original-only state, normal mode switching, hide/show/alignment and mobile controls. Typecheck (21.455s), one build (1m35.784s, existing chunk-size warning) and minimal local Workers SSR smoke passed. No paid image generation, model/asset replacement or broad review. The provided marked screenshot was unsuitable as a clean local-inference benchmark (no usable original contour was returned from its diagnostic crop); exact source-photo accuracy was not verified. Tests cover the corrected geometry/UI behavior, not hidden anatomical reconstruction.
+
+## Optional extra body-edit instructions — implemented, contracts verified (2026-10-15)
+
+- Keep four modes and the strength slider. Optional instructions can be opened, typed, cleared or left blank without any generation request; show a useful input example and character limit on desktop/mobile.
+- An explicit edit submits the exact normalized instruction with the photo/mode/strength. Blank instructions retain the existing default flow, provider prompt and request hash.
+- Instructions can narrow the edit to one area or replace the preset's target; preserve face, outfit/coverage, scene and framing. The local outline continues to show mode/strength rather than parsing free text.
+- Lock text with the other settings during pending/uncertain requests. Retry uses the same instruction/request UUID. Login retains it; choosing another photo/sample resets it.
+- Reject excessive, control-character, duplicate or file-valued instructions before billing/provider calls. Changed instructions with a reused UUID conflict; guest and paid paths share the contract and preserve existing quotas/refunds/privacy.
+- Walk the real browser UI before writing E2E, with fixture provider responses. Run affected suites, typecheck/build, SEO and Workers SSR. Keep a bounded live spot-check separate from regression and record any quality limitations.
+
+Verification completed within the user's requested scope:
+
+- Shared domain: 288 tests across eight suites passed, including blank prompt/hash compatibility, normalization, UTF-8 prefix allocation, provider multipart, real SQLite guest/paid idempotency and no extra charge/provider call.
+- HTTP: 96 tests across two suites passed. Both guest and account submissions forward normalized text; excessive/control/duplicate/File values return `INVALID_INSTRUCTIONS`/400 before execution.
+- Browser: nine new instructions E2E cases passed (19.6s), covering optional/blank payloads, limits, no-call typing, settings/login retention, pending/uncertain locks, snapshot retry, ID-only session storage, correction after 400, photo/sample resets and mobile layout. Twenty existing editing/guest critical-flow cases also passed (1.0m). Provider/auth responses were fixtures and database cleanup was disabled.
+- Fresh typecheck passed (18.355s), one Cloudflare production build passed (1m44.923s, existing chunk-size warnings). Minimal local Workers smoke returned 200 for SSR homepage with the optional control and 200 for config; editing correctly remained unavailable without production secrets/database bindings.
+- One live `waist-only` generation was attempted with the existing fictional clothed-adult original. The provider request timed out (`TIMEOUT`); no result or visual adherence was verified. No second generation or automatic repeat was made. Quick-target shortcuts remain outside this change.
+- No new database migration, environment variable, indexable route, checkout or deployment. No additional review rounds, full-suite reruns or broad SEO audit were performed after the user asked to keep verification bounded.
+
+## Guest body edit trial — verified (2026-10-15)
+
+- Fresh guest selects a photo, any mode and strength, generates without sign-in, compares and downloads the private result.
+- One successful edit consumes the browser guest allowance. Refresh, another tab and a new request ID do not restore it; further generation prompts sign-in without a provider call.
+- Provider failure/timeout releases the allowance, with bounded retries. Duplicate and concurrent submissions cannot execute multiple trials.
+- Guest session initialization requires same origin. Another guest cannot poll, look up or download the result; ownership stays private after login.
+- Signing in grants no new account trial; paid-account validation, balance deductions/refunds and banned-account checks remain enforced.
+- Cookie resets remain bounded by persistent network quotas. Validation uses mocked provider responses and temporary databases, never live paid generation.
+- Verify homepage and tool-page EN/ZH copy, desktop/mobile UI, focused E2E, typecheck/build and Workers SSR. Only TanStack remains in this repository.
+
+Verification:
+
+- 346 unit tests across 13 related suites passed; three additional opt-in tests passed against real PostgreSQL in an isolated, subsequently removed schema, including concurrent guest/network reservations.
+- 50 Chromium E2E cases passed in 2.3 minutes: guest trial (4), editing (16), contour preview (7), entrypoints (8), homepage (15). Guest tests run real handlers, service, HttpOnly cookies and transactional SQLite; provider/object store/auth sessions are fixtures. No live paid generation or test-user cleanup against the configured database.
+- The login/reload regression was reproduced before the fix and passed afterwards. Guest recovery remains cookie-owned after login; new signed-in submissions use account credits. Error messaging follows the original job's billing source.
+- Fresh `pnpm typecheck --force` and `pnpm build --force` passed through Corepack pnpm 9.4.0 (an ignored PATH shim avoids the environment's incompatible pnpm wrapper). Existing chunk-size warnings remain.
+- SEO audit passed. Workers local preview on port 7004 returned 200 with SSR guest copy for `/`, `/body-editor`, `/skinny-filter`, `/breast-expansion`; configuration returned 200 with editing unavailable because production secrets/database bindings are absent. This verifies rendering/preflight, not production generation.
+- The configured development Neon database received only additive migration `0007_body_guest_edit`; 17 columns/four indexes verified. Actual development guest-session API returned 200, remaining 1, HttpOnly cookie and private/no-store. One initial transient 500 did not reproduce after server reload; unknown initialization failures now log only error name/code.
+- Existing preview tests were aligned with the current four-mode slider, cropped sample blobs and sample sidebar; guest initialization POSTs are excluded from generation/mutation counts. Used Playwright for the browser walkthrough because `agent-browser` was unavailable. Only TanStack is maintained; checkout and deployment are outside this change.
+
 ## Unified edit action — verified (2026-10-14)
 
 - Sample and uploaded photos use the exact English action label `Edit Photo` in every edit mode.

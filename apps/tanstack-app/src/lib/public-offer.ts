@@ -5,6 +5,7 @@
  * -> plan ids -> `config.payment.plans` (the same plan checkout charges).
  */
 import { config } from '@config'
+import { bodyGuestConfig } from '../../../../config/body-guest'
 
 export interface CreditPack {
   key: string
@@ -22,7 +23,7 @@ interface PlanLike {
   duration?: { type?: string }
 }
 
-export const FREE_TRIAL_EDITS = config.credits.publicOffer.freeTrialEdits
+export const FREE_TRIAL_EDITS = bodyGuestConfig.freeEdits
 export const CREDITS_PER_EDIT = config.credits.publicOffer.creditsPerEdit
 
 export function getCreditPacks(): CreditPack[] {

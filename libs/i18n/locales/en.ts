@@ -1522,7 +1522,7 @@ export const en: Locale = {
       badge: "AI photo editing",
       title: "AI Body Editor",
       subtitle: "Choose a photo, an editing mode and an intensity. Generate your edit, compare it with the original and download the result.",
-      note: "Clothed adult photos only · Sign in to edit · Private results"
+      note: "Clothed adult photos only · One free guest edit · Private results"
     },
     showcase: {
       eyebrow: "Slim, Muscle & Proportions",
@@ -1541,7 +1541,7 @@ export const en: Locale = {
       examplesTitle: "More editing concepts",
       examplesSubtitle: "More portraits to help you picture each editing direction.",
       previewTitle: "Edit your photo",
-      previewSubtitle: "Choose a photo, mode and intensity. Sign in to generate an edit, then compare and download the result.",
+      previewSubtitle: "Choose a photo, mode and intensity. Generate your first edit free without signing in, then compare and download the result.",
       detailTitle: "Look beyond the silhouette",
       detailSubtitle: "Check the surrounding details when you review a change to a portrait.",
       detailFace: "Face and expression",
@@ -1549,8 +1549,8 @@ export const en: Locale = {
       detailBackground: "Background lines",
       detailNotice: "These concepts show details to review. Actual AI edits can change a face, clothing or background; compare the whole image before saving.",
       closingTitle: "Start with a photo you like",
-      closingDescription: "Choose a photo and an editing direction. Sign in to generate, compare and download your result.",
-      pricingNote: "AI edits use credits. Each account gets trial credits for one edit; sign in to get started.",
+      closingDescription: "Choose a photo and an editing direction. Generate your first edit free, compare and download your result.",
+      pricingNote: "Try one guest edit free without signing in. Further edits require an account with credits.",
       modes: {
         slim: {
           label: "Slim",
@@ -1592,7 +1592,7 @@ export const en: Locale = {
       },
       privacy: {
         title: "Photo processing and private results",
-        description: "Selecting a photo creates a local preview. When you submit an edit, your photo is sent to Rabbit API for processing. Results are stored privately for your account."
+        description: "Selecting a photo creates a local preview. When you submit an edit, your photo is sent to Rabbit API for processing. Results are stored privately and accessed using your guest browser or signed-in account."
       }
     },
     upload: {
@@ -1613,8 +1613,8 @@ export const en: Locale = {
         type: "Please upload a JPG, PNG or WebP image.",
         size: "This photo is larger than 10 MB."
       },
-      availability: "Choose a mode and intensity. Sign in to generate your edit.",
-      comingSoon: "Choose a mode and intensity, then sign in to edit your photo."
+      availability: "Choose a mode and intensity. Your first guest edit is free without signing in.",
+      comingSoon: "Choose a mode and intensity, then generate your free guest edit."
     },
     editing: {
       intensityLabel: "Intensity",
@@ -1622,10 +1622,18 @@ export const en: Locale = {
       intensityHigh: "Dramatic",
       intensityValue: "{value} out of 100",
       intensityHint: "Applies when you generate.",
+      instructionsToggle: "Extra instructions (optional)",
+      instructionsLabel: "Extra body-edit instructions",
+      instructionsPlaceholder: "Only slim my waist; keep my arms and legs unchanged.",
+      instructionsExample: "Example: Make my shoulders slightly wider.",
+      instructionsHint: "Instructions apply when you generate. The outline only reflects the mode and intensity.",
+      instructionsCounter: "{count}/{max} characters",
       contourPreview: {
         analyzing: "Finding your body outline…",
         unavailable: "Outline preview is unavailable. You can still generate your edit.",
         noPerson: "No clear body outline found. Try a clearer photo, or continue to generate.",
+        chestUnclear: "Approximate chest area; covered edges cannot be predicted. Use Align to reposition the guide.",
+        area: "Chest area",
         original: "Original",
         target: "Target outline",
         note: "Target outline · AI results may vary.",
@@ -1658,17 +1666,23 @@ export const en: Locale = {
       compareHint: "Drag to compare",
       download: "Download photo",
       editAnother: "Edit another photo",
-      signinTitle: "Sign in to edit your photo",
-      signinDescription: "Your selected photo will stay here while you sign in.",
-      signinRequired: "Sign in to edit",
-      trialNote: "Each account gets 15 trial credits for one edit.",
+      signinTitle: "Sign in to continue",
+      signinDescription: "Sign in to continue with account credits. Your selected photo will stay here.",
+      signinRequired: "Sign in to continue",
+      trialNote: "One free guest edit per browser.",
       costNote: "{credits} credits per edit.",
+      guestUsedNote: "Your free guest edit has been used. Sign in to continue with account credits.",
+      guestRetryNote: "Your free edit is still available. You can try again within the retry limits.",
       refunded: "The credits for this edit were returned.",
       checkEdit: "Check edit status",
       retry: "Try again",
       errors: {
+        TRIAL_EXHAUSTED: "Your free guest edit has been used. Sign in to continue.",
+        TRIAL_IN_PROGRESS: "Another free edit is already running in this browser. Wait for it to finish.",
+        RATE_LIMITED: "Too many trial requests. Please try again later.",
         NOT_CONFIGURED: "Editing is unavailable right now. Please try later.",
         INVALID_INPUT: "Choose a valid JPG, PNG or WebP photo up to 10 MB, a mode and an intensity.",
+        INVALID_INSTRUCTIONS: "Use up to 500 characters of plain text for your extra instructions. Remove unsupported control characters and try again.",
         UNAUTHENTICATED: "Sign in to edit your photo.",
         UNAUTHORIZED: "Sign in to edit your photo.",
         FORBIDDEN: "You cannot access this edit.",
@@ -1741,7 +1755,7 @@ export const en: Locale = {
         },
         {
           title: "Generate and compare",
-          description: "Sign in and select Edit Photo. Compare the result with your original, check the details and download the image."
+          description: "Select Edit Photo. Compare the result with your original, check the details and download the image."
         }
       ]
     },
@@ -1787,16 +1801,16 @@ export const en: Locale = {
         },
         {
           title: "Preview before sending",
-          description: "Selecting a photo stays local. Submitting an edit sends it for AI processing; your result is available through your signed-in account."
+          description: "Selecting a photo stays local. Submitting an edit sends it for AI processing; guest results are accessible from this browser, and account results require sign-in."
         }
       ]
     },
     pricing: {
       title: "Pricing",
-      subtitle: "Credit-based AI editing with one account trial. Sign in to see your balance and generate an edit.",
+      subtitle: "Try one guest edit free. Sign in and use credits for further edits.",
       free: {
-        name: "Account trial",
-        detail: "One edit with trial credits · Sign-in required"
+        name: "Guest trial",
+        detail: "One free edit per browser · No sign-in required"
       },
       packs: {
         starter: "Starter",
@@ -1813,7 +1827,7 @@ export const en: Locale = {
       items: [
         {
           question: "How do I edit a photo?",
-          answer: "Choose a JPG, PNG or WebP photo up to 10 MB, select Slim, Muscle, Proportions or Breast and choose an intensity. Sign in, generate the edit, then compare and download the result."
+          answer: "Choose a JPG, PNG or WebP photo up to 10 MB, select Slim, Muscle, Proportions or Breast and choose an intensity. Generate your first guest edit free, then compare and download the result."
         },
         {
           question: "Which mode is for a slimmer look?",
@@ -1829,7 +1843,7 @@ export const en: Locale = {
         },
         {
           question: "How much does an edit cost?",
-          answer: "An edit uses 15 credits. Each signed-in account gets 15 trial credits once, enough for one edit. If an edit fails, its consumed credits are returned; generating again uses credits."
+          answer: "Guests can generate one successful edit per browser for free, with retry and network limits. Further edits require an account with credits and cost 15 credits each. Signing in grants no additional trial. Failed guest edits restore the opportunity; failed paid edits return their credits."
         },
         {
           question: "Can I edit several photos at once?",
@@ -1837,11 +1851,11 @@ export const en: Locale = {
         },
         {
           question: "When is my photo uploaded?",
-          answer: "Choosing a photo creates a local preview. Submitting Edit Photo uploads it for processing by Rabbit API. The app stores the result privately for your account and does not persistently store your original upload."
+          answer: "Choosing a photo creates a local preview. Submitting Edit Photo uploads it for processing by Rabbit API. The app stores the result privately for your guest browser or signed-in account and does not persistently store your original upload."
         },
         {
           question: "Can I edit on my phone?",
-          answer: "Yes. Choose a photo in your mobile browser, sign in and generate an edit. You can compare and download the result without installing an app."
+          answer: "Yes. Choose a photo in your mobile browser, generate your first guest edit free. You can compare and download the result without installing an app."
         }
       ]
     },
@@ -1891,7 +1905,7 @@ export const en: Locale = {
       hero: {
         title: "Body Editor",
         subtitle: "Choose the right portrait, set a clear body reshaping goal and learn which details to check when reviewing a change.",
-        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
+        note: "Clothed adult photos only · Four modes · 1–100 intensity · One free guest edit"
       },
       what: {
         title: "What is a body editor?",
@@ -1899,7 +1913,7 @@ export const en: Locale = {
           "A body editor changes the way a person's silhouette appears in a photo. Common goals include a slimmer outline, more muscle definition or a different balance between the upper and lower body. Start with one clear aim: decide what bothers you about the picture and whether it comes from the pose, the outfit or the shape you want to explore.",
           "Photo choice often matters more than the size of a planned change. A phone held close to the body, a twisted stance or a coat covering the waist can make proportions difficult to read. Compare the image with another portrait taken from a comfortable distance. If the issue is mainly the angle, taking a new picture can give you a better starting point than trying to reshape a poor one.",
           "For an outfit portrait, you might want the silhouette to read more evenly while keeping the way the garment hangs. In a fitness portrait, the aim might be to explore a more defined appearance. Keep those goals specific to the photo. An edited image cannot show how a body will change through training, and it cannot establish how an item of clothing will fit.",
-          "On this site, the Body Editor guide and homepage use one AI Body Editor. Choose Slim, Muscle, Proportions or Breast, then adjust the intensity slider from 1 to 100. Sign in and submit the original photo to generate an edit. Compare the result with your source image and download it only after reviewing the details. The advice below helps you choose a useful starting photo and assess the change."
+          "On this site, the Body Editor guide and homepage use one AI Body Editor. Choose Slim, Muscle, Proportions or Breast, then adjust the intensity slider from 1 to 100. Submit the original photo to generate an edit. Compare the result with your source image and download it only after reviewing the details. The advice below helps you choose a useful starting photo and assess the change."
         ],
         linkBefore: "The ",
         linkAfter: " homepage explains the product and offers the same photo editor.",
@@ -1931,7 +1945,7 @@ export const en: Locale = {
           },
           {
             title: "Generate, compare and download",
-            description: "Sign in and select Edit Photo to send the original for AI processing. Wait for the result, then move the comparison control to inspect the face, hands, clothing and background. Download the edited image when you are satisfied. A generated result can vary from your intended change."
+            description: "Select Edit Photo to send the original for AI processing. Wait for the result, then move the comparison control to inspect the face, hands, clothing and background. Download the edited image when you are satisfied. A generated result can vary from your intended change."
           }
         ]
       },
@@ -1961,7 +1975,7 @@ export const en: Locale = {
           },
           {
             question: "Can I reshape my body with it now?",
-            answer: "Yes. Choose an original photo, a mode and an intensity, then sign in and select Edit Photo. The editor sends it for AI processing and shows a result you can compare and download."
+            answer: "Yes. Choose an original photo, a mode and an intensity, then select Edit Photo. The editor sends it for AI processing and shows a result you can compare and download."
           },
           {
             question: "Are there controls for individual body areas?",
@@ -1981,7 +1995,7 @@ export const en: Locale = {
           },
           {
             question: "Where does my selected photo go?",
-            answer: "Selecting a photo creates a local preview. When you submit an edit, the app sends the original to Rabbit API for processing. The result is stored privately for your account; the app does not persistently store the original upload."
+            answer: "Selecting a photo creates a local preview. When you submit an edit, the app sends the original to Rabbit API for processing. The result is stored privately for your guest browser or signed-in account; the app does not persistently store the original upload."
           }
         ]
       },
@@ -1999,7 +2013,7 @@ export const en: Locale = {
       hero: {
         title: "Skinny Filter",
         subtitle: "Plan a slimmer silhouette with photo selection tips and advice for keeping the overall portrait believable.",
-        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
+        note: "Clothed adult photos only · Four modes · 1–100 intensity · One free guest edit"
       },
       what: {
         title: "What is a skinny filter?",
@@ -2007,7 +2021,7 @@ export const en: Locale = {
           "A skinny filter is a photo effect that makes a person's outline look slimmer. People use the term for several kinds of edits, from a light change to the torso to a narrower silhouette across the whole portrait. In this guide, the focus is on choosing a suitable picture and planning a modest change that still fits the person, pose and outfit.",
           "Look at the starting image before deciding what needs to be slimmer. A seated pose folds clothing around the waist. An oversized coat can make the upper body look wider, while an arm pressed against the torso can hide the waist entirely. Another photo from the same session may show the outline more clearly and reduce the need for a change.",
           "A useful slimming reference shows the body with some space around it. In a standing portrait, leave the hands and feet visible if possible. For a seated photo, look for a pose where the torso is easy to read and the clothing is not bunched up. Keep the original crop when comparing candidates so you can judge the full composition.",
-          "Slim is part of the AI Body Editor used on the homepage and every guide. It targets a narrower waist and upper-arm outline. Choose an original photo, adjust the intensity slider from 1 to 100, then sign in to generate an edit. Compare the result with the whole original portrait before downloading. The other modes remain available in the same editor when your goal concerns muscle definition, overall proportions or a clothed bust silhouette."
+          "Slim is part of the AI Body Editor used on the homepage and every guide. It targets a narrower waist and upper-arm outline. Choose an original photo, adjust the intensity slider from 1 to 100, then generate an edit. Compare the result with the whole original portrait before downloading. The other modes remain available in the same editor when your goal concerns muscle definition, overall proportions or a clothed bust silhouette."
         ],
         linkBefore: "For the product overview and the other mode choices, visit the ",
         linkAfter: " homepage.",
@@ -2039,7 +2053,7 @@ export const en: Locale = {
           },
           {
             title: "Generate and keep a reference",
-            description: "Sign in and select Edit Photo. Once the result is ready, compare it with the original and inspect the face, hands and overall balance alongside the waist. Check garment seams and background lines, then download the result if the change suits the portrait."
+            description: "Select Edit Photo. Once the result is ready, compare it with the original and inspect the face, hands and overall balance alongside the waist. Check garment seams and background lines, then download the result if the change suits the portrait."
           }
         ]
       },
@@ -2065,7 +2079,7 @@ export const en: Locale = {
         items: [
           {
             question: "Can I apply the skinny filter now?",
-            answer: "Yes. Choose a photo, select Slim and an intensity, then sign in to generate a result. The same editor lets you compare the edited photo with the original and download it."
+            answer: "Yes. Choose a photo, select Slim and an intensity, then generate a result. The same editor lets you compare the edited photo with the original and download it."
           },
           {
             question: "How do I choose a photo for a slimmer look?",
@@ -2107,7 +2121,7 @@ export const en: Locale = {
       hero: {
         title: "AI Breast Expansion",
         subtitle: "Understand bust proportions in clothed portraits, choose a useful starting photo and learn which garment details to check.",
-        note: "Clothed adult photos only · Four modes · Three intensities · Sign in to edit"
+        note: "Clothed adult photos only · Four modes · 1–100 intensity · One free guest edit"
       },
       what: {
         title: "What is AI breast expansion?",
@@ -2115,7 +2129,7 @@ export const en: Locale = {
           "AI breast expansion is a photo edit that makes the bust silhouette appear fuller under the existing clothing. The aim is to adjust garment volume while preserving the neckline, coverage and pose. This guide explains how to choose a useful portrait and judge those details. Select Breast in the shared AI Body Editor for this direction; Proportions remains available for a broader change to the overall silhouette.",
           "Read the clothing before deciding on a change. A loose blouse may hide the body outline, while a structured jacket may hold its own shape. The neckline, seams and folds tell you how the garment sits in the original photo. Choose an image where those details are visible, so a later comparison has useful reference points.",
           "A fuller outline also changes how the upper body relates to the shoulders, waist and hips in the picture. A portrait that includes the torso gives more context than a close crop around the chest. Keep the person's posture in view, and check whether the camera angle or drape of the fabric explains the appearance you want to adjust.",
-          "An edited portrait changes the image, not the body. It cannot predict a physical change or how clothing will fit in real life. Choose a clothed adult portrait you have permission to edit, select Breast and an intensity, then sign in to generate a result. Compare the whole image with the original before focusing on the bust outline, and check the neckline, fabric folds, hands and surrounding background."
+          "An edited portrait changes the image, not the body. It cannot predict a physical change or how clothing will fit in real life. Choose a clothed adult portrait you have permission to edit, select Breast and an intensity, then generate a result. Compare the whole image with the original before focusing on the bust outline, and check the neckline, fabric folds, hands and surrounding background."
         ],
         linkBefore: "For the product overview and all four mode choices, visit the ",
         linkAfter: " homepage.",
@@ -2147,7 +2161,7 @@ export const en: Locale = {
           },
           {
             title: "Generate and assess the result",
-            description: "Sign in and select Edit Photo. When the result is ready, compare the shoulders, waist and hips with the original. Check the neckline and garment seams for coherent folds, and make sure the hands and background still look plausible before downloading."
+            description: "Select Edit Photo. When the result is ready, compare the shoulders, waist and hips with the original. Check the neckline and garment seams for coherent folds, and make sure the hands and background still look plausible before downloading."
           }
         ]
       },
@@ -2173,7 +2187,7 @@ export const en: Locale = {
         items: [
           {
             question: "Can I generate an AI breast expansion edit now?",
-            answer: "Yes. Select Breast and an intensity in the shared editor, choose a clothed adult portrait and sign in to generate an edit. Compare the result with the original and check the garment before downloading."
+            answer: "Yes. Select Breast and an intensity in the shared editor, choose a clothed adult portrait and generate an edit. Compare the result with the original and check the garment before downloading."
           },
           {
             question: "Which mode changes the bust silhouette?",
@@ -2197,7 +2211,7 @@ export const en: Locale = {
           },
           {
             question: "When is my selected photo uploaded?",
-            answer: "Selecting a photo only previews it locally. Submitting an edit sends the original to Rabbit API for processing. Your result is stored privately for your account; the app does not persistently store the original upload."
+            answer: "Selecting a photo only previews it locally. Submitting an edit sends the original to Rabbit API for processing. Your result is stored privately for your guest browser or signed-in account; the app does not persistently store the original upload."
           }
         ]
       },

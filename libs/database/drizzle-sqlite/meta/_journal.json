@@ -50,6 +50,13 @@
       "when": 1791957529575,
       "tag": "0006_body_image_edit",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792056189656,
+      "tag": "0007_body_guest_edit",
+      "breakpoints": true
     }
   ]
 }

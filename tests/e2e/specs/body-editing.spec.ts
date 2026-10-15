@@ -14,12 +14,13 @@ async function setup(page: Page, handler: (route: Route) => Promise<void>, signe
   await page.route('**/api/auth/**', route => json(route, route.request().url().includes('get-session') && signedIn ? SESSION : null));
   await page.context().route('**/api/body-edit**', async route => {
     const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/guest-session')) return json(route, { ownerId: 'guest:fixture', remaining: 0 });
     if (url.pathname.endsWith('/image')) return route.fulfill({ body: PNG, contentType: 'image/png', headers: { 'Cache-Control': 'private, no-store', ...(url.searchParams.has('download') ? { 'Content-Disposition': 'attachment; filename="edited.png"' } : {}) } });
     if (route.request().method() === 'GET' && url.pathname === '/api/body-edit' && !url.search) return json(route, { available: true, costCredits: 15, freeTrialEdits: 1 });
     return handler(route);
   });
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: signedIn ? 'Edit Photo' : 'Sign in to continue', exact: true })).toBeEnabled();
 }
 async function upload(page: Page) { await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG }); }
 const editor = (page: Page) => page.locator('[data-body-editor]');
@@ -283,14 +284,14 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
     expect(workers).toBe(2); expect(posts).toBe(1);
   });
-  test('anonymous submission opens sign in and keeps photo, mode and strength', async ({ page }) => {
+  test('an exhausted guest opens sign in and keeps photo, mode and strength', async ({ page }) => {
     let posts = 0;
     await setup(page, async route => { posts++; await route.abort(); }, false);
     await upload(page); await editor(page).getByText('Breast', { exact: true }).click();
     await selectStrength(page, 93);
     const source = await editor(page).getByRole('img').getAttribute('src');
-    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
-    await expect(page.getByRole('dialog')).toContainText('Your selected photo will stay here while you sign in.');
+    await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('Your selected photo will stay here.');
     await expect(page.getByRole('dialog').getByRole('link', { name: 'Sign up', exact: true })).toHaveAttribute('target', '_blank');
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(editor(page).getByRole('img')).toHaveAttribute('src', source!);

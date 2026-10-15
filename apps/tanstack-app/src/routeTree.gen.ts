@@ -44,6 +44,7 @@ import { Route as ApiPaymentCancelRouteImport } from './routes/api/payment/cance
 import { Route as ApiCreditsTransactionsRouteImport } from './routes/api/credits/transactions'
 import { Route as ApiCreditsStatusRouteImport } from './routes/api/credits/status'
 import { Route as ApiCreditsBalanceRouteImport } from './routes/api/credits/balance'
+import { Route as ApiBodyEditGuestSessionRouteImport } from './routes/api/body-edit/guest-session'
 import { Route as ApiBodyEditJobIdRouteImport } from './routes/api/body-edit/$jobId'
 import { Route as ApiBlogSlugRouteImport } from './routes/api/blog/$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -276,6 +277,11 @@ const ApiCreditsBalanceRoute = ApiCreditsBalanceRouteImport.update({
   id: '/api/credits/balance',
   path: '/api/credits/balance',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBodyEditGuestSessionRoute = ApiBodyEditGuestSessionRouteImport.update({
+  id: '/guest-session',
+  path: '/guest-session',
+  getParentRoute: () => ApiBodyEditRoute,
 } as any)
 const ApiBodyEditJobIdRoute = ApiBodyEditJobIdRouteImport.update({
   id: '/$jobId',
@@ -539,6 +545,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
+  '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -618,6 +625,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
+  '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -700,6 +708,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
+  '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -782,6 +791,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
+    | '/api/body-edit/guest-session'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -861,6 +871,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
+    | '/api/body-edit/guest-session'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -942,6 +953,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
+    | '/api/body-edit/guest-session'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -1307,6 +1319,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/credits/balance'
       preLoaderRoute: typeof ApiCreditsBalanceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/body-edit/guest-session': {
+      id: '/api/body-edit/guest-session'
+      path: '/guest-session'
+      fullPath: '/api/body-edit/guest-session'
+      preLoaderRoute: typeof ApiBodyEditGuestSessionRouteImport
+      parentRoute: typeof ApiBodyEditRoute
     }
     '/api/body-edit/$jobId': {
       id: '/api/body-edit/$jobId'
@@ -1756,10 +1775,12 @@ const ApiBodyEditJobIdRouteWithChildren =
 
 interface ApiBodyEditRouteChildren {
   ApiBodyEditJobIdRoute: typeof ApiBodyEditJobIdRouteWithChildren
+  ApiBodyEditGuestSessionRoute: typeof ApiBodyEditGuestSessionRoute
 }
 
 const ApiBodyEditRouteChildren: ApiBodyEditRouteChildren = {
   ApiBodyEditJobIdRoute: ApiBodyEditJobIdRouteWithChildren,
+  ApiBodyEditGuestSessionRoute: ApiBodyEditGuestSessionRoute,
 }
 
 const ApiBodyEditRouteWithChildren = ApiBodyEditRoute._addFileChildren(

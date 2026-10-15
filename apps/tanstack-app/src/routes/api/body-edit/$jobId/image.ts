@@ -4,6 +4,6 @@ import { getBodyEditHandlers, withBodyEditDb } from '@/lib/body-edit-server';
 export const Route = createFileRoute('/api/body-edit/$jobId/image')({
   server: { handlers: {
     GET: withBodyEditDb(async ({ request, params }: { request: Request; params: { jobId: string } }) =>
-      (await getBodyEditHandlers()).image(request, params.jobId)),
+      (await getBodyEditHandlers(request)).image(request, params.jobId)),
   } },
 });

@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { bodyEditConfig, LEGACY_BODY_EDIT_INTENSITIES } from '../../config/body-editor';
-import { BODY_EDIT_CREDIT_COST, creditsConfig } from '../../config/credits';
+import { BODY_EDIT_CREDIT_COST } from '../../config/credits';
 import { BodyImageEditError, prepareBodyImageEdit, type editBodyImage, type BodyImageEditOptions } from './body-edit';
 import { BodyEditError, type BodyEditRepository, type BodyEditResultStore, type BodyEditOutcome } from '../credits/body-edit-types';
 
@@ -12,6 +12,7 @@ export interface SubmitBodyEdit {
   image: BodyImageEditOptions['sourceImage'];
   mode: BodyImageEditOptions['mode'];
   intensity?: BodyImageEditOptions['intensity'];
+  instructions?: string;
 }
 export interface BodyEditorService {
   submit(input: SubmitBodyEdit): Promise<BodyEditOutcome>;
@@ -32,28 +33,33 @@ export function createBodyEditorService(deps: {
   return {
     async submit(input) {
       if (!input?.userId || !isBodyEditUuid(input.requestId ?? '')) throw new BodyEditError('INVALID_INPUT', 400);
-      const options: BodyImageEditOptions = { sourceImage: input.image, mode: input.mode, intensity: input.intensity };
+      const options: BodyImageEditOptions = { sourceImage: input.image, mode: input.mode, intensity: input.intensity, instructions: input.instructions };
       let prepared: ReturnType<typeof prepareBodyImageEdit>;
       try { prepared = prepareBodyImageEdit(options); }
       catch (error) {
-        const unavailable = (error as { code?: string }).code === 'INVALID_CONFIGURATION';
+        const code = (error as { code?: string }).code;
+        if (code === 'INVALID_INSTRUCTIONS') throw new BodyEditError('INVALID_INSTRUCTIONS', 400);
+        const unavailable = code === 'INVALID_CONFIGURATION';
         throw new BodyEditError(unavailable ? 'NOT_CONFIGURED' : 'INVALID_INPUT', unavailable ? 503 : 400);
       }
+      options.instructions = prepared.instructions;
       if (!(await deps.checkAvailable())) throw new BodyEditError('NOT_CONFIGURED', 503);
-      const hashInput = new Uint8Array(input.image.bytes.length + 128);
       // Preserve the hash format of old in-flight requests when an old client retries.
       const hashIntensity = typeof input.intensity === 'string' && Object.hasOwn(LEGACY_BODY_EDIT_INTENSITIES, input.intensity)
         ? input.intensity : prepared.intensity;
-      const prefix = new TextEncoder().encode(`${prepared.mode}\0${hashIntensity}\0${prepared.mimeType}\0`);
+      const prefix = new TextEncoder().encode(prepared.instructions
+        ? `body-edit:v2\0${JSON.stringify({ mode: prepared.mode, intensity: prepared.intensity, mimeType: prepared.mimeType, instructions: prepared.instructions })}\0`
+        : `${prepared.mode}\0${hashIntensity}\0${prepared.mimeType}\0`);
+      const hashInput = new Uint8Array(prefix.length + input.image.bytes.length);
       hashInput.set(prefix); hashInput.set(input.image.bytes, prefix.length);
-      const digest = await crypto.subtle.digest('SHA-256', hashInput.subarray(0, prefix.length + input.image.bytes.length));
+      const digest = await crypto.subtle.digest('SHA-256', hashInput);
       const inputHash = Buffer.from(digest).toString('hex');
       const started = now();
       const reserved = await deps.repository.reserve({
         jobId: (deps.newJobId ?? (() => crypto.randomUUID()))(), userId: input.userId, requestId: input.requestId.toLowerCase(),
         inputHash, mode: prepared.mode, intensity: prepared.intensity, model: prepared.model,
         costCredits: BODY_EDIT_CREDIT_COST,
-        trialCredits: BODY_EDIT_CREDIT_COST * creditsConfig.publicOffer.freeTrialEdits,
+        trialCredits: 0,
         now: started, deadlineAt: new Date(started.getTime() + bodyEditConfig.timeoutMs + bodyEditConfig.resultTimeoutMs + 10_000),
       });
       if (reserved.reused) return reserved;

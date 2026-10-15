@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { normalizeBodyEditInstructions } from "../../ai/body-edit-instructions";
 import type {
   BodyEditMode,
   BodyEditIntensity,
@@ -20,6 +21,7 @@ type Attempt = {
   image: File;
   mode: BodyEditMode;
   intensity: BodyEditIntensity;
+  instructions: string;
   requestId: string;
 };
 type Recovery = {
@@ -28,18 +30,36 @@ type Recovery = {
   jobId?: string;
   startedAt: number;
 };
-type EditFailure = { code: string; refunded?: boolean; uncertain?: boolean };
+type EditFailure = { code: string; refunded?: boolean; uncertain?: boolean; guest?: boolean };
 const savedJobKey = "body-editor-job";
 const reservationGraceMs = 15_000;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Deduplicate initializers across React StrictMode and simultaneously mounted editors.
+let guestInitialization: Promise<{ ownerId: string; remaining: number }> | undefined;
+function initializeGuest() {
+  if (!guestInitialization) {
+    guestInitialization = fetch('/api/body-edit/guest-session', { method: 'POST', credentials: 'same-origin', cache: 'no-store' })
+      .then(async response => {
+        const body = await response.json();
+        if (!response.ok || typeof body.ownerId !== 'string' || ![0, 1].includes(body.remaining)) throw new Error(body.error?.code ?? 'NETWORK');
+        return body as { ownerId: string; remaining: number };
+      }).finally(() => { guestInitialization = undefined; });
+  }
+  return guestInitialization;
+}
+
 /** Browser orchestration; provider settings, prompts and billing stay on the server. */
-export function useBodyEdit(ownerId?: string) {
+export function useBodyEdit(accountId?: string, authPending = false) {
+  // Guest ownership is authenticated by the HttpOnly cookie, never by browser storage.
+  const ownerId = accountId ?? 'guest';
+  const [guestRemaining, setGuestRemaining] = useState<number | null>(null);
   const [config, setConfig] = useState<{
     available: boolean;
     costCredits: number;
     freeTrialEdits: number;
+    guestTrialEdits?: number;
   } | null>(null);
   const [pending, setPending] = useState(false),
     [result, setResult] = useState<BodyEditView | null>(null);
@@ -54,7 +74,8 @@ export function useBodyEdit(ownerId?: string) {
   currentOwner.current = ownerId;
 
   const isCurrent = () =>
-    mounted.current && recovery.current?.ownerId === currentOwner.current;
+    mounted.current && !!recovery.current &&
+    (recovery.current.ownerId === currentOwner.current || recovery.current.ownerId === 'guest');
   function save() {
     try {
       if (recovery.current)
@@ -103,9 +124,16 @@ export function useBodyEdit(ownerId?: string) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setGuestRemaining(null);
+    if (!accountId && !authPending) void initializeGuest().then(value => { if (active) setGuestRemaining(value.remaining); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [accountId, authPending]);
+
   async function read(response: Response, expectedRequest: string, expectedOwner: string): Promise<void> {
     const body = await response.json();
-    if (!isCurrent() || recovery.current?.requestId !== expectedRequest || currentOwner.current !== expectedOwner) return;
+    if (!isCurrent() || recovery.current?.requestId !== expectedRequest || recovery.current.ownerId !== expectedOwner) return;
     if (
       typeof body.jobId === "string" &&
       uuid.test(body.jobId) &&
@@ -129,6 +157,7 @@ export function useBodyEdit(ownerId?: string) {
       body.result?.downloadUrl
     ) {
       setResult(body);
+      if (expectedOwner === 'guest') setGuestRemaining(0);
       setError(null);
       attempt.current = null;
       finish();
@@ -151,9 +180,13 @@ export function useBodyEdit(ownerId?: string) {
       "FORBIDDEN",
       "INVALID_ORIGIN",
       "INVALID_INPUT",
+      "INVALID_INSTRUCTIONS",
       "NOT_CONFIGURED",
       "INSUFFICIENT_CREDITS",
       "NOT_FOUND",
+      "TRIAL_EXHAUSTED",
+      "TRIAL_IN_PROGRESS",
+      "RATE_LIMITED",
     ]);
     const terminal =
       typeof body.jobId === "string" && body.error?.refunded === true;
@@ -166,7 +199,9 @@ export function useBodyEdit(ownerId?: string) {
       finish();
       return;
     }
-    setError({ code, refunded: body.error?.refunded === true });
+    setError({ code, refunded: body.error?.refunded === true, guest: expectedOwner === 'guest' });
+    if (code === 'TRIAL_EXHAUSTED') setGuestRemaining(0);
+    else if (expectedOwner === 'guest' && terminal) setGuestRemaining(1);
     attempt.current = null;
     recovery.current = null;
     clearSaved();
@@ -201,6 +236,7 @@ export function useBodyEdit(ownerId?: string) {
     form.set("image", value.image);
     form.set("mode", value.mode);
     form.set("intensity", String(value.intensity));
+    if (value.instructions) form.set("instructions", value.instructions);
     form.set("requestId", value.requestId);
     try {
       await read(
@@ -219,17 +255,39 @@ export function useBodyEdit(ownerId?: string) {
     image: File,
     mode: BodyEditMode,
     intensity: BodyEditIntensity,
+    instructions?: string,
   ) {
-    if (busy.current || !ownerId) return;
+    if (busy.current || authPending) return;
+    let normalizedInstructions: string;
+    try {
+      normalizedInstructions = normalizeBodyEditInstructions(instructions);
+    } catch {
+      setError({ code: "INVALID_INSTRUCTIONS" });
+      return;
+    }
+    if (!accountId) {
+      busy.current = true; setPending(true); setError(null);
+      try {
+        const session = await initializeGuest();
+        if (!mounted.current || currentOwner.current !== ownerId) { finish(); return; }
+        setGuestRemaining(session.remaining);
+        if (!session.remaining) { setError({ code: 'TRIAL_EXHAUSTED' }); finish(); return; }
+      } catch (error) {
+        if (mounted.current) setError({ code: error instanceof Error ? error.message : 'NETWORK' });
+        finish(); return;
+      }
+    }
     const requestId = crypto.randomUUID();
     recovery.current = { ownerId, requestId, startedAt: Date.now() };
     save(); // Persist before starting the paid request, even before the server returns a job ID.
-    attempt.current = { image, mode, intensity, requestId };
+    attempt.current = { image, mode, intensity, instructions: normalizedInstructions, requestId };
     await send(attempt.current);
   }
   async function recover() {
     if (busy.current || !recovery.current) return;
-    if (!recovery.current.jobId && attempt.current) await send(attempt.current);
+    // A guest upload with an uncertain response must never be replayed as a paid
+    // account request after login. Cookie-owned lookup can still recover it.
+    if (!recovery.current.jobId && attempt.current && recovery.current.ownerId === ownerId) await send(attempt.current);
     else {
       busy.current = true;
       setPending(true);
@@ -251,7 +309,7 @@ export function useBodyEdit(ownerId?: string) {
       const raw = sessionStorage.getItem(savedJobKey);
       const saved = raw ? (JSON.parse(raw) as Recovery) : null;
       if (
-        saved?.ownerId === ownerId &&
+        (saved?.ownerId === ownerId || saved?.ownerId === 'guest') &&
         uuid.test(saved.requestId) &&
         Number.isFinite(saved.startedAt) &&
         (!saved.jobId || uuid.test(saved.jobId))
@@ -278,5 +336,5 @@ export function useBodyEdit(ownerId?: string) {
     setResult(null);
     clearSaved();
   }
-  return { config, pending, result, error, submit, recover, reset };
+  return { config, pending, result, error, submit, recover, reset, guestRemaining, isGuest: !accountId };
 }
