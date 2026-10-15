@@ -54,13 +54,15 @@ test.describe('Live local body contour preview', () => {
       const values: string[] = [];
       for (const mode of ['Slim', 'Muscle', 'Proportions', 'Breast']) {
         await editor(page).getByText(mode, { exact: true }).click();
+        if (mode === 'Breast') await expect(page.locator('[data-contour-area]')).toBeVisible();
+        else await expect(page.locator('[data-contour-area]')).toHaveCount(0);
         const slider = editor(page).getByRole('slider', { name: 'Intensity', exact: true });
         await slider.fill('20');
         if (mode === 'Breast' && await target(page).count() === 0) {
           await expect(page.locator('[data-contour-area]')).toBeVisible();
           await expect(editor(page).getByRole('button', { name: 'Adjust outline alignment', exact: true })).toBeVisible();
           await slider.fill('90');
-          await expect(page.locator('[data-contour-area], [data-contour-target]')).toBeVisible();
+          await expect(page.locator('[data-contour-area]')).toBeVisible();
           await expect(page.locator('[data-contour-original]')).toHaveAttribute('d', original!);
           values.push(await target(page).count() ? (await target(page).getAttribute('d'))! : original!);
           continue;
@@ -75,6 +77,9 @@ test.describe('Live local body contour preview', () => {
       expect(workers).toBe(1);
       expect(posts()).toBe(0);
       expect(errors).toEqual([]);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.locator('[data-contour-area]')).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
       await page.locator('[data-body-contour-preview]').screenshot({ path: `test-results/contour-real-${asset}.png` });
     });
   }
@@ -138,6 +143,7 @@ test.describe('Live local body contour preview', () => {
     await expect(area).toBeVisible();
     await editor(page).getByText('Slim', { exact: true }).click();
     await expect(target(page)).toBeVisible();
+    await expect(area).toHaveCount(0);
     expect(workers).toBe(1);
     expect(posts()).toBe(0);
   });

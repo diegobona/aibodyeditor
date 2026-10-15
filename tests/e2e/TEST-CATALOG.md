@@ -1,5 +1,13 @@
 # E2E 测试流程目录
 
+## Breast area remains visible with a valid target contour — verified (2026-10-16)
+
+- In Breast mode, keep the chest-area ellipse visible whether or not visible torso-side contours can be deformed; it continues to resize with intensity and retain alignment.
+- Keep the detected target contour when available, and label the solid target and dashed area separately. Other modes do not show a chest-area ellipse, and hide/show still controls the overlay.
+- Reproduce both supplied screenshots using local inference only. Verify the visible-target and fallback-area UI flows, typecheck/build and Workers SSR; no paid generation or broad review.
+
+Verification: both diagnostic screenshots returned reliable torso landmarks and usable Breast target contours. The UI previously hid the area whenever such a target existed. Both screenshots now retain their chest-area ellipse alongside the target, and both respond to intensity; the walkthrough screenshots were inspected, with two local worker analyses and zero generation POSTs. Two focused E2E cases passed (18.3s), covering real local inference, all modes, always-visible Breast area, mobile wrapping, and the existing fallback alignment/reset flow. Typecheck passed (14.487s), one build passed (1m19.542s; existing chunk-size warning), and local Workers SSR returned 200 with the heading and editor. Screenshot-based diagnosis verifies the display issue, not precise breast segmentation of the original photos.
+
 ## Breast area guide follows intensity — verified (2026-10-16)
 
 - The fallback chest ellipse grows continuously as Intensity increases and shrinks when it decreases. Its default-strength size remains the same.

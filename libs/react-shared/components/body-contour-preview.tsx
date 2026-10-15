@@ -69,6 +69,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
   const contour = useMemo(() => analysis ? buildBodyContourPreview(analysis, mode, intensity, region) : undefined,
     [analysis, mode, intensity, region]);
   const targetAvailable = contour?.targetAvailable !== false;
+  const showChestArea = mode === 'breast';
   const setRegion = (next: PreviewRegion) => setAdjustment({ file, mode, region: next });
 
   const photoPoint = (clientX: number, clientY: number) => {
@@ -109,7 +110,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
         <img src={previewUrl} alt={alt} className="absolute inset-0 h-full w-full object-contain" />
         {analysis && contour && visible && (
           <svg ref={svgRef} viewBox={`0 0 ${analysis.width} ${analysis.height}`} preserveAspectRatio="xMidYMid meet"
-            className="absolute inset-0 h-full w-full" aria-label={targetAvailable ? copy.target : copy.area} data-contour-overlay>
+            className="absolute inset-0 h-full w-full" aria-label={showChestArea ? copy.area : copy.target} data-contour-overlay>
             <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" aria-hidden="true">
               <path d={contour.originalPath} stroke="white" strokeWidth="4" vectorEffect="non-scaling-stroke" opacity="0.8" />
               <path d={contour.originalPath} stroke="#64748b" strokeWidth="1.5" strokeDasharray="5 5" vectorEffect="non-scaling-stroke" data-contour-original />
@@ -118,7 +119,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
                 <path d={contour.targetPath} stroke="#7047eb" strokeWidth="2.5" vectorEffect="non-scaling-stroke" data-contour-target />
               </>}
             </g>
-            {(adjusting || !targetAvailable) && (
+            {(adjusting || showChestArea) && (
               <g role={adjusting ? 'button' : undefined} tabIndex={adjusting ? disabled ? -1 : 0 : undefined}
                 aria-label={adjusting ? copy.alignmentHandle : undefined} aria-disabled={adjusting ? disabled : undefined}
                 className={cn('rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring', adjusting ? 'cursor-move touch-none' : 'pointer-events-none')}
@@ -128,7 +129,7 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
                 <ellipse cx={contour.region.x * analysis.width} cy={contour.region.y * analysis.height}
                   rx={contour.guideRegion.radiusX * analysis.width} ry={contour.guideRegion.radiusY * analysis.height}
                   fill="#7047eb" fillOpacity="0.09" stroke="#7047eb" strokeWidth="2" strokeDasharray="4 4" vectorEffect="non-scaling-stroke"
-                  data-contour-area={!targetAvailable ? '' : undefined} />
+                  data-contour-area={showChestArea ? '' : undefined} />
                 {adjusting && <circle cx={contour.region.x * analysis.width} cy={contour.region.y * analysis.height}
                   r={Math.min(analysis.width, analysis.height) * 0.024} fill="white" stroke="#7047eb" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
               </g>
@@ -145,9 +146,10 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
         {analysis && contour ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-hidden="true">
                 <span className="inline-flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-slate-500" />{copy.original}</span>
-                <span className="inline-flex items-center gap-1.5 text-primary"><span className={cn('w-4 border-t-2 border-primary', !targetAvailable && 'border-dashed')} />{targetAvailable ? copy.target : copy.area}</span>
+                {targetAvailable && <span className="inline-flex items-center gap-1.5 text-primary"><span className="w-4 border-t-2 border-primary" />{copy.target}</span>}
+                {showChestArea && <span className="inline-flex items-center gap-1.5 text-primary"><span className="w-4 border-t-2 border-dashed border-primary" />{copy.area}</span>}
               </div>
               <button type="button" disabled={disabled} onClick={() => { setVisible(!visible); setAdjusting(false); }}
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-1 text-xs font-medium text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
