@@ -1,5 +1,26 @@
 # E2E 测试流程目录
 
+## Editor workbench and explicit preset behavior — verified (2026-10-16)
+
+- Initial homepage has no selected example or loaded photo; Slim 70 and empty instructions, one upload canvas.
+- Ten examples scroll horizontally above the editor. Default selection replaces photo and applies the exact recipe, displaying its saved edited half directly, with no comparison slider or duplicate settings.
+- “Only apply settings” defaults off and is disabled without a photo. Toggling it changes no content. When enabled, case selection preserves the current original and its result while updating the recipe.
+- Uploading another photo clears the previous result. Parameter changes retain the result with a regenerate notice. Only Edit Photo submits; pending and uncertain requests lock photo/settings/presets.
+- Desktop original/result/settings share one wide workbench; mobile uses Original/Result tabs. No horizontal page overflow at 320, 390, 768 or 1440px.
+- Verify exact submitted file/recipe, refunded failure, successful result/download, guide compatibility, typecheck and build without paid generation.
+
+Results: all 9 related scenarios passed (7 in the first run, remaining 2 after correcting a fixture assertion and waiting for auth readiness). Typecheck passed (24.803 s); Workers build passed (1m16.422 s, existing chunk-size warning). Desktop/mobile visual walk confirmed direct result display and no page overflow. Workers preview returned 200 with 10 cases, one h1/canonical, no selected case or loaded photo. API generation and downloads were mocked; no paid generation. Evidence: `test-results/workbench/`.
+
+
+## Unified real example presets — verified (2026-10-16)
+
+- Show ten unique real cases in a scrollable thumbnail selector near the uploader, including all four modes and custom recipes. Right comparison uses the selected saved actual result and original, with fixed case mode/intensity/instructions in SSR HTML. Remove the duplicate lower gallery and all concept-only hero images.
+- Selecting a case loads its original and exact settings when no device photo exists. Set mode/intensity and clear or fill instructions; expand instructions when nonempty. No generation or quota consumption. Rapid selection must resolve to the last chosen case and remain locked during pending/uncertain edits.
+- After a user uploads a device photo, selecting cases applies settings while preserving that photo. An explicit Use this sample photo action replaces it. Replacing a sample with a device photo retains the recipe. Editing controls changes only the local target and submitted settings; the saved reference remains fixed and is labeled accordingly.
+- Verify ten sources/people, fixed reference versus changed controls, recipe clearing and retention, mobile horizontal selector/desktop vertical selector, no horizontal page overflow, and zero selection-triggered generation POSTs. Run only related E2E, typecheck and build.
+
+Verification: browser walk confirmed ten SSR choices, no duplicate gallery/concept hero, exact recipe loading, immutable saved reference, retained device photo/recipe, explicit sample replacement, empty-instruction clearing and horizontal mobile selector, with zero generation POSTs. Nine targeted E2E tests passed (37.0s): eight unified-preset scenarios plus the affected homepage entrypoint. They cover ten unique originals/people, all actual modes/intensities/instructions, 320/390/768/1280 layouts, keyboard/touch comparison, delayed-fetch races and one locally intercepted multipart submit/pending-lock/refund flow. Typecheck passed (21.928s), one build passed (1m17.817s; existing chunk-size warning), and Workers SSR returned 200 with ten examples, one h1/canonical, fixed saved-result metadata and no duplicate cards/concept labeling. No live provider requests, new image generation, full-suite run or broad audit.
+
 ## Unique people in every actual case — verified (2026-10-16)
 
 - Replace the reused subjects in the fuller-figure and combined-edit cases with two newly generated adult originals and actual editor outputs. Keep ten cases and require ten distinct subjects/source hashes, including a white man, the existing Black man/woman and East Asian woman.

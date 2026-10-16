@@ -1805,6 +1805,38 @@ export const zhCN: Locale = {
       subtitle: "选择照片、编辑模式与强度。生成结果，与原图比较，再下载照片。",
       note: "仅限穿着衣物的成年人照片 · 首次游客编辑免费 · 结果私有存储"
     },
+    examples: {
+      title: "试试真实案例",
+      selectorLabel: "选择编辑案例",
+      chooseLabel: "试试{name}",
+      settingsOnly: "仅应用设置",
+      previousExamples: "向前查看案例",
+      nextExamples: "查看更多案例",
+      sampleResult: "已保存的案例结果",
+      loadingSample: "正在载入样照…",
+      original: "原图",
+      result: "结果",
+      photoViews: "照片视图",
+      settingsTitle: "编辑设置",
+      emptyHint: "上传自己的照片，或选择顶部案例，试用其照片和设置。",
+      resultPlaceholder: "编辑后的照片将在这里显示",
+      resultPlaceholderHint: "选择设置后，点击“编辑照片”生成结果。",
+      currentSettingsDiffer: "设置已更改，再次生成以更新结果。",
+      sampleNote: "这是本编辑器根据 AI 成年人样照实际生成的结果。点击“编辑照片”按当前设置重新生成。",
+      reviewResult: "下载前请检查面部、衣服和背景细节。",
+      labels: {
+        naturalSlim: "自然瘦身",
+        muscle: "运动体型",
+        proportions: "比例平衡",
+        breast: "饱满胸型",
+        breastSubtle: "温和丰胸",
+        legProportions: "修长双腿",
+        shoulders: "仅加宽肩膀",
+        waistOnly: "仅瘦腰",
+        fullerFigure: "稍微饱满",
+        customCombination: "肩膀 + 腰部"
+      }
+    },
     realResults: {
       "title": "本编辑器的真实生成结果",
       "description": "查看四种编辑模式与具体修改要求的实际效果。原图为 AI 生成的成年人样照，结果由本编辑器实际生成。效果因照片而异。",

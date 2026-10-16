@@ -29,7 +29,7 @@ type AnalysisState = { file: Blob; analysis?: BodyPhotoAnalysis; error?: 'NO_PER
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
 /** Local, non-destructive outline guide. Only changing the source runs inference. */
-export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled, alt, copy }: {
+export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled, alt, copy, className, frameClassName }: {
   file: Blob;
   previewUrl: string;
   mode: BodyEditMode;
@@ -37,6 +37,8 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
   disabled: boolean;
   alt: string;
   copy: BodyContourPreviewCopy;
+  className?: string;
+  frameClassName?: string;
 }) {
   const [state, setState] = useState<AnalysisState>();
   const [visible, setVisible] = useState(true);
@@ -105,8 +107,8 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
   };
 
   return (
-    <div data-body-contour-preview className="overflow-hidden rounded-[20px] border border-border bg-background">
-      <div className="relative h-80 w-full sm:h-[420px]" data-contour-frame>
+    <div data-body-contour-preview className={cn("overflow-hidden rounded-[20px] border border-border bg-background", className)}>
+      <div className={cn("relative h-80 w-full sm:h-[420px]", frameClassName)} data-contour-frame>
         <img src={previewUrl} alt={alt} className="absolute inset-0 h-full w-full object-contain" />
         {analysis && contour && visible && (
           <svg ref={svgRef} viewBox={`0 0 ${analysis.width} ${analysis.height}`} preserveAspectRatio="xMidYMid meet"

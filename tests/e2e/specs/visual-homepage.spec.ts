@@ -3,663 +3,289 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { TIMEOUTS } from '../helpers/constants';
 
-/** Public preview coverage. Run with E2E_SKIP_CLEANUP=true; no account is created. */
+/** Public fixture coverage. E2E_SKIP_CLEANUP=true; all generation requests are intercepted. */
 const SITE_URL = 'https://aibodyeditor.net';
-const CONCEPT_LABEL = 'AI-generated concept';
-const CONCEPT_NOTICE = 'Concept images illustrate editing directions. They are not results from this app.';
-const SAMPLE_NOTICE = 'Samples are AI-generated concepts. Select Edit Photo to generate a new edit.';
 const AVAILABILITY = 'Choose a mode and intensity. Your first guest edit is free without signing in.';
-const COMPARE_LABEL = 'Compare original and edited concepts';
+const PREVIEW_ALT = 'Preview of the photo you selected';
 const PREVIEW_PNG = readFileSync(resolve(__dirname, '../../../apps/tanstack-app/public/favicon-32x32.png'));
-const MODES = [
-  {
-    id: 'slim', label: 'Slim', title: 'A slimmer silhouette',
-    description: 'Explore a visibly slimmer waist, abdomen and upper arms in a clothed portrait.',
-    subject: 'mauve', source: '/examples/v3/slim-lifestyle.webp',
-  },
-  {
-    id: 'muscle', label: 'Muscle', title: 'A more defined athletic look',
-    description: 'Explore fuller shoulders, chest and upper arms for a more defined athletic silhouette.',
-    subject: 'blue T-shirt', source: '/examples/v3/muscle-lifestyle.webp',
-  },
-  {
-    id: 'proportions', label: 'Proportions', title: 'A clearer waist-to-hip balance',
-    description: 'Explore a more defined waist and balanced hip line with a clear contrast in the overall silhouette.',
-    subject: 'sage', source: '/examples/v3/proportions-lifestyle.webp',
-  },
-] as const;
+const RECIPES = JSON.parse(readFileSync(resolve(__dirname,
+  '../../../apps/tanstack-app/public/examples/results-2026-10-16/provenance.json'), 'utf8')) as {
+  case: string; mode: string; intensity: number; instructions: string; subject: string; sourceSha256: string;
+}[];
+const FILES: Record<string, string> = {
+  naturalSlim: 'natural-slim', muscle: 'muscle', proportions: 'proportions', breast: 'breast',
+  breastSubtle: 'breast-subtle', legProportions: 'leg-proportions', shoulders: 'shoulders',
+  waistOnly: 'waist-only', fullerFigure: 'fuller-figure-unique', customCombination: 'custom-combination-unique',
+};
+const source = (key: string) => `/examples/results-2026-10-16/${FILES[key]}.webp`;
+const recipe = (key: string) => RECIPES.find(item => item.case === key)!;
+const mutations = new WeakMap<Page, string[]>();
 
-async function visit(page: Page, path = '/') {
-  await page.goto(path, { timeout: TIMEOUTS.navigation });
-  // Session resolution provides a stable signal that the interactive page hydrated.
+async function publicFixtures(page: Page) {
+  const requests: string[] = [];
+  mutations.set(page, requests);
+  await page.route('**/*', async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/auth/')) return route.fulfill({ json: null });
+    if (path === '/api/body-edit/guest-session') return route.fulfill({ json: { ownerId: 'guest:presets', remaining: 1 } });
+    if (path === '/api/body-edit' && request.method() === 'GET') {
+      return route.fulfill({ json: { available: true, costCredits: 15, guestTrialEdits: 1, freeTrialEdits: 0 } });
+    }
+    // Keep contour analysis local and deterministic; these tests exercise preset selection.
+    if (path === '/body-preview/worker.js') {
+      return route.fulfill({ contentType: 'application/javascript', body: "self.onmessage=()=>self.postMessage({type:'error',code:'NO_PERSON'});" });
+    }
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) {
+      requests.push(`${request.method()} ${request.url()}`);
+      return route.abort('blockedbyclient');
+    }
+    return route.continue();
+  });
+}
+
+async function visit(page: Page) {
+  await page.goto('/', { timeout: TIMEOUTS.navigation });
   await expect(page.locator('header a[href="/signin"]')).toHaveCount(1);
+  await expect(page.locator('#try').getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled({ timeout: 15_000 });
 }
 
 async function expectDecoded(image: Locator) {
   await expect(image).toBeVisible();
-  await expect.poll(() => image.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await image.evaluate((node) => (node as HTMLImageElement).decode());
+  await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await image.evaluate(node => (node as HTMLImageElement).decode());
 }
 
-async function expectUploadControlsInViewport(page: Page) {
-  const editor = page.locator('#try');
-  const viewport = page.viewportSize()!;
-  const header = (await page.locator('header').boundingBox())!;
-  const controls = [
-    editor.getByRole('heading', { level: 1 }), editor.getByRole('button', { name: 'Upload a photo to edit', exact: true }),
-    ...await editor.locator('fieldset label').all(),
-    editor.getByRole('button', { name: 'Edit Photo', exact: true }),
-    editor.getByText(AVAILABILITY, { exact: true }),
-  ];
-  expect(controls).toHaveLength(8);
-  for (const control of controls) {
-    await expect(control).toBeVisible();
-    const box = (await control.boundingBox())!;
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
-    expect(box.y).toBeGreaterThanOrEqual(header.y + header.height - 1);
-    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
-  }
+async function expectRecipe(page: Page, key: string) {
+  const expected = recipe(key);
+  const editor = page.locator('[data-body-editor]');
+  await expect(page.locator(`#samples [data-example="${key}"]`)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#samples [aria-pressed="true"]')).toHaveCount(1);
+  await expect(editor.locator(`input[type="radio"][value="${expected.mode}"]`)).toBeChecked();
+  await expect(editor.getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue(String(expected.intensity));
+  await expect(editor.locator('textarea')).toHaveValue(expected.instructions);
+  await expect(editor.getByRole('button', { name: 'Extra instructions (optional)', exact: true }))
+    .toHaveAttribute('aria-expanded', String(Boolean(expected.instructions)));
 }
+const choose = (page: Page, key: string) => page.locator(`#samples [data-example="${key}"]`).click();
+const preview = (page: Page) => page.getByRole('img', { name: PREVIEW_ALT, exact: true });
+const toggle = (page: Page) => page.getByRole('switch', { name: 'Only apply settings', exact: true });
 
-async function preventMutations(page: Page) {
-  const requests: string[] = [];
-  await page.route('**/*', async (route) => {
-    const request = route.request();
-    if (new URL(request.url()).pathname === '/api/body-edit/guest-session') return route.fulfill({ json: { ownerId: 'guest:preview', remaining: 1 } });
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) {
-      requests.push(`${request.method()} ${request.url()}`);
-      await route.abort('blockedbyclient');
-    } else {
-      await route.continue();
-    }
+test.describe('Editor workbench and explicit example selection', () => {
+  test.beforeEach(async ({ page }) => publicFixtures(page));
+  test.afterEach(async ({ page }) => {
+    expect(mutations.get(page), 'Preset browsing must not generate images').toEqual([]);
   });
-  return requests;
-}
 
-async function expectPhotoHalf(image: Locator, side: 'original' | 'edited') {
-  const framing = await image.evaluate((node) => {
-    const photo = node as HTMLImageElement;
-    const style = getComputedStyle(photo);
-    const matrix = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform);
-    return {
-      width: parseFloat(style.width), parentWidth: parseFloat(getComputedStyle(photo.parentElement!).width),
-      transform: style.transform, shiftX: matrix.m41, shiftY: matrix.m42, scaleX: matrix.m11, scaleY: matrix.m22,
-    };
-  });
-  expect(framing.width).toBeCloseTo(framing.parentWidth * 2, 1);
-  expect(framing.shiftY).toBe(0);
-  expect(framing.scaleX).toBe(1);
-  expect(framing.scaleY).toBe(1);
-  if (side === 'original') {
-    expect(framing.transform).toBe('none');
-    expect(framing.shiftX).toBe(0);
-  } else {
-    expect(framing.shiftX).toBeCloseTo(-framing.width / 2, 1);
-  }
-}
-
-async function expectComparisonDirection(comparison: Locator, source: string, screenshotPrefix?: string) {
-  const range = comparison.getByRole('slider');
-  const original = comparison.locator('img[alt^="Original"]');
-  const edited = comparison.locator('img[alt^="Edited"]');
-  const originalLabel = comparison.getByText('Original concept', { exact: true });
-  const editedLabel = comparison.getByText('Edited concept', { exact: true });
-  const clip = comparison.locator('[data-comparison-before]');
-  for (const image of [original, edited]) await expect(image).toHaveAttribute('src', source);
-  await expectPhotoHalf(original, 'original');
-  await expectPhotoHalf(edited, 'edited');
-  await expect(range).toHaveValue('50');
-  await expect(clip).toHaveCSS('clip-path', 'inset(0px 50% 0px 0px)');
-  await expect(originalLabel).toBeVisible();
-  await expect(editedLabel).toBeVisible();
-
-  await range.press('Home');
-  await expect(range).toHaveValue('0');
-  await expect(clip).toHaveCSS('clip-path', 'inset(0px 100% 0px 0px)');
-  await expect(originalLabel).toBeHidden();
-  await expect(editedLabel).toBeVisible();
-  if (screenshotPrefix) await comparison.screenshot({ path: `${screenshotPrefix}-edited.png` });
-
-  await range.press('End');
-  await expect(range).toHaveValue('100');
-  await expect(clip).toHaveCSS('clip-path', 'inset(0px 0% 0px 0px)');
-  await expect(originalLabel).toBeVisible();
-  await expect(editedLabel).toBeHidden();
-  if (screenshotPrefix) await comparison.screenshot({ path: `${screenshotPrefix}-original.png` });
-
-  const frame = (await range.boundingBox())!;
-  await range.click({ position: { x: frame.width / 2, y: frame.height / 2 } });
-  await expect(range).toHaveValue('50');
-  await expect(clip).toHaveCSS('clip-path', 'inset(0px 50% 0px 0px)');
-  await expect(originalLabel).toBeVisible();
-  await expect(editedLabel).toBeVisible();
-  if (screenshotPrefix) await comparison.screenshot({ path: `${screenshotPrefix}-compare.png` });
-}
-
-test.describe('Upload-first homepage and honest local previews', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route('**/api/body-edit/guest-session', route => route.fulfill({ json: { ownerId: 'guest:preview', remaining: 1 } }));
-  });
-  test('SSR separates concept samples from actual results and preserves SEO links', async ({ page, request }) => {
-    const response = await request.get('/?campaign=preview', {
-      headers: { 'Accept-Language': 'zh-CN,zh;q=0.9' },
-    });
+  test('SSR and hydrated initial state are empty with ten distinct examples and the existing SEO links', async ({ page, request }) => {
+    const response = await request.get('/?campaign=preview', { headers: { 'Accept-Language': 'zh-CN' } });
     expect(response.status()).toBe(200);
-    const rendered = await page.evaluate((html) => {
+    const rendered = await page.evaluate(html => {
       const document = new DOMParser().parseFromString(html, 'text/html');
-      const text = (selector: string) => document.querySelector(selector)?.textContent?.trim() ?? '';
       return {
-        h1: Array.from(document.querySelectorAll('h1'), (node) => node.textContent?.trim()),
-        hero: text('#home-hero'), editor: text('#try'), pricing: text('#pricing'), faq: text('#faq'),
-        canonical: Array.from(document.querySelectorAll('head link[rel="canonical"]'), (node) => node.getAttribute('href')),
-        keywords: document.querySelectorAll('head meta[name="keywords"]').length,
-        images: Array.from(document.querySelectorAll('img[src^="/examples/"]'), (node) => ({
-          src: node.getAttribute('src'), alt: node.getAttribute('alt'),
+        h1: Array.from(document.querySelectorAll('h1'), n => n.textContent),
+        canonical: document.querySelector('link[rel=canonical]')?.getAttribute('href'),
+        keywords: document.querySelectorAll('meta[name=keywords]').length,
+        examples: Array.from(document.querySelectorAll('[data-example]'), n => ({
+          key: n.getAttribute('data-example'), subject: n.getAttribute('data-subject'), selected: n.getAttribute('aria-pressed'),
+          src: n.querySelector('img')?.getAttribute('src'), alt: n.querySelector('img')?.getAttribute('alt'),
         })),
-        heroImages: Array.from(document.querySelectorAll('#hero-showcase img'), (node) => ({
-          src: node.getAttribute('src'), alt: node.getAttribute('alt'), loading: node.getAttribute('loading'),
-        })),
-        toolsOpen: document.querySelector('header details')?.hasAttribute('open'),
-        headerLinks: Array.from(document.querySelectorAll('header details a'), (node) => ({
-          href: node.getAttribute('href'), text: node.textContent?.trim(),
-        })),
-        guideLinks: Array.from(document.querySelectorAll('#tools a'), (node) => ({
-          href: node.getAttribute('href'), text: node.textContent?.trim(),
-        })),
-        jsonLd: Array.from(document.querySelectorAll('script[type="application/ld+json"]'), (node) => JSON.parse(node.textContent ?? 'null')),
+        links: Array.from(document.querySelectorAll('#tools a'), n => n.getAttribute('href')),
+        text: document.querySelector('#try')?.textContent,
+        source: document.querySelector('[data-body-editor]')?.getAttribute('data-photo-source'),
+        editorImages: document.querySelectorAll('[data-body-editor] img').length,
       };
     }, await response.text());
-
     expect(rendered.h1).toEqual(['AI Body Editor']);
-    expect(rendered.canonical).toEqual([SITE_URL]);
+    expect(rendered.canonical).toBe(SITE_URL);
     expect(rendered.keywords).toBe(0);
-    expect(rendered.hero).toContain(CONCEPT_LABEL);
-    expect(rendered.hero).not.toContain(CONCEPT_NOTICE);
-    expect(rendered.hero).not.toContain(SAMPLE_NOTICE);
-    expect(rendered.hero).toContain(AVAILABILITY);
-    expect(rendered.editor).toContain(AVAILABILITY);
-    expect(rendered.pricing).toContain('Try one guest edit free without signing in. Further edits require an account with credits.');
-    expect(rendered.faq).not.toContain('coming soon');
-    expect(rendered.faq).toContain('compare and download');
-    expect(rendered.heroImages).toHaveLength(2);
-    for (const image of rendered.heroImages) {
-      expect(image.src).toBe(MODES[0].source);
-      expect(image.alt).toContain('mauve');
-      expect(image.loading).toBe('eager');
+    expect(rendered.source).toBe('empty');
+    expect(rendered.editorImages).toBe(0);
+    expect(rendered.text).toContain(AVAILABILITY);
+    expect(rendered.examples).toHaveLength(10);
+    expect(new Set(rendered.examples.map(x => x.subject)).size).toBe(10);
+    expect(rendered.examples.map(x => x.subject)).toContain('city-woman');
+    expect(rendered.examples.map(x => x.key).sort()).toEqual(RECIPES.map(x => x.case).sort());
+    expect(rendered.links).toEqual(expect.arrayContaining(['/body-editor', '/skinny-filter', '/breast-expansion']));
+    for (const item of rendered.examples) {
+      expect(item.selected).toBe('false'); expect(item.src).toBe(source(item.key!)); expect(item.alt!.length).toBeGreaterThan(70);
     }
-    const expectedAssets = [...MODES.map((mode) => mode.source), ...[
-      'breast', 'waist-only', 'natural-slim', 'muscle', 'proportions', 'shoulders',
-      'leg-proportions', 'breast-subtle', 'fuller-figure-unique', 'custom-combination-unique',
-    ].map((file) => `/examples/results-2026-10-16/${file}.webp`)].sort();
-    expect([...new Set(rendered.images.map((image) => image.src))].sort()).toEqual(expectedAssets);
-    for (const image of rendered.images) {
-      expect(image.alt?.length).toBeGreaterThan(70);
-      expect(image.alt).toMatch(/^(?:(Original|Edited) (Slim|Muscle|Proportions) concept:|Original AI-created|Actual (Breast|Slim|Muscle|Proportions) mode result)/);
+    for (const description of [/Black man/, /East Asian woman/, /white man/]) {
+      expect(rendered.examples.some(x => description.test(x.alt ?? ''))).toBe(true);
     }
-    const tools = [
-      { href: '/body-editor', text: 'Body Editor' },
-      { href: '/skinny-filter', text: 'Skinny Filter' },
-      { href: '/breast-expansion', text: 'AI Breast Expansion' },
-    ];
-    expect(rendered.toolsOpen).toBe(false);
-    expect(rendered.headerLinks).toEqual(tools);
-    expect(rendered.guideLinks).toEqual(expect.arrayContaining(tools));
-    const application = rendered.jsonLd.find((item) => item['@type'] === 'SoftwareApplication');
-    expect(application).toMatchObject({ '@id': `${SITE_URL}#editor`, name: 'AI Body Editor', url: SITE_URL });
-    expect(application.aggregateRating).toBeUndefined();
-    expect((application.offers ?? []).some((offer: { name?: string }) => offer.name === 'Planned free trial')).toBe(false);
-    const prefixed = await request.get('/en', { maxRedirects: 0 });
-    expect(prefixed.status()).toBe(301);
-    const target = new URL(prefixed.headers().location, prefixed.url());
-    expect(target.origin).toBe(new URL(prefixed.url()).origin);
-    expect(`${target.pathname}${target.search}${target.hash}`).toBe('/');
-  });
-
-  test('upload comes first while the concept photo remains available on desktop and mobile', async ({ page }) => {
-    for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
-      await page.setViewportSize(viewport);
-      await visit(page);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI Body Editor');
-      await expectUploadControlsInViewport(page);
-      const showcase = page.locator('#hero-showcase');
-      await expect(showcase.getByText(CONCEPT_LABEL, { exact: true })).toBeVisible();
-      const control = showcase.getByRole('slider', { name: COMPARE_LABEL, exact: true });
-      const frame = await control.boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame!.y).toBeGreaterThanOrEqual(0);
-      if (viewport.width >= 1024) expect(frame!.y + Math.min(100, frame!.height)).toBeLessThan(viewport.height);
-      await showcase.scrollIntoViewIfNeeded();
-      for (const image of await showcase.getByRole('img').all()) await expectDecoded(image);
-      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-      await page.screenshot({
-        path: viewport.width === 1280
-          ? 'test-results/upload-first-homepage/home-desktop.png'
-          : 'test-results/upload-first-homepage/home-mobile.png',
-        fullPage: false,
-      });
-    }
-  });
-
-  test('the three hero controls change the photo, caption and editor mode', async ({ page }) => {
-    const requests = await preventMutations(page);
-    await visit(page);
-    const showcase = page.locator('#hero-showcase');
-    const group = showcase.getByRole('group', { name: 'Explore editing concepts', exact: true });
-    await expect(group.getByRole('button')).toHaveCount(3);
-    await expect(group.getByRole('button', { name: 'Slim', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    for (const mode of [MODES[1], MODES[2], MODES[0]]) {
-      await group.getByRole('button', { name: mode.label, exact: true }).click();
-      for (const other of MODES) {
-        await expect(group.getByRole('button', { name: other.label, exact: true })).toHaveAttribute('aria-pressed', String(other.id === mode.id));
-      }
-      await expect(showcase.locator('[data-mode-caption]')).toContainText(mode.title);
-      await expect(showcase.locator('[data-mode-caption]')).toHaveText(mode.title);
-      for (const image of await showcase.getByRole('img').all()) {
-        await expect(image).toHaveAttribute('src', mode.source);
-        await expect(image).toHaveAttribute('alt', new RegExp(mode.subject));
-        await expectDecoded(image);
-      }
-      await expect(page.locator(`#try input[type="radio"][value="${mode.id}"]`)).toBeChecked();
-    }
-    expect(requests).toEqual([]);
-  });
-
-  test('the native comparison supports keyboard focus and keeps both portraits aligned', async ({ page }) => {
-    await visit(page);
-    const showcase = page.locator('#hero-showcase');
-    const range = showcase.getByRole('slider', { name: COMPARE_LABEL, exact: true });
-    await expect(range).toHaveAttribute('type', 'range');
-    await expect(range).toHaveValue('50');
-    await range.focus();
-    await range.press('Home');
-    await expect(range).toHaveValue('0');
-    await range.press('ArrowRight');
-    await expect(range).toHaveValue('1');
-    await range.press('End');
-    await expect(range).toHaveValue('100');
-    await range.press('ArrowLeft');
-    await expect(range).toHaveValue('99');
-    await expect(range).toBeFocused();
-    await expect(range).toHaveAttribute('aria-valuetext', '99% Original concept');
-    await expect(showcase.locator('[data-comparison-before]')).toHaveCSS('clip-path', 'inset(0px 1% 0px 0px)');
-    expect(await range.evaluate((node) => getComputedStyle(node.parentElement!).boxShadow)).not.toBe('none');
-    const dimensions = await showcase.locator('img').evaluateAll((images) => images.map((image) => {
-      const rect = image.getBoundingClientRect();
-      const photo = image as HTMLImageElement;
-      return { width: rect.width, height: rect.height, naturalRatio: photo.naturalWidth / photo.naturalHeight };
-    }));
-    expect(dimensions).toHaveLength(2);
-    expect(dimensions[0].width).toBeCloseTo(dimensions[1].width, 1);
-    expect(dimensions[0].height).toBeCloseTo(dimensions[1].height, 1);
-    for (const image of dimensions) expect(image.width / image.height).toBeCloseTo(image.naturalRatio, 2);
-    await expect(showcase.getByText('Original concept', { exact: true })).toBeVisible();
-    await expect(showcase.getByText('Edited concept', { exact: true })).toBeVisible();
-  });
-
-  test('comparison endpoints preserve original-left and edited-right through mode changes', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await visit(page);
-    const showcase = page.locator('#hero-showcase');
-    const group = showcase.getByRole('group', { name: 'Explore editing concepts', exact: true });
-    for (const mode of [MODES[0], MODES[1], MODES[2], MODES[0]]) {
-      await group.getByRole('button', { name: mode.label, exact: true }).click();
-      for (const image of await showcase.getByRole('img').all()) await expectDecoded(image);
-      await expectComparisonDirection(showcase, mode.source,
-        mode.id === 'slim' ? 'test-results/concept-direction/slim' : undefined);
-    }
-    await expect(page.locator('#examples')).toHaveCount(0);
-  });
-
-  test('mode cards preserve the photo while sample thumbnails load their original half', async ({ page }) => {
-    const requests = await preventMutations(page);
-    await visit(page);
-    const editor = page.locator('#try');
-    const input = editor.getByLabel('Upload a photo to edit', { exact: true });
-    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
-    await input.setInputFiles({ name: 'keep-local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
-    await expectDecoded(preview);
-    const blob = await preview.getAttribute('src');
-    for (const mode of [...MODES, { id: 'breast', label: 'Breast' }]) {
-      const card = page.locator(`#features article[data-showcase-mode="${mode.id}"]`);
-      await expect(card.getByRole('heading', { level: 3 })).toHaveText(mode.label);
-      await expect(card.getByRole('img')).toHaveCount(0);
-      const link = card.getByRole('link', { name: `Use ${mode.label}`, exact: true });
-      await expect(link).toHaveAttribute('href', '#try');
-      await link.click();
-      await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-      await expect(preview).toHaveAttribute('src', blob!);
-      expect(await input.evaluate((node) => (node as HTMLInputElement).files?.[0]?.name)).toBe('keep-local-preview.png');
-    }
-    for (const mode of MODES) {
-      const sample = page.locator('#samples').getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-      await expect(sample.getByRole('img')).toHaveAttribute('src', mode.source);
-      await expectPhotoHalf(sample.getByRole('img'), 'original');
-      await sample.click();
-      await expect(preview).toHaveAttribute('src', /^blob:/);
-      await expectDecoded(preview);
-    }
-    await expect(page.locator('#details img')).toHaveCount(0);
-    await expect(page.locator('#details h2')).toHaveText('Check your result before downloading');
-    await expect(page.locator('#details h3')).toHaveCount(3);
-    expect(requests).toEqual([]);
-  });
-
-  test('a phone touch gesture changes the native comparison position', async ({ browser, baseURL }) => {
-    const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const page = await context.newPage();
-    try {
-      await visit(page);
-      const range = page.locator('#hero-showcase').getByRole('slider', { name: COMPARE_LABEL, exact: true });
-      await range.scrollIntoViewIfNeeded();
-      const frame = (await range.boundingBox())!;
-      const session = await context.newCDPSession(page);
-      const point = (fraction: number) => ({ x: frame.x + frame.width * fraction, y: frame.y + frame.height / 2 });
-      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(0.5)] });
-      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(0.8)] });
-      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      await expect.poll(async () => Number(await range.inputValue())).toBeGreaterThan(65);
-      await range.tap({ position: { x: frame.width * 0.2, y: frame.height / 2 } });
-      await expect.poll(async () => Number(await range.inputValue())).toBeLessThan(35);
-      await session.detach();
-    } finally {
-      await context.close();
-    }
-  });
-
-  test('concept samples and actual result resources use distinct subjects without repeated image sections', async ({ page }) => {
-    await visit(page);
-    const showcase = page.locator('#hero-showcase');
-    const group = showcase.getByRole('group', { name: 'Explore editing concepts', exact: true });
-    const decodedSources = new Set<string>();
-    for (const mode of MODES) {
-      await group.getByRole('button', { name: mode.label, exact: true }).click();
-      await showcase.scrollIntoViewIfNeeded();
-      for (const image of await showcase.getByRole('img').all()) {
-        await expect(image).toHaveAttribute('src', mode.source);
-        await expect(image).toHaveAttribute('alt', new RegExp(mode.subject));
-        await expectDecoded(image);
-        const framing = await image.evaluate((node) => {
-          const photo = node as HTMLImageElement;
-          const rect = photo.getBoundingClientRect();
-          return { displayed: rect.width / rect.height, natural: photo.naturalWidth / photo.naturalHeight };
-        });
-        expect(framing.displayed).toBeCloseTo(framing.natural, 2);
-        decodedSources.add((await image.getAttribute('src'))!);
-      }
-    }
-    await page.locator('#real-results').getByRole('button', { name: 'Show 4 more examples', exact: true }).click();
-    for (const [key, file, subject] of [
-      ['breast', 'breast', 'cream T-shirt'], ['waistOnly', 'waist-only', 'green tank top'],
-    ] as const) {
-      const result = page.locator(`#real-results article[data-real-result="${key}"]`);
-      await result.scrollIntoViewIfNeeded();
-      const original = result.locator('img[alt^="Original AI-created"]');
-      const actual = result.locator('img[alt^="Actual"]');
-      for (const image of [original, actual]) {
-        await expect(image).toHaveAttribute('src', `/examples/results-2026-10-16/${file}.webp`);
-        await expect(image).toHaveAttribute('alt', new RegExp(subject));
-        await expectDecoded(image);
-        decodedSources.add((await image.getAttribute('src'))!);
-      }
-      await expectPhotoHalf(original, 'original');
-      await expectPhotoHalf(actual, 'edited');
-      await expect(result.getByRole('slider')).toHaveAttribute('aria-label', 'Compare the original sample and actual editor result');
-    }
-    expect(decodedSources.size).toBe(5);
-    await expect(page.locator('#features img, #details img, #examples')).toHaveCount(0);
-    await expect(page.locator('#features article[data-showcase-mode]')).toHaveCount(4);
-  });
-
-  test('actual gallery covers ten cases with diverse people and outfits, expands without generating, and fits mobile', async ({ page, request }) => {
-    const mutations = await preventMutations(page);
-    const html = await (await request.get('/')).text();
-    expect((html.match(/data-real-result=/g) ?? []).length).toBe(10);
-    for (const key of ['shoulders', 'waistOnly', 'fullerFigure', 'customCombination']) expect(html).toContain(`data-real-result="${key}"`);
-    await visit(page);
-    const gallery = page.locator('#real-results');
-    const cards = gallery.locator('article[data-real-result]');
-    await expect(cards).toHaveCount(10);
-    await expect(gallery.locator('article:visible')).toHaveCount(6);
-    await expect(gallery.getByText('10 examples · 10 sample people · 4 editing modes', { exact: true })).toBeVisible();
-    const metadata = await cards.evaluateAll(nodes => nodes.map(node => ({ subject: node.getAttribute('data-subject'), mode: node.getAttribute('data-result-mode') })));
-    expect(new Set(metadata.map(item => item.subject)).size).toBe(10);
     const provenance = await (await request.get('/examples/results-2026-10-16/provenance.json')).json();
-    expect(provenance).toHaveLength(10);
-    expect(new Set(provenance.map((item: { sourceSha256: string }) => item.sourceSha256)).size).toBe(10);
-    expect([...new Set(metadata.map(item => item.mode))].sort()).toEqual(['breast', 'muscle', 'proportions', 'slim']);
-    for (const subject of ['city-woman', 'black-man', 'asian-dress-woman', 'shorts-man', 'skirt-woman']) {
-      await expect(gallery.locator(`[data-subject="${subject}"]`).first()).toBeVisible();
+    expect(new Set(provenance.map((x: {sourceSha256: string}) => x.sourceSha256)).size).toBe(10);
+    await visit(page);
+    await expect(toggle(page)).not.toBeChecked(); await expect(toggle(page)).toBeDisabled();
+    await expect(page.getByRole('radio', { name: 'Slim', exact: true })).toBeChecked();
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('70');
+    await expect(page.locator('[data-body-editor] textarea')).toHaveValue('');
+    await expect(page.locator('#samples [aria-pressed="true"]')).toHaveCount(0);
+    await expect(page.locator('[data-photo-panel]')).toHaveCount(0);
+    await expect(page.locator('[data-comparison-before], [data-real-result], #features img, #details img')).toHaveCount(0);
+  });
+
+  test('every case loads its exact recipe and original with a direct edited image and no duplicated settings', async ({ page }) => {
+    await visit(page);
+    for (const row of RECIPES) {
+      await choose(page, row.case); await expectRecipe(page, row.case);
+      await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
+      await expect(page.locator('[data-body-editor]')).toHaveAttribute('aria-busy', 'false');
+      await expectDecoded(preview(page));
+      expect(await preview(page).evaluate(n => ({ w: (n as HTMLImageElement).naturalWidth, h: (n as HTMLImageElement).naturalHeight }))).toEqual({ w: 768, h: 1024 });
+      await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', row.case);
+      await expect(page.locator('#hero-showcase image')).toHaveAttribute('href', source(row.case));
+      await expect(page.locator('#hero-showcase image')).toHaveAttribute('x', '-768');
+      await expect(page.locator('#hero-showcase svg')).toHaveAttribute('viewBox', '0 0 768 1024');
+      await expect(page.locator('[data-photo-panel="result"] input, [data-example-settings], [data-example-instructions]')).toHaveCount(0);
     }
-    await page.locator('#try input[type="file"]').setInputFiles({ name: 'keep-gallery-original.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
-    const photo = page.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
-    const original = await photo.getAttribute('src');
-    const expand = gallery.getByRole('button', { name: 'Show 4 more examples', exact: true });
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
-    await expand.click();
-    await expect(gallery.locator('article:visible')).toHaveCount(10);
-    await expect(gallery.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
-    await expect(gallery.locator('[data-subject="combination-white-man"]')).toBeVisible();
-    await expect(gallery.locator('[data-subject="combination-white-man"] img').first()).toHaveAttribute('alt', /white man/);
-    const files = new Set<string>();
-    for (const card of await cards.all()) {
-      await card.scrollIntoViewIfNeeded();
-      await expect(card.getByRole('heading', { level: 3 })).toBeVisible();
-      await expect(card.getByText(/Intensity \d+\/100/)).toBeVisible();
-      for (const image of await card.getByRole('img').all()) {
-        await expect(image).toHaveAttribute('loading', 'lazy');
-        await expectDecoded(image);
-        files.add((await image.getAttribute('src'))!);
+    await expect(page.getByRole('button', { name: 'Use this sample photo', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('slider')).toHaveCount(1);
+  });
+
+  test('the default replaces a device photo; settings-only retains its current photo and corresponding result', async ({ page }) => {
+    await visit(page);
+    const input = page.getByLabel('Upload a photo to edit', { exact: true });
+    const editor = page.locator('[data-body-editor]');
+    await input.setInputFiles({ name: 'own.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    await expect(editor).toHaveAttribute('data-photo-source', 'local');
+    const own = await preview(page).getAttribute('src');
+    await choose(page, 'shoulders'); await expectRecipe(page, 'shoulders');
+    await expect(editor).toHaveAttribute('data-photo-source', 'sample');
+    await expect(preview(page)).not.toHaveAttribute('src', own!);
+    const original = await preview(page).getAttribute('src');
+    await toggle(page).check();
+    await expect(preview(page)).toHaveAttribute('src', original!);
+    await choose(page, 'breast'); await expectRecipe(page, 'breast');
+    await expect(preview(page)).toHaveAttribute('src', original!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
+    await expect(page.locator('[data-photo-panel="result"]').getByRole('status')).toHaveText('Settings changed. Generate again to update this result.');
+    await input.setInputFiles({ name: 'another.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    await expect(editor).toHaveAttribute('data-photo-source', 'local');
+    await expect(page.locator('#hero-showcase image')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toContainText('Your edited photo will appear here');
+    const another = await preview(page).getAttribute('src');
+    await choose(page, 'customCombination'); await expectRecipe(page, 'customCombination');
+    await expect(preview(page)).toHaveAttribute('src', another!);
+    await expect(page.locator('#hero-showcase image')).toHaveCount(0);
+    await toggle(page).uncheck();
+    await expect(preview(page)).toHaveAttribute('src', another!);
+    await choose(page, 'fullerFigure'); await expectRecipe(page, 'fullerFigure');
+    await expect(editor).toHaveAttribute('data-photo-source', 'sample');
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'fullerFigure');
+    await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('33');
+    await page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true }).fill('Only change my waist.');
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'fullerFigure');
+  });
+
+  test('desktop panels align and mobile tabs and the case strip fit 320–1440px without page overflow', async ({ page }) => {
+    await visit(page); await choose(page, 'naturalSlim');
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1100 });
+      const group = page.locator('#samples [role=group]');
+      expect(await group.evaluate(n => n.scrollWidth > n.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      if (width >= 1024) {
+        const a = (await page.locator('[data-photo-panel="original"]').boundingBox())!;
+        const b = (await page.locator('[data-photo-panel="result"]').boundingBox())!;
+        const c = (await page.locator('[data-editor-settings]').boundingBox())!;
+        expect(a.y).toBe(b.y); expect(b.y).toBe(c.y); expect(a.height).toBe(b.height); expect(b.height).toBe(c.height);
+        expect(a.x + a.width).toBeLessThanOrEqual(b.x + 1); expect(b.x + b.width).toBeLessThanOrEqual(c.x + 1);
+        expect(a.width).toBeCloseTo(b.width, 0);
+      } else {
+        const original = page.getByRole('tab', { name: 'Original', exact: true });
+        const result = page.getByRole('tab', { name: 'Result', exact: true });
+        await result.click(); await expect(page.locator('[data-photo-panel="result"]')).toBeVisible();
+        await expect(page.locator('[data-photo-panel="original"]')).toBeHidden();
+        await expect(result).toHaveAttribute('aria-selected', 'true');
+        await original.click(); await expect(page.locator('[data-photo-panel="original"]')).toBeVisible();
+        await expect(page.locator('[data-photo-panel="result"]')).toBeHidden();
       }
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.screenshot({ path: `test-results/workbench/home-${width}.png` });
     }
-    expect(files.size).toBe(10);
-    const last = gallery.locator('[data-real-result="customCombination"]');
-    const range = last.getByRole('slider');
-    await range.press('Home');
-    await expect(last.locator('[data-comparison-before]')).toHaveCSS('clip-path', 'inset(0px 100% 0px 0px)');
-    await range.press('End');
-    await expect(last.locator('[data-comparison-before]')).toHaveCSS('clip-path', 'inset(0px 0% 0px 0px)');
-    await gallery.getByRole('button', { name: 'Show fewer examples', exact: true }).click();
-    await expect(gallery.locator('article:visible')).toHaveCount(6);
-    await expect(photo).toHaveAttribute('src', original!);
-    await gallery.screenshot({ path: 'test-results/gallery-expansion-2026-10-16/gallery-desktop-loaded.png' });
-    await page.setViewportSize({ width: 390, height: 844 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-    await gallery.getByRole('button', { name: 'Show 4 more examples', exact: true }).click();
-    await expect(gallery.locator('article:visible')).toHaveCount(10);
-    await page.evaluate(() => window.scrollTo(0, document.querySelector('#real-results')!.getBoundingClientRect().top + window.scrollY - 80));
-    await page.screenshot({ path: 'test-results/gallery-expansion-2026-10-16/gallery-mobile-top.png' });
-    expect(mutations).toEqual([]);
+    const group = page.locator('#samples [role=group]');
+    await group.evaluate(n => { n.scrollLeft = 0; });
+    await page.getByRole('button', { name: 'More examples', exact: true }).click();
+    await expect.poll(() => group.evaluate(n => n.scrollLeft)).toBeGreaterThan(100);
   });
 
-  test('sample thumbnail links carry their photo and mode into the editor', async ({ page }) => {
-    const requests = await preventMutations(page);
+  test('a slow sample response cannot overwrite a newer case', async ({ page }) => {
     await visit(page);
-    const editor = page.locator('#try [data-body-editor]');
-    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
-    for (const mode of MODES) {
-      const link = page.locator('#samples').getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-      await expect(link).toHaveAttribute('href', '#try');
-      await expect(link.getByRole('img')).toHaveAttribute('src', mode.source);
-      const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
-      await link.click();
-      await expect(page).toHaveURL(/\/#try$/);
-      await expect(preview).toHaveAttribute('src', /^blob:/);
-      if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
-      await expectDecoded(preview);
-      await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-      await expect(editor.getByRole('button', { name: 'Clear sample', exact: true })).toHaveCount(0);
-      await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-      await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
-      await expect(editor.getByText(AVAILABILITY, { exact: true })).toBeVisible();
-    }
-    expect(requests).toEqual([]);
+    let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
+    let started!: () => void; const fetched = new Promise<void>(resolve => { started = resolve; });
+    await page.route(`**${source('waistOnly')}`, async route => {
+      if (route.request().resourceType() !== 'fetch') return route.fallback();
+      started(); await held; return route.fallback();
+    });
+    await choose(page, 'waistOnly'); await fetched;
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('aria-busy', 'true');
+    await choose(page, 'muscle'); await expectRecipe(page, 'muscle');
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
+    const latest = await preview(page).getAttribute('src');
+    const returned = page.waitForResponse(r => new URL(r.url()).pathname === source('waistOnly') && r.request().resourceType() === 'fetch');
+    release(); await (await returned).finished();
+    await expect(preview(page)).toHaveAttribute('src', latest!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'muscle');
   });
 
-  test('samples and local files can replace one another without uploads', async ({ page }) => {
-    const requests = await preventMutations(page);
-    await visit(page);
-    const editor = page.locator('#try [data-body-editor]');
-    const samples = page.locator('#samples');
-    const input = editor.getByLabel('Upload a photo to edit', { exact: true });
-    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
-    const clear = editor.getByRole('button', { name: 'Clear sample', exact: true });
-
-    for (const mode of MODES) {
-      const link = samples.getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-      const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
-      await link.click();
-      await expect(link).toHaveAttribute('aria-current', 'true');
-      await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-      await expect(preview).toHaveAttribute('src', /^blob:/);
-      if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
-      await expectDecoded(preview);
-    }
-    const sampleBlob = await preview.getAttribute('src');
-    await editor.locator('fieldset').getByText('Muscle', { exact: true }).click();
-    await expect(editor.getByRole('radio', { name: 'Muscle', exact: true })).toBeChecked();
-    await expect(preview).toHaveAttribute('src', sampleBlob!);
-    await expect(clear).toHaveCount(0);
-    await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-
-    await input.setInputFiles({ name: 'local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
-    await expect(preview).toHaveAttribute('alt', 'Preview of the photo you selected');
-    await expect(preview).toHaveAttribute('src', /^blob:/);
-    await expectDecoded(preview);
-    const firstBlob = await preview.getAttribute('src');
-    await expect(clear).toHaveCount(0);
-    await expect(samples.locator('a[aria-current="true"]')).toHaveCount(0);
-    await input.setInputFiles({ name: 'replacement-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
-    await expect(preview).not.toHaveAttribute('src', firstBlob!);
-    await expect(preview).toHaveAttribute('src', /^blob:/);
-    await expectDecoded(preview);
-
-    const uploadedBlob = await preview.getAttribute('src');
-    await samples.getByRole('link', { name: 'Preview Muscle', exact: true }).click();
-    await expect(preview).toHaveAttribute('src', /^blob:/);
-    await expect(preview).not.toHaveAttribute('src', uploadedBlob!);
-    await expectDecoded(preview);
-    await expect(input).toHaveValue('');
-    await expect(clear).toHaveCount(0);
-    await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-    await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
-    await expect(samples.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-    expect(requests, 'Concept and file previews must never upload or create an edit task').toEqual([]);
+  test('only Edit Photo submits the cropped original and recipe; pending locks all changes until a mocked refund', async ({ page }) => {
+    await visit(page); await choose(page, 'customCombination'); await expectRecipe(page, 'customCombination');
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
+    let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
+    let posted!: (form: FormData) => void; const submitted = new Promise<FormData>(resolve => { posted = resolve; });
+    let count = 0;
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      count++; const request = route.request();
+      posted(await new Response(new Uint8Array(request.postDataBuffer()!), { headers: { 'content-type': request.headers()['content-type'] } }).formData());
+      await held;
+      return route.fulfill({ status: 502, json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'failed', error: { code: 'PROVIDER_ERROR', refunded: true } } });
+    });
+    expect(count).toBe(0);
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    const form = await submitted; const expected = recipe('customCombination');
+    expect(form.get('mode')).toBe(expected.mode); expect(form.get('intensity')).toBe(String(expected.intensity));
+    expect(form.get('instructions')).toBe(expected.instructions);
+    const image = form.get('image') as File;
+    expect(image.name).toBe('customCombination-original.png'); expect(image.type).toBe('image/png');
+    const png = Buffer.from(await image.arrayBuffer()); expect(png.readUInt32BE(16)).toBe(768); expect(png.readUInt32BE(20)).toBe(1024);
+    for (const button of await page.locator('#samples [data-example]').all()) await expect(button).toBeDisabled();
+    await expect(toggle(page)).toBeDisabled(); await expect(page.locator('input[type=file]')).toBeDisabled();
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeDisabled();
+    release();
+    await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    await expect(page.getByRole('alert')).toContainText('Your free edit is still available. You can try again within the retry limits.');
+    await expectRecipe(page, 'customCombination'); expect(count).toBe(1);
   });
 
-  test('header, pricing and closing CTAs reach the same usable hero editor', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await visit(page);
-    await expect(page.locator('#home-hero').getByRole('link', { name: 'Edit a photo', exact: true })).toHaveCount(0);
-    for (const container of ['header', '#pricing', '#tools']) {
-      const link = page.locator(container).getByRole('link', { name: 'Edit a photo', exact: true }).first();
-      await expect(link).toHaveAttribute('href', '#try');
-      await link.click();
-      await expect(page).toHaveURL(/\/#try$/);
-      await expect(page.locator('#try').getByRole('heading', { level: 1 })).toBeVisible();
-      await expect(page.locator('#try').getByLabel('Upload a photo to edit', { exact: true })).toBeAttached();
-      await expect(page.locator('#try').getByRole('radio')).toHaveCount(4);
-    }
-  });
-
-  test('320, 390, 768 and 1280px layouts stay inside the viewport', async ({ page }) => {
-    for (const width of [320, 390, 768, 1280]) {
-      await test.step(`${width}px`, async () => {
-        await page.setViewportSize({ width, height: 900 });
-        await visit(page);
-        for (const section of ['#home-hero', '#features', '#try', '#samples', '#real-results', '#details', '#pricing', '#faq', '#tools']) {
-          await page.locator(section).scrollIntoViewIfNeeded();
-          const size = await page.evaluate(() => ({
-            content: document.documentElement.scrollWidth,
-            viewport: document.documentElement.clientWidth,
-          }));
-          expect(size.content, `${section} at ${width}px must not overflow`).toBeLessThanOrEqual(size.viewport + 1);
-        }
-        const modes = page.locator('#hero-showcase').getByRole('group').getByRole('button');
-        for (const button of await modes.all()) {
-          const box = (await button.boundingBox())!;
-          expect(box.width).toBeGreaterThanOrEqual(44);
-          expect(box.height).toBeGreaterThanOrEqual(40);
-        }
-        await page.locator('#faq summary').first().click();
-        await expect(page.locator('#faq details').first()).toHaveJSProperty('open', true);
-        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(1);
-      });
-    }
-  });
-
-  test('the only file input and editor are in the hero with desktop controls fully visible', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await visit(page);
-    await expect(page.locator('#try')).toHaveCount(1);
-    await expect(page.locator('input[type="file"]')).toHaveCount(1);
-    await expect(page.locator('#home-hero #try input[type="file"]')).toHaveCount(1);
-    await expect(page.locator('#home-hero h2')).toHaveText('Try a sample photo');
-    await expectUploadControlsInViewport(page);
-    const editor = (await page.locator('#try').boundingBox())!;
-    const concept = (await page.locator('#hero-showcase').boundingBox())!;
-    expect(editor.x + editor.width).toBeLessThan(concept.x);
-    expect(Math.abs(editor.y - concept.y)).toBeLessThanOrEqual(2);
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
-  });
-
-  test('320, 390 and 768px put the complete upload controls before the concept photo', async ({ page }) => {
-    for (const width of [320, 390, 768]) {
-      await page.setViewportSize({ width, height: 844 });
-      await visit(page);
-      await expectUploadControlsInViewport(page);
-      const follows = await page.locator('#try').evaluate((editor) => {
-        const concept = document.querySelector('#hero-showcase')!;
-        return Boolean(editor.compareDocumentPosition(concept) & Node.DOCUMENT_POSITION_FOLLOWING);
-      });
-      expect(follows).toBe(true);
-      const editor = (await page.locator('#try').boundingBox())!;
-      const concept = (await page.locator('#hero-showcase').boundingBox())!;
-      expect(concept.y).toBeGreaterThanOrEqual(editor.y + editor.height);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-    }
-  });
-
-  test('mode changes preserve a selected local file and sample links return to the hero without uploads', async ({ page }) => {
-    const requests = await preventMutations(page);
-    for (const width of [1280, 390]) {
-      await page.setViewportSize({ width, height: 900 });
-      await visit(page);
-      const editor = page.locator('#try');
-      const input = editor.getByLabel('Upload a photo to edit', { exact: true });
-      const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
-      await input.setInputFiles({ name: 'keep-local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
-      await expectDecoded(preview);
-      const blob = await preview.getAttribute('src');
-      expect(blob).toMatch(/^blob:/);
-      for (const mode of MODES) {
-        await editor.locator('fieldset').getByText(mode.label, { exact: true }).click();
-        await expect(preview).toHaveAttribute('src', blob!);
-        await page.locator('#hero-showcase').getByRole('button', { name: mode.label, exact: true }).click();
-        await expect(preview).toHaveAttribute('src', blob!);
-        await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-        expect(await input.evaluate((node) => (node as HTMLInputElement).files?.[0]?.name)).toBe('keep-local-preview.png');
-      }
-      for (const mode of MODES) {
-        const link = page.locator('#samples').getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-        await expect(link).toHaveAttribute('href', '#try');
-        await link.click();
-        await expect(page).toHaveURL(/\/#try$/);
-        await expect(link).toHaveAttribute('aria-current', 'true');
-        await expect(page.locator('#samples a[aria-current="true"]')).toHaveCount(1);
-        await expect(preview).toHaveAttribute('src', /^blob:/);
-        await expect(input).toHaveValue('');
-        await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-        const header = (await page.locator('header').boundingBox())!;
-        await expect.poll(async () => {
-          const top = (await editor.boundingBox())!.y;
-          return top >= header.y + header.height && top <= 128;
-        }, { message: 'Sample links must finish scrolling the hero beneath the header' }).toBe(true);
-        await expectUploadControlsInViewport(page);
-      }
-    }
-    expect(requests, 'Changing modes and jumping from samples must not upload the local file').toEqual([]);
+  test('a successful generated result stays paired through settings-only changes and clears on upload', async ({ page }) => {
+    await page.route('**/mock-workbench-result.png*', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl: '/mock-workbench-result.png', downloadUrl: '/mock-workbench-result.png', mode: 'muscle', intensity: 80 },
+        credits: { charged: 0, balance: 0 }, reused: false } });
+    });
+    await visit(page); await choose(page, 'shoulders');
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    const generated = page.locator('#hero-showcase img'); await expectDecoded(generated);
+    await expect(generated).toHaveAttribute('src', '/mock-workbench-result.png');
+    const download = page.getByRole('link', { name: 'Download photo', exact: true });
+    await expect(download).toBeVisible();
+    const downloaded = page.waitForEvent('download'); await download.click();
+    expect((await downloaded).suggestedFilename()).toBe('ai-body-edit-11111111-1111-4111-8111-111111111111.png');
+    const current = await preview(page).getAttribute('src');
+    await toggle(page).check(); await choose(page, 'waistOnly'); await expectRecipe(page, 'waistOnly');
+    await expect(generated).toHaveAttribute('src', '/mock-workbench-result.png');
+    await expect(preview(page)).toHaveAttribute('src', current!);
+    await expect(page.locator('[data-photo-panel="result"]').getByRole('status')).toContainText('Settings changed.');
+    await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'new.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    await expect(generated).toHaveCount(0); await expect(download).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toContainText('Your edited photo will appear here');
   });
 });

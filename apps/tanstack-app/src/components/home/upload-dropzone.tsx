@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw } from "lucide-react";
+import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw, Sparkles } from "lucide-react";
 import { authClientReact } from "@libs/auth/authClient";
 import { Button } from "@libs/react-shared/ui/button";
 import { Textarea } from "@libs/react-shared/ui/textarea";
@@ -25,7 +25,7 @@ import {
 import { BODY_EDIT_CREDIT_COST } from "../../../../../config/credits";
 import { useTranslation } from "@/hooks/use-translation";
 import { LoginForm } from "@/components/login-form";
-import type { EditorSample } from "./showcase-data";
+import type { EditorPhotoSource, EditorSample, EditorSettings } from "./showcase-data";
 
 /** Load the original half as a photo for the shared outline and editing flow. */
 async function sampleOriginal(sample: EditorSample): Promise<File> {
@@ -70,20 +70,30 @@ async function sampleOriginal(sample: EditorSample): Promise<File> {
 
 export function UploadDropzone({
   className,
+  layout = "card",
   selectedMode,
   defaultMode = "slim",
+  defaultIntensity = BODY_EDIT_INTENSITY.default,
   onModeChange,
   sample,
   onSampleClear,
   onPendingChange,
+  onPhotoChange,
+  onSettingsChange,
+  preserveSettingsOnPhotoChange = false,
 }: {
   className?: string;
+  layout?: "card" | "workbench";
   selectedMode?: BodyEditMode;
   defaultMode?: BodyEditMode;
+  defaultIntensity?: BodyEditIntensity;
   onModeChange?: (mode: BodyEditMode) => void;
   sample?: EditorSample;
   onSampleClear?: () => void;
   onPendingChange?: (pending: boolean) => void;
+  onPhotoChange?: (source: EditorPhotoSource) => void;
+  onSettingsChange?: (settings: EditorSettings) => void;
+  preserveSettingsOnPhotoChange?: boolean;
 }) {
   const { t } = useTranslation();
   const copy = t.home.upload,
@@ -93,9 +103,10 @@ export function UploadDropzone({
   const inputId = useId(),
     inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [photoSource, setPhotoSource] = useState<EditorPhotoSource>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
-  const [intensity, setIntensity] = useState<BodyEditIntensity>(BODY_EDIT_INTENSITY.default);
+  const [intensity, setIntensity] = useState<BodyEditIntensity>(defaultIntensity);
   const [instructions, setInstructions] = useState("");
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [error, setError] = useState(""),
@@ -104,6 +115,13 @@ export function UploadDropzone({
     [preparing, setPreparing] = useState(false);
   const [loadingSample, setLoadingSample] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [reference, setReference] = useState<EditorSample>();
+  const [generatedSettings, setGeneratedSettings] = useState<EditorSettings>();
+  const [mobileView, setMobileView] = useState<"original" | "result">("original");
+  const [resultLoadError, setResultLoadError] = useState(false);
+  const [resultRetry, setResultRetry] = useState(0);
+  const workbench = layout === "workbench";
+  const workspace = t.home.examples;
   const startLock = useRef(false);
   const mode = selectedMode ?? localMode,
     pending = editing.pending || preparing;
@@ -129,6 +147,12 @@ export function UploadDropzone({
     onPendingChange?.(locked);
   }, [locked, onPendingChange]);
   useEffect(() => {
+    onPhotoChange?.(photoSource);
+  }, [photoSource, onPhotoChange]);
+  useEffect(() => {
+    onSettingsChange?.({ mode, intensity, instructions });
+  }, [mode, intensity, instructions, onSettingsChange]);
+  useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
       return;
@@ -144,15 +168,26 @@ export function UploadDropzone({
     }
     if (locked) return;
     let active = true;
+    setError("");
+    setLocalMode(sample.mode);
+    onModeChange?.(sample.mode);
+    setIntensity(sample.intensity ?? BODY_EDIT_INTENSITY.default);
+    setInstructions(sample.instructions ?? "");
+    setInstructionsOpen(Boolean(sample.instructions));
+    if (sample.loadPhoto === false) {
+      setLoadingSample(false);
+      return;
+    }
+    editing.reset();
+    setReference(undefined);
+    setMobileView("original");
     setFile(null);
     setPreviewUrl(null);
-    setError("");
-    setInstructions("");
-    editing.reset();
+    setPhotoSource(null);
     setLoadingSample(true);
     if (inputRef.current) inputRef.current.value = "";
     void sampleOriginal(sample)
-      .then((source) => { if (active) setFile(source); })
+      .then((source) => { if (active) { setFile(source); setPhotoSource("sample"); setReference(sample); } })
       .catch(() => { if (active) setError(editCopy.errors.INVALID_INPUT); })
       .finally(() => { if (active) setLoadingSample(false); });
     return () => { active = false; };
@@ -176,8 +211,15 @@ export function UploadDropzone({
     }
     setError("");
     editing.reset();
-    setInstructions("");
+    if (!preserveSettingsOnPhotoChange) {
+      setInstructions("");
+      setInstructionsOpen(false);
+    }
+    setReference(undefined);
+    setGeneratedSettings(undefined);
+    setMobileView("original");
     setFile(candidate);
+    setPhotoSource("local");
     onSampleClear?.();
   };
   const onDrop = (event: DragEvent<HTMLElement>) => {
@@ -203,6 +245,9 @@ export function UploadDropzone({
     setPreparing(true);
     setError("");
     try {
+      setGeneratedSettings({ mode, intensity, instructions });
+      setResultLoadError(false);
+      setMobileView("result");
       await editing.submit(file, mode, intensity, instructions);
     } catch {
       setError(editCopy.errors.INVALID_INPUT);
@@ -227,280 +272,167 @@ export function UploadDropzone({
     } catch { setError(editCopy.errors.RESULT_UNAVAILABLE); }
     finally { setDownloading(false); }
   };
-  return (
-    <div
-      className={cn(
-        "rounded-[28px] bg-card p-3 shadow-[0_1px_2px_rgb(30_26_46/0.06),0_12px_40px_-12px_rgb(30_26_46/0.18)]",
-        className,
-      )}
-      data-body-editor
-    >
-      {editing.result ? (
-        <div className="px-1 pb-2">
-          <p className="mb-3 text-sm font-semibold" role="status">
-            {editCopy.resultTitle}
-          </p>
-          <BodyEditComparison
-            key={editing.result.jobId}
-            beforeSrc={previewUrl}
-            afterSrc={editing.result.result.imageUrl}
-            beforeAlt={editCopy.beforeAlt}
-            afterAlt={editCopy.afterAlt}
-            beforeLabel={editCopy.before}
-            afterLabel={editCopy.after}
-            controlLabel={editCopy.compareLabel}
-            hint={editCopy.compareHint}
-            loadingLabel={editCopy.loadingResult}
-            loadErrorLabel={editCopy.resultLoadError}
-            reloadLabel={editCopy.reloadResult}
-          />
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full"
-              onClick={() => {
-                editing.reset();
-                setInstructions("");
-                setInstructionsOpen(false);
-                setFile(null);
-                onSampleClear?.();
-              }}
-            >
-              {editCopy.editAnother}
-            </Button>
-            <Button asChild className="rounded-full">
-              <a href={editing.result.result.downloadUrl} download aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
-                <Download className="size-4" aria-hidden="true" />
-                {editCopy.download}
-              </a>
-            </Button>
+  const clearPhoto = () => {
+    editing.reset(); setReference(undefined); setGeneratedSettings(undefined);
+    setInstructions(""); setInstructionsOpen(false); setFile(null); setPhotoSource(null);
+    setMobileView("original"); onSampleClear?.();
+    if (inputRef.current) inputRef.current.value = "";
+  };
+  const savedSettings = editing.result ? generatedSettings : reference;
+  const settingsChanged = !!savedSettings && (savedSettings.mode !== mode || savedSettings.intensity !== intensity ||
+    (savedSettings.instructions ?? "").trim() !== instructions.trim());
+  const resetOnChange = () => { if (!workbench) editing.reset(); };
+  const resultExists = !!editing.result || !!reference;
+  const input = <input ref={inputRef} id={inputId} type="file" accept={bodyEditConfig.allowedMimeTypes.join(",")}
+    disabled={locked} className="sr-only" aria-label={copy.inputLabel}
+    onChange={(event) => pickFile(event.target.files?.[0])} />;
+  const photo = (
+    <div className={cn("relative", workbench && "h-full min-h-0")} onDragOver={(event) => {
+      event.preventDefault(); if (!locked) setDragging(true);
+    }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
+      {file && previewUrl ? <>
+        <BodyContourPreview file={file} previewUrl={previewUrl} mode={mode} intensity={intensity}
+          disabled={locked} alt={copy.previewAlt} copy={editCopy.contourPreview}
+          className={workbench ? "flex h-full flex-col rounded-none border-0 [&>div:last-child]:min-h-24" : undefined}
+          frameClassName={workbench ? "h-[420px] sm:h-[480px] lg:h-auto lg:min-h-0 lg:flex-1" : undefined} />
+        <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
+          className="absolute right-2 top-2 flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
+          <RefreshCw className="size-3.5" aria-hidden="true" />{copy.replace}
+        </button>
+      </> : <label htmlFor={inputId} className={cn(
+        "flex min-h-80 flex-col items-center justify-center gap-4 border-2 border-dashed p-8 text-center transition-colors",
+        workbench ? "h-full rounded-2xl" : "rounded-[20px]",
+        locked ? "cursor-wait" : "cursor-pointer", dragging ? "border-primary bg-accent" : "border-input bg-background hover:border-primary/60") }>
+        <span className="flex size-16 items-center justify-center rounded-2xl bg-accent text-primary">
+          {loadingSample ? <LoaderCircle className="size-8 animate-spin" aria-hidden="true" /> : <ImageUp className="size-8" aria-hidden="true" />}
+        </span>
+        <span className="max-w-md text-xl font-semibold">{loadingSample ? workspace.loadingSample : copy.dropTitle}</span>
+        <span className="text-sm text-muted-foreground">{copy.dropHint}</span>
+        {workbench && <span className="max-w-sm text-xs leading-relaxed text-muted-foreground">{workspace.emptyHint}</span>}
+      </label>}
+      {pending && !workbench && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[20px] bg-background/90" role="status">
+        <LoaderCircle className="size-7 animate-spin text-primary" aria-hidden="true" /><p className="max-w-xs text-sm font-medium">{editCopy.pending}</p>
+      </div>}
+    </div>
+  );
+  const controls = <>
+    <fieldset disabled={locked} className={cn("flex flex-wrap items-center gap-2", workbench ? "grid grid-cols-2" : "mt-3 px-1")}>
+      <legend className={workbench ? "mb-3 text-xs font-semibold text-muted-foreground" : "sr-only"}>{copy.modeLabel}</legend>
+      {BODY_EDIT_MODES.map((value) => <label key={value} className={cn(
+        "rounded-xl border px-3 py-2.5 text-center text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+        locked ? "cursor-default" : "cursor-pointer", mode === value ? "border-primary bg-accent text-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground")}>
+        <input type="radio" name={"edit-mode-" + inputId} value={value} checked={mode === value} className="sr-only"
+          onChange={() => { setLocalMode(value); onModeChange?.(value); resetOnChange(); }} />{copy.modes[value]}
+      </label>)}
+    </fieldset>
+    <div className={cn("mt-5 min-w-0", !workbench && "px-1")}>
+      <BodyEditIntensitySlider value={intensity} onChange={(value) => { setIntensity(value); resetOnChange(); }} disabled={locked}
+        label={editCopy.intensityLabel} lowLabel={editCopy.intensityLow} highLabel={editCopy.intensityHigh}
+        valueLabel={editCopy.intensityValue.replace('{value}', String(intensity))}
+        description={editCopy.intensityDescriptions[mode]} hint={editCopy.intensityHint} />
+      <div className="mt-4 min-w-0">
+        <button type="button" disabled={locked} aria-expanded={instructionsOpen} aria-controls={inputId + "-instructions-panel"}
+          onClick={() => setInstructionsOpen(value => !value)}
+          className="flex min-h-9 max-w-full items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
+          <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", instructionsOpen && "rotate-180")} aria-hidden="true" />{editCopy.instructionsToggle}
+        </button>
+        <div id={inputId + "-instructions-panel"} hidden={!instructionsOpen} className="min-w-0 space-y-1.5 pt-1">
+          <label htmlFor={inputId + "-instructions"} className="text-xs font-semibold">{editCopy.instructionsLabel}</label>
+          <Textarea id={inputId + "-instructions"} value={instructions} onChange={event => { setInstructions(event.currentTarget.value); resetOnChange(); }}
+            disabled={locked} maxLength={bodyEditConfig.maxInstructionsLength} rows={workbench ? 5 : 2} placeholder={editCopy.instructionsPlaceholder}
+            aria-invalid={code === "INVALID_INSTRUCTIONS" || undefined}
+            aria-describedby={inputId + "-instructions-hint " + inputId + "-instructions-counter" + (code === "INVALID_INSTRUCTIONS" ? " " + inputId + "-error" : "")}
+            className="min-h-20 resize-y rounded-xl" />
+          <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {!workbench && <p>{editCopy.instructionsExample}</p>}
+            <span id={inputId + "-instructions-counter"} className="ml-auto shrink-0 tabular-nums">{editCopy.instructionsCounter.replace("{count}", String(instructions.length)).replace("{max}", String(bodyEditConfig.maxInstructionsLength))}</span>
           </div>
+          <p id={inputId + "-instructions-hint"} className="text-xs leading-relaxed text-muted-foreground">{editCopy.instructionsHint}</p>
         </div>
-      ) : (
-        <>
-          <input
-            ref={inputRef}
-            id={inputId}
-            type="file"
-            accept={bodyEditConfig.allowedMimeTypes.join(",")}
-            disabled={locked}
-            className="sr-only"
-            aria-label={copy.inputLabel}
-            onChange={(event) => pickFile(event.target.files?.[0])}
-          />
-          <div
-            onDragOver={(event) => {
-              event.preventDefault();
-              if (!locked) setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            className="relative"
-          >
-          {file && previewUrl ? (
-            <div className="relative">
-              <BodyContourPreview file={file} previewUrl={previewUrl} mode={mode} intensity={intensity}
-                disabled={locked} alt={copy.previewAlt} copy={editCopy.contourPreview} />
-              <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
-                className="absolute right-2 top-2 flex size-11 items-center justify-center gap-1.5 rounded-full bg-card/95 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 sm:w-auto sm:px-3">
-                <RefreshCw className="size-3.5" aria-hidden="true" /><span className="sr-only sm:not-sr-only">{copy.replace}</span>
-              </button>
+      </div>
+    </div>
+  </>;
+  const action = <Button type="button" size="lg" className={cn("h-12 rounded-full px-6 text-base", workbench && "w-full")}
+    disabled={pending || loadingSample || session.isPending}
+    onClick={unresolved ? () => { void editing.recover(); } : () => { void handleSubmit(); }}>
+    {pending && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+    {unresolved ? editCopy.checkEdit : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
+  </Button>;
+  const notices = <>
+    {(error || editError) && <p role="alert" id={inputId + "-error"} className="mt-3 text-sm font-medium text-destructive">
+      {error || editError}{editing.error?.refunded && <span className="mt-1 block">{editing.error.guest ? editCopy.guestRetryNote : editCopy.refunded}</span>}
+    </p>}
+    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{editing.isGuest ? editing.guestRemaining === 0 ? editCopy.guestUsedNote : editCopy.trialNote : editCopy.costNote.replace("{credits}", String(cost))}</p>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.availability}</p>
+  </>;
+  const download = editing.result && <Button asChild variant="outline" size="sm" className="rounded-full">
+    <a href={editing.result.result.downloadUrl} download aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
+      <Download className="size-4" aria-hidden="true" />{editCopy.download}
+    </a>
+  </Button>;
+  return (
+    <div className={cn(workbench ? "overflow-hidden rounded-3xl border bg-card shadow-sm" : "rounded-[28px] bg-card p-3 shadow-sm", className)}
+      data-body-editor data-layout={layout} data-photo-source={photoSource ?? "empty"} aria-busy={loadingSample}>
+      {input}
+      {workbench ? <div className="grid min-w-0 lg:h-[720px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_304px]">
+        <div className="min-w-0 lg:col-span-2 lg:min-h-0">
+          {(file && previewUrl) || editing.result ? <>
+            <div role="tablist" aria-label={workspace.photoViews} className="flex border-b p-2 lg:hidden">
+              {(["original", "result"] as const).map(view => <button key={view} type="button" role="tab" id={inputId + "-" + view + "-tab"}
+                aria-selected={mobileView === view} aria-controls={inputId + "-" + view} onClick={() => setMobileView(view)}
+                className={cn("min-h-10 flex-1 rounded-xl text-sm font-semibold", mobileView === view ? "bg-accent text-primary" : "text-muted-foreground")}>{view === "original" ? workspace.original : workspace.result}</button>)}
             </div>
-          ) : (
-          <label htmlFor={inputId} className={cn(
-              "relative flex min-h-64 flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed p-6 text-center transition-colors",
-              locked ? "cursor-wait" : "cursor-pointer",
-              dragging
-                ? "border-primary bg-accent"
-                : "border-input bg-background hover:border-primary/60",
-            )}
-          >
-            {previewUrl ? (
-              <>
-                <img
-                  src={previewUrl}
-                  alt={copy.previewAlt}
-                  className="max-h-56 rounded-xl object-contain"
-                />
-                {!locked && (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                    <RefreshCw className="size-4" aria-hidden="true" />
-                    {copy.replace}
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <span className="flex size-14 items-center justify-center rounded-full bg-accent text-primary">
-                  {loadingSample ? <LoaderCircle className="size-7 animate-spin" aria-hidden="true" /> : <ImageUp className="size-7" aria-hidden="true" />}
-                </span>
-                <span className="text-lg font-semibold text-foreground">
-                  {loadingSample ? editCopy.contourPreview.analyzing : copy.dropTitle}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {copy.dropHint}
-                </span>
-              </>
-            )}
-          </label>
-          )}
-            {pending && (
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[20px] bg-background/90"
-                role="status"
-              >
-                <LoaderCircle
-                  className="size-7 animate-spin text-primary"
-                  aria-hidden="true"
-                />
-                <p className="max-w-xs text-sm font-medium">
-                  {editCopy.pending}
-                </p>
-              </div>
-            )}
-          </div>
-          <fieldset
-            disabled={locked}
-            className="mt-3 flex flex-wrap items-center gap-2 px-1"
-          >
-            <legend className="sr-only">{copy.modeLabel}</legend>
-            {BODY_EDIT_MODES.map((value) => (
-              <label
-                key={value}
-                className={cn(
-                  "rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                  locked ? "cursor-default" : "cursor-pointer",
-                  mode === value
-                    ? "border-primary bg-accent text-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <input
-                  type="radio"
-                  name={"edit-mode-" + inputId}
-                  value={value}
-                  checked={mode === value}
-                  onChange={() => {
-                    setLocalMode(value);
-                    onModeChange?.(value);
-                    editing.reset();
-                  }}
-                  className="sr-only"
-                />
-                {copy.modes[value]}
-              </label>
-            ))}
-          </fieldset>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-3 px-1">
-            <div className="w-full min-w-0 sm:max-w-sm sm:flex-1">
-              <BodyEditIntensitySlider
-                value={intensity}
-                onChange={(value) => { setIntensity(value); editing.reset(); }}
-                disabled={locked}
-                label={editCopy.intensityLabel}
-                lowLabel={editCopy.intensityLow}
-                highLabel={editCopy.intensityHigh}
-                valueLabel={editCopy.intensityValue.replace('{value}', String(intensity))}
-                description={editCopy.intensityDescriptions[mode]}
-                hint={editCopy.intensityHint}
-              />
-              <div className="mt-2 min-w-0">
-                <button
-                  type="button"
-                  disabled={locked}
-                  aria-expanded={instructionsOpen}
-                  aria-controls={inputId + "-instructions-panel"}
-                  onClick={() => setInstructionsOpen(value => !value)}
-                  className="flex min-h-8 max-w-full items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50"
-                >
-                  <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", instructionsOpen && "rotate-180")} aria-hidden="true" />
-                  {editCopy.instructionsToggle}
-                </button>
-                <div id={inputId + "-instructions-panel"} hidden={!instructionsOpen} className="min-w-0 space-y-1.5 pt-1">
-                  <label htmlFor={inputId + "-instructions"} className="text-xs font-semibold">{editCopy.instructionsLabel}</label>
-                  <Textarea
-                    id={inputId + "-instructions"}
-                    value={instructions}
-                    onChange={event => { setInstructions(event.currentTarget.value); editing.reset(); }}
-                    disabled={locked}
-                    maxLength={bodyEditConfig.maxInstructionsLength}
-                    rows={2}
-                    placeholder={editCopy.instructionsPlaceholder}
-                    aria-invalid={code === "INVALID_INSTRUCTIONS" || undefined}
-                    aria-describedby={inputId + "-instructions-hint " + inputId + "-instructions-counter" + (code === "INVALID_INSTRUCTIONS" ? " " + inputId + "-error" : "")}
-                    className="min-h-20 resize-y rounded-xl"
-                  />
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <p>{editCopy.instructionsExample}</p>
-                    <span id={inputId + "-instructions-counter"} className="ml-auto shrink-0 tabular-nums">
-                      {editCopy.instructionsCounter.replace("{count}", String(instructions.length)).replace("{max}", String(bodyEditConfig.maxInstructionsLength))}
-                    </span>
-                  </div>
-                  <p id={inputId + "-instructions-hint"} className="text-xs leading-relaxed text-muted-foreground">{editCopy.instructionsHint}</p>
+            <div className="grid h-full min-w-0 lg:grid-cols-2">
+              <section id={inputId + "-original"} aria-label={workspace.original} data-photo-panel="original"
+                className={cn("min-h-0 min-w-0 flex-col lg:flex lg:border-r", mobileView === "original" ? "flex" : "hidden")}>
+                <div className="flex h-12 shrink-0 items-center border-b px-4 text-xs font-semibold">{workspace.original}</div>
+                <div className="min-h-0 flex-1">{photo}</div>
+              </section>
+              <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
+                className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
+                <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
+                  <span>{editing.result ? editCopy.resultTitle : reference ? workspace.sampleResult : workspace.result}</span>{download}
                 </div>
-              </div>
+                <div id="real-results" className="contents"><div id="hero-showcase" data-result-example={!editing.result ? reference?.id : undefined}
+                  className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
+                  {pending ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center"><LoaderCircle className="size-7 animate-spin text-primary" /><p className="text-sm">{editCopy.pending}</p></div>
+                    : editing.result ? <>
+                      <img key={editing.result.jobId + resultRetry} src={editing.result.result.imageUrl + (resultRetry ? (editing.result.result.imageUrl.includes("?") ? "&" : "?") + "previewRetry=" + resultRetry : "")}
+                        alt={editCopy.afterAlt} className={cn("absolute inset-0 h-full w-full object-contain", resultLoadError && "invisible")}
+                        onLoad={() => setResultLoadError(false)} onError={() => setResultLoadError(true)} />
+                      {resultLoadError && <div role="status" className="p-6 text-center text-sm text-muted-foreground"><p>{editCopy.resultLoadError}</p><Button type="button" variant="outline" className="mt-3" onClick={() => { setResultLoadError(false); setResultRetry(value => value + 1); }}>{editCopy.reloadResult}</Button></div>}
+                    </> : reference ? <svg role="img" aria-label={reference.afterAlt ?? editCopy.afterAlt} viewBox="0 0 768 1024" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-hidden">
+                      <image href={reference.src} x={-768} width={1536} height={1024} />
+                    </svg>
+                    : <div className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground"><Sparkles className="size-7 text-primary/60" /><p className="text-sm font-medium">{workspace.resultPlaceholder}</p><p className="text-xs leading-relaxed">{workspace.resultPlaceholderHint}</p></div>}
+                </div></div>
+                <div className="flex min-h-24 shrink-0 items-center border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+                  {settingsChanged && resultExists ? <p role="status" className="text-primary">{workspace.currentSettingsDiffer}</p> : <p>{editing.result ? workspace.reviewResult : reference ? workspace.sampleNote : workspace.resultPlaceholderHint}</p>}
+                </div>
+              </section>
             </div>
-            <Button
-              type="button"
-              size="lg"
-              className="h-12 rounded-full px-6 text-base"
-              disabled={pending || loadingSample || session.isPending}
-              onClick={
-                unresolved
-                  ? () => {
-                      void editing.recover();
-                    }
-                  : () => {
-                      void handleSubmit();
-                    }
-              }
-            >
-              {pending && (
-                <LoaderCircle
-                  className="size-4 animate-spin"
-                  aria-hidden="true"
-                />
-              )}
-              {unresolved ? editCopy.checkEdit : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
-            </Button>
-          </div>
-        </>
-      )}
-      {(error || editError) && (
-        <p
-          role="alert"
-          id={inputId + "-error"}
-          className="mt-3 px-2 text-sm font-medium text-destructive"
-        >
-          {error || editError}
-          {editing.error?.refunded && (
-            <span className="mt-1 block">{editing.error.guest ? editCopy.guestRetryNote : editCopy.refunded}</span>
-          )}
-        </p>
-      )}
-      <p className="mt-3 px-2 text-xs leading-relaxed text-muted-foreground">
-        {editing.isGuest
-          ? editing.guestRemaining === 0 ? editCopy.guestUsedNote : editCopy.trialNote
-          : editCopy.costNote.replace("{credits}", String(cost))}
-      </p>
-      <p className="mt-1 px-2 pb-1 text-xs leading-relaxed text-muted-foreground">
-        {copy.availability}
-      </p>
+          </> : <div className="h-full min-h-[380px] p-4 sm:min-h-[460px] sm:p-6">{photo}</div>}
+        </div>
+        <aside data-editor-settings className="flex min-h-0 min-w-0 flex-col border-t lg:border-l lg:border-t-0">
+          <h2 className="flex h-12 shrink-0 items-center border-b px-5 text-sm font-semibold">{workspace.settingsTitle}</h2>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">{controls}</div>
+          <div className="shrink-0 border-t p-5">{action}{notices}</div>
+        </aside>
+      </div> : <>
+        {editing.result ? <div className="px-1 pb-2">
+          <p className="mb-3 text-sm font-semibold" role="status">{editCopy.resultTitle}</p>
+          <BodyEditComparison key={editing.result.jobId} beforeSrc={previewUrl} afterSrc={editing.result.result.imageUrl}
+            beforeAlt={editCopy.beforeAlt} afterAlt={editCopy.afterAlt} beforeLabel={editCopy.before} afterLabel={editCopy.after}
+            controlLabel={editCopy.compareLabel} hint={editCopy.compareHint} loadingLabel={editCopy.loadingResult}
+            loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult} />
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button>{download}</div>
+        </div> : <>{photo}{controls}<div className="mt-4 flex justify-end">{action}</div></>}
+        <div className="px-2 pb-1">{notices}</div>
+      </>}
       <Dialog open={signinOpen} onOpenChange={setSigninOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editCopy.signinTitle}</DialogTitle>
-            <DialogDescription>{editCopy.signinDescription}</DialogDescription>
-          </DialogHeader>
-          <LoginForm
-            onSuccess={async () => {
-              await session.refetch();
-              setSigninOpen(false);
-              editing.reset();
-              setError("");
-            }}
-          />
+          <DialogHeader><DialogTitle>{editCopy.signinTitle}</DialogTitle><DialogDescription>{editCopy.signinDescription}</DialogDescription></DialogHeader>
+          <LoginForm onSuccess={async () => { await session.refetch(); setSigninOpen(false); editing.reset(); setError(""); }} />
         </DialogContent>
       </Dialog>
     </div>

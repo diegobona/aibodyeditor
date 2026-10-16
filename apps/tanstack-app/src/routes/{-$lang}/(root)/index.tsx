@@ -2,24 +2,12 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpRight, Check, ShieldCheck } from "lucide-react";
 import { Button } from "@libs/react-shared/ui/button";
-import {
-  DiptychPhoto,
-  PhotoComparison,
-} from "@libs/react-shared/components/photo-comparison";
 import { useTranslation } from "@/hooks/use-translation";
 import { routeHead } from "@/lib/seo";
 import { toolRoute } from "@/lib/tools";
 import { Section, SectionHeading } from "@/components/page-section";
 import { formatPrice, getCreditPacks } from "@/lib/public-offer";
-import { RealResultsGallery } from "@/components/home/real-results-gallery";
-import { UploadDropzone } from "@/components/home/upload-dropzone";
-import {
-  BODY_EDITOR_MODES,
-  SHOWCASE_IMAGES,
-  type BodyEditorMode,
-  type EditorSample,
-} from "@/components/home/showcase-data";
-import { cn } from "@libs/ui/utils/cn";
+import { ExamplePlayground } from "@/components/home/example-playground";
 import { BODY_EDIT_MODES, type BodyEditMode } from "../../../../../../config/body-editor";
 
 /** Photo-led overview. Copy, meaningful image alt and keyword links remain SSR-visible. */
@@ -34,137 +22,13 @@ function HomePage() {
   const { t, langParam } = useTranslation();
   const home = t.home;
   const copy = home.showcase;
-  const [mode, setMode] = useState<BodyEditorMode>("slim");
   const [editMode, setEditMode] = useState<BodyEditMode>("slim");
   const [editingPending, setEditingPending] = useState(false);
-  const [sample, setSample] = useState<EditorSample>();
-  const active = copy.modes[mode];
   const packs = getCreditPacks().filter((pack) => pack.price !== null);
-
-  const previewSample = (selected: BodyEditorMode) => {
-    if (editingPending) return;
-    setMode(selected);
-    setEditMode(selected);
-    setSample({
-      id: `${selected}-secondary`,
-      mode: selected,
-      src: SHOWCASE_IMAGES[selected].secondary,
-      alt: copy.modes[selected].secondaryBeforeAlt,
-    });
-  };
 
   return (
     <div className="bg-background">
-      <section id="home-hero" className="pb-10 pt-5 md:pb-14 md:pt-8">
-        <div className="container grid max-w-6xl items-start gap-8 px-4 md:px-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)] lg:gap-12">
-          <div id="try" className="w-full scroll-mt-24">
-            <h1 className="mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              {home.hero.title}
-            </h1>
-            <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_9rem] lg:grid-cols-[minmax(0,1fr)_8rem]">
-              <UploadDropzone
-                selectedMode={editMode}
-                onModeChange={(value) => {
-                  setEditMode(value);
-                  if (value !== "breast") setMode(value);
-                }}
-                onPendingChange={setEditingPending}
-                sample={sample}
-                onSampleClear={() => setSample(undefined)}
-                className="w-full min-w-0"
-              />
-              <section id="samples" aria-labelledby="sample-heading" className="min-w-0">
-                <h2 id="sample-heading" className="mb-3 text-sm font-semibold text-foreground">
-                  {copy.sampleLabel}
-                </h2>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-1">
-                  {BODY_EDITOR_MODES.map((value) => (
-                    <a
-                      key={value}
-                      href="#try"
-                      aria-label={copy.modes[value].cta}
-                      aria-current={
-                        sample?.id === `${value}-secondary` ? "true" : undefined
-                      }
-                      onClick={() => previewSample(value)}
-                      className={cn(
-                        "flex flex-col overflow-hidden rounded-xl border border-border text-left transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:items-center",
-                        sample?.id === `${value}-secondary` &&
-                          "border-primary ring-2 ring-primary/20",
-                      )}
-                    >
-                      <DiptychPhoto
-                        src={SHOWCASE_IMAGES[value].secondary}
-                        alt={copy.modes[value].secondaryBeforeAlt}
-                        className="sm:w-12 sm:shrink-0"
-                      />
-                      <span className="flex min-h-10 items-center justify-center px-1 text-xs font-semibold text-foreground">
-                        {copy.modes[value].label}
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            </div>
-          </div>
-          <div
-            id="hero-showcase"
-            className="mx-auto w-full max-w-[410px] lg:mr-0"
-          >
-            <div className="rounded-[32px] border border-primary/10 bg-card p-3 shadow-[0_20px_70px_-35px_rgb(78_44_132/0.28)] sm:p-4">
-              <p className="mb-2 text-center text-[11px] font-semibold text-primary">
-                {copy.conceptLabel}
-              </p>
-              <div
-                role="group"
-                aria-label={copy.modesLabel}
-                className="mb-3 grid grid-cols-3 rounded-full bg-background p-1"
-              >
-                {BODY_EDITOR_MODES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={mode === value}
-                    disabled={editingPending}
-                    onClick={() => {
-                      setMode(value);
-                      setEditMode(value);
-                    }}
-                    className={cn(
-                      "min-h-10 rounded-full px-2 text-xs font-semibold transition-colors sm:text-sm",
-                      mode === value
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {copy.modes[value].label}
-                  </button>
-                ))}
-              </div>
-              <PhotoComparison
-                key={mode}
-                src={SHOWCASE_IMAGES[mode].secondary}
-                beforeAlt={active.secondaryBeforeAlt}
-                afterAlt={active.secondaryAfterAlt}
-                beforeLabel={copy.before}
-                afterLabel={copy.after}
-                controlLabel={copy.compareLabel}
-                hint={copy.compareHint}
-                eager
-              />
-            </div>
-            <div className="mt-3 text-center" aria-live="polite">
-              <div data-mode-caption className="mb-2">
-                <p className="text-sm font-semibold text-foreground">
-                  {active.title}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <RealResultsGallery />
+      <ExamplePlayground selectedMode={editMode} onModeChange={setEditMode} pending={editingPending} onPendingChange={setEditingPending} />
 
       <Section
         id="features"
@@ -196,7 +60,6 @@ function HomePage() {
                     onClick={(event) => {
                       if (editingPending) { event.preventDefault(); return; }
                       setEditMode(value);
-                      if (value !== "breast") setMode(value);
                     }}
                     className="mt-auto inline-flex min-h-10 items-center gap-2 pt-4 text-sm font-semibold text-primary hover:underline underline-offset-4"
                   >

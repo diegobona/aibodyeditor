@@ -1524,6 +1524,38 @@ export const en: Locale = {
       subtitle: "Choose a photo, an editing mode and an intensity. Generate your edit, compare it with the original and download the result.",
       note: "Clothed adult photos only · One free guest edit · Private results"
     },
+    examples: {
+      title: "Try an example",
+      selectorLabel: "Choose an editing example",
+      chooseLabel: "Try {name}",
+      settingsOnly: "Only apply settings",
+      previousExamples: "Previous examples",
+      nextExamples: "More examples",
+      sampleResult: "Saved example result",
+      loadingSample: "Loading sample photo…",
+      original: "Original",
+      result: "Result",
+      photoViews: "Photo views",
+      settingsTitle: "Edit settings",
+      emptyHint: "Upload your own photo, or choose an example above to try its photo and settings.",
+      resultPlaceholder: "Your edited photo will appear here",
+      resultPlaceholderHint: "Choose your settings, then select Edit Photo to generate a result.",
+      currentSettingsDiffer: "Settings changed. Generate again to update this result.",
+      sampleNote: "Actual editor output from an AI-created adult sample. Select Edit Photo to generate with your current settings.",
+      reviewResult: "Review the face, clothing and background before downloading.",
+      labels: {
+        naturalSlim: "Natural slim",
+        muscle: "Athletic build",
+        proportions: "Body balance",
+        breast: "Fuller bust",
+        breastSubtle: "Gentle bust",
+        legProportions: "Longer legs",
+        shoulders: "Shoulders only",
+        waistOnly: "Waist only",
+        fullerFigure: "Slightly fuller",
+        customCombination: "Shoulders + waist"
+      }
+    },
     realResults: {
       "title": "Actual results from this editor",
       "description": "Explore four editing modes and specific body-edit requests. These are actual editor outputs from AI-created adult sample portraits. Results vary by photo.",

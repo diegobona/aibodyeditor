@@ -98,3 +98,37 @@ unique and that the white man appears after expansion. Two focused tests passed
 and one build passed (1m38.963 s; existing chunk-size warning). Updated public
 `source-prompts.json` includes both built-in imagegen source prompts, and raw
 originals/results remain in `test-results/gallery-unique-2026-10-16/`.
+
+## Unified homepage examples (2026-10-16)
+
+The ten existing actual-result cases now supply the homepage's top example
+selector, replacing the three concept thumbnails, concept comparison and separate
+lower gallery. Each selection loads its exact mode, intensity and submitted extra
+instructions; empty instructions clear the field, while nonempty instructions
+open it. A selected device photo is preserved when applying a case recipe. The
+explicit **Use this sample photo** action replaces it with the case original,
+and choosing a device photo retains the loaded recipe.
+
+The comparison retains the selected case's saved actual output and immutable
+reference settings when editor controls change. Its copy distinguishes that
+saved reference from a newly generated result. Browsing examples and applying
+settings make no generation request. This update reuses the existing assets and
+provenance; no new paid generation was needed.
+
+Verification: the actual browser walk confirmed the ten-choice selector, exact
+recipes, preserved device photo, explicit original replacement, instruction
+clearing and fixed saved reference with no generation POSTs. Nine related E2E
+tests passed (37.0 s), including keyboard/touch, 320/390/768/1280 layouts,
+independent provenance uniqueness, delayed asset races and a locally intercepted
+multipart submission with exact parameters, original-half PNG, pending locks and
+failure restoration. Typecheck passed (21.928 s), one Workers build passed
+(1m17.817 s; existing chunk-size warning), and Workers SSR returned 200 with ten
+examples, one h1/canonical, no concept labeling and no duplicate result cards.
+
+## Homepage workbench follow-up (2026-10-16, current behavior)
+
+The editor now starts empty with Slim 70 and no example selected. Ten real cases form a horizontal top strip. Selecting a case defaults to loading both its original and exact recipe. An explicit **Only apply settings** switch defaults off, is disabled without a photo, and affects only the next selection. When enabled, selection retains the current photo and its corresponding saved/generated result. New photo uploads clear the old result; settings changes preserve it with a regeneration notice.
+
+A shared desktop frame places original, direct result and settings side by side; mobile uses Original/Result tabs. Saved example results show only their edited half with the same image scale as the original. Repeated case parameters, prompts, replacement actions and the comparison slider were removed from the result pane. The settings CTA stays at the bottom, with scrollable controls. Guide pages retain their compact editor. Existing auth, quota, recovery and charge/refund logic are reused.
+
+Verification: 9 related scenarios passed, including all ten exact recipes, default replacement, settings-only retention, successful result/download, failed generation/refund, delayed selection races, 320/390/768/1440 layouts and guide preview. Typecheck passed (24.803 s); one Workers build passed (1m16.422 s; existing chunk-size warning). Local Workers SSR returned 200 with ten cases and an empty editor. Generation requests were mocked; no paid calls. Logs and screenshots: `test-results/workbench/`.
