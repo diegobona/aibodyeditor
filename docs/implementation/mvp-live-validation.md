@@ -132,3 +132,15 @@ The editor now starts empty with Slim 70 and no example selected. Ten real cases
 A shared desktop frame places original, direct result and settings side by side; mobile uses Original/Result tabs. Saved example results show only their edited half with the same image scale as the original. Repeated case parameters, prompts, replacement actions and the comparison slider were removed from the result pane. The settings CTA stays at the bottom, with scrollable controls. Guide pages retain their compact editor. Existing auth, quota, recovery and charge/refund logic are reused.
 
 Verification: 9 related scenarios passed, including all ten exact recipes, default replacement, settings-only retention, successful result/download, failed generation/refund, delayed selection races, 320/390/768/1440 layouts and guide preview. Typecheck passed (24.803 s); one Workers build passed (1m16.422 s; existing chunk-size warning). Local Workers SSR returned 200 with ten cases and an empty editor. Generation requests were mocked; no paid calls. Logs and screenshots: `test-results/workbench/`.
+
+## Restored real-case gallery and Try (2026-10-16)
+
+The homepage again renders all ten actual cases below the workbench: two columns on desktop, one on mobile, each with an accessible before/after slider, exact recipe information and a Try link. Gallery and top-strip selections share one handler, including settings-only and pending/uncertain guards. The editor remains initially empty and keeps direct result display. The unique #real-results anchor now targets the gallery; top Breast cases are explicitly labelled Fuller/Subtle.
+
+Verification: 9 related scenarios passed, including SSR content, all ten Try recipes, settings-only preservation, keyboard/touch comparison and pending lock/refund. Typecheck passed (25.617 s); Workers build passed (1m22.319 s, existing chunk-size warning). Workers SSR returned 200 with 10 cards and 10 Try links. No paid generation. Evidence: `test-results/gallery-try/`.
+
+## Mirrored settings-only switches and four-column gallery (2026-10-16)
+
+The top case strip and lower gallery now reuse one controlled settings-only switch component and one state. Checked and disabled states synchronize; changing the preference does not replace a photo/result. Existing selection and pending/uncertain guards are reused. Gallery layout is four columns at 1024px+, two at 768px+, and one below 768px, keeping original portrait ratios, comparison sliders and Try links.
+
+Verification: 10 related E2E scenarios passed (50.5 s), typecheck passed (24.57 s), Workers build passed (1m17.851 s; existing chunk-size warning). Browser walk confirmed both synchronization directions, settings-only retention, compact portraits and no mobile overflow. No paid API calls. Evidence: `test-results/gallery-compact/`.

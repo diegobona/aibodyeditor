@@ -1,5 +1,26 @@
 # E2E 测试流程目录
 
+## Mirrored settings-only controls and compact gallery — verified (2026-10-16)
+
+- Show the same controlled settings-only switch above both the top case strip and lower gallery. Both default off, share checked/disabled state, and stay disabled without a loaded photo or during pending/uncertain requests.
+- Switching either control updates the other without changing current photo/result; choosing a case through either entry respects this state.
+- Display 4 gallery cards per desktop row (1024px+), 2 on tablet (768px+) and 1 on phones. Preserve full portrait aspect ratio, sliders, Try actions, all ten cases and no horizontal page overflow.
+- Verify bidirectional switch synchronization, gallery Try with settings-only on/off, responsive column counts, existing pending guard, related E2E, typecheck and build. No paid generation.
+
+Results: 10 related E2E scenarios passed (50.5 s), including bidirectional checked/disabled synchronization, unchanged photo/result on toggling, all ten gallery Try actions, pending guards and 1/2/4 responsive columns. Browser walk confirmed smaller portraits and no mobile overflow. Typecheck passed (24.57 s), Workers build passed (1m17.851 s; existing chunk-size warning). No paid generation. Evidence: `test-results/gallery-compact/`.
+
+
+## Restored real-case gallery and Try — verified (2026-10-16)
+
+- All ten existing cases render below the editor in SSR HTML, in two desktop columns and one mobile column, including the two clearly labelled Breast cases.
+- Each card has its own accessible original/actual comparison slider, mode, exact intensity, description, optional submitted instructions and Try link.
+- Try scrolls to the editor and loads the same case photo and recipe as its top thumbnail. Settings-only preserves the current photo/result; no generation happens on Try. Pending/uncertain edits prevent Try from changing state.
+- The workbench retains direct result display and an initially empty photo state. The lower gallery owns the unique #real-results anchor.
+- Verify gallery slider keyboard/touch, all ten Try recipes, settings-only retention, pending lock, mobile overflow, typecheck and build; no paid generation.
+
+Results: 9 related scenarios passed (8 initially; disabled-link guard rerun passed after bypassing Playwright's intentional aria-disabled actionability check). All ten gallery Try recipes and keyboard/touch sliders verified without generation requests. Typecheck passed (25.617 s), Workers build passed (1m22.319 s; existing chunk-size warning). Workers SSR returned 200 with 10 cards, 10 Try links, a unique #real-results anchor, one h1/canonical and an empty initial editor. Evidence: `test-results/gallery-try/`.
+
+
 ## Editor workbench and explicit preset behavior — verified (2026-10-16)
 
 - Initial homepage has no selected example or loaded photo; Slim 70 and empty instructions, one upload canvas.

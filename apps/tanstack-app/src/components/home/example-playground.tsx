@@ -5,6 +5,8 @@ import { cn } from "@libs/ui/utils/cn";
 import { useTranslation } from "@/hooks/use-translation";
 import type { BodyEditMode } from "../../../../../config/body-editor";
 import { UploadDropzone } from "./upload-dropzone";
+import { RealResultsGallery } from "./real-results-gallery";
+import { SettingsOnlyToggle } from "./settings-only-toggle";
 import { REAL_RESULT_CASES, REAL_RESULT_IMAGES, type EditorPhotoSource, type EditorSample } from "./showcase-data";
 
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
@@ -34,18 +36,14 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
   };
 
   return (
+    <>
     <section id="home-hero" className="pb-10 pt-5 md:pb-14 md:pt-7">
       <div id="try" className="mx-auto w-full max-w-[1600px] scroll-mt-20 px-3 sm:px-6">
         <h1 className="mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{t.home.hero.title}</h1>
         <section id="samples" aria-labelledby="sample-heading" className="mb-4 min-w-0">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h2 id="sample-heading" className="text-sm font-semibold">{copy.title}</h2>
-            <label className="relative flex min-h-10 cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground has-[:disabled]:cursor-default has-[:disabled]:opacity-50">
-              <input type="checkbox" role="switch" checked={settingsOnly} disabled={!photoSource || pending}
-                onChange={(event) => setSettingsOnly(event.target.checked)} className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-default" />
-              <span aria-hidden="true" className="relative h-5 w-9 rounded-full bg-input transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-primary peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2" />
-              {copy.settingsOnly}
-            </label>
+            <SettingsOnlyToggle checked={settingsOnly} disabled={!photoSource || pending} onChange={setSettingsOnly} />
           </div>
           <div className="flex min-w-0 items-center gap-2">
             <button type="button" aria-label={copy.previousExamples} onClick={() => rail.current?.scrollBy({ left: -440, behavior: "smooth" })}
@@ -70,5 +68,11 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
           sample={sample} onSampleClear={() => { setSample(undefined); setSelected(undefined); }} />
       </div>
     </section>
+    <RealResultsGallery pending={pending} settingsOnly={settingsOnly} onSettingsOnlyChange={setSettingsOnly}
+      settingsOnlyDisabled={!photoSource || pending} onTry={(key) => {
+      choose(key);
+      rail.current?.querySelector(`[data-example="${key}"]`)?.scrollIntoView({ block: "nearest", inline: "center" });
+    }} />
+    </>
   );
 }

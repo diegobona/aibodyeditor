@@ -393,7 +393,7 @@ export function UploadDropzone({
                 <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
                   <span>{editing.result ? editCopy.resultTitle : reference ? workspace.sampleResult : workspace.result}</span>{download}
                 </div>
-                <div id="real-results" className="contents"><div id="hero-showcase" data-result-example={!editing.result ? reference?.id : undefined}
+                <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result ? reference?.id : undefined}
                   className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
                   {pending ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center"><LoaderCircle className="size-7 animate-spin text-primary" /><p className="text-sm">{editCopy.pending}</p></div>
                     : editing.result ? <>
