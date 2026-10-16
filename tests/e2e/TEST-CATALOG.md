@@ -1,5 +1,37 @@
 # E2E 测试流程目录
 
+## Unique people in every actual case — verified (2026-10-16)
+
+- Replace the reused subjects in the fuller-figure and combined-edit cases with two newly generated adult originals and actual editor outputs. Keep ten cases and require ten distinct subjects/source hashes, including a white man, the existing Black man/woman and East Asian woman.
+- Update translated alt text and provenance, retain the six-plus-four gallery interaction, and run the focused gallery E2E, typecheck and build only.
+
+Verification: both new actual editor requests succeeded without retries. The two versioned assets replace the reused subjects. Public provenance contains ten different subject IDs and ten different source hashes. Two focused E2E cases passed (6.9s), including all asset decoding, unique originals, the white man, retained Black/East Asian subjects, expansion and mobile layout, with zero browse-triggered generation POSTs. Typecheck passed (33.878s) and one build passed (1m38.963s; existing chunk-size warning).
+
+## Ten actual editing cases — verified (2026-10-16)
+
+- Show ten traceable actual editor results covering Slim, Muscle, Proportions, Breast and optional custom instructions, with at least six distinct fictional adult subjects. Do not count strength variants as independent cases.
+- Each card shows its original/result comparison, specific goal, mode, intensity and optional submitted instructions. Six cards appear initially; an accessible expansion reveals four more and can collapse them. All case copy/alt stays in SSR HTML, images load lazily, and mobile has no horizontal overflow.
+- Expansion/comparison must not call generation APIs or change the uploaded photo. Keep one proof gallery and preserve the distinct hero/mode/detail roles.
+- Verify the focused gallery flow, typecheck and build only; do not run broad audits or repeat paid requests automatically.
+
+Verification: ten cases across eight subjects, including the requested Black man/woman and East Asian woman, with dress/skirt/shorts variety visible among the initial six. Browser walk and four related E2E cases passed (21.5s), covering SSR/SEO assets, gallery expansion/collapse, comparison endpoints, original preservation, decoded lazy-loaded assets and 390px overflow, with zero generation POSTs. Typecheck passed (27.498s), one build passed (1m2.761s; existing chunk-size warning), and Workers SSR returned 200 with all ten cases. Source/output hashes and source prompts are recorded alongside the public pairs.
+
+## Homepage sections have distinct purposes and people — verified (2026-10-16)
+
+- Hero trial thumbnails and illustrative preview use the existing lifestyle portraits, distinct from the two actual-result subjects. Selecting a thumbnail still loads that original into the editor without generating.
+- Keep actual results in their dedicated proof section. Replace repeated mode-comparison cards with four text-only mode choices, preserving any selected photo when choosing a mode.
+- Remove the extra concept gallery and replace repeated detail photos with concise face/clothing/background checks. Verify only affected homepage flows, typecheck/build and Workers SSR; no generation calls or broad review.
+
+Verification: the browser walkthrough confirmed three distinct hero portraits, two separate actual-result subjects, no images in mode/detail sections, all four mode choices, retention of the selected original, and no horizontal overflow at 390px, with zero generation POSTs. Hero, mode cards and mobile detail screenshots were inspected. Three focused existing E2E cases passed (15.0s): SSR/SEO separation, mode selection versus sample loading, and the five distinct photo resources. Typecheck passed (25.88s), one build passed (1m21.368s; existing chunk-size warning), and Workers SSR returned 200 with the lifestyle hero, actual results, mode guide and no duplicate gallery. No paid image generation, full-suite run or broad review.
+
+## Two real MVP edits and homepage proof — verified (2026-10-16)
+
+- Make exactly two live requests with existing fictional clothed-adult originals: Breast at 70, and Slim at 70 with waist-only instructions. Do not retry or generate extra variants.
+- Confirm successful private image downloads and exhausted guest allowance. Recover an existing result in the actual browser and download identical bytes without a new generation request. Cover failure restoration with the existing provider-failure fixture case, without spending on an intentional live failure.
+- Add these two actual before/after results to a separate SSR-visible homepage section, labeled as actual editor output from AI-created sample portraits. Existing concepts retain their labels. Verify comparison interaction/mobile fit, typecheck and one build only.
+
+Verification: exactly two live requests succeeded (Breast 69.7s, waist-only 37.5s), each returning a downloadable 1086×1448 PNG and reducing its isolated guest allowance from 1 to 0; neither returned 502. Actual browser recovery and download matched the saved bytes with zero generation POSTs, then exposed the exhausted-guest sign-in entry. The initial cold browser initialization timed out before generation; both live calls therefore used the real guest HTTP endpoint, followed by the successful browser recovery check. The existing simulated-provider-failure E2E passed (3.4s), confirming restoration without an intentional paid failure. Homepage SSR, both loaded assets, actual comparison clip movement and 390px overflow checks passed. Typecheck passed (35.368s), one build passed (1m36.687s; existing chunk-size warning), and Workers SSR returned 200 with the new title, image alt and result asset. No extra live requests, retries or broad review.
+
 ## Breast area remains visible with a valid target contour — verified (2026-10-16)
 
 - In Breast mode, keep the chest-area ellipse visible whether or not visible torso-side contours can be deformed; it continues to resize with intensity and retain alignment.

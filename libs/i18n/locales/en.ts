@@ -1524,6 +1524,88 @@ export const en: Locale = {
       subtitle: "Choose a photo, an editing mode and an intensity. Generate your edit, compare it with the original and download the result.",
       note: "Clothed adult photos only · One free guest edit · Private results"
     },
+    realResults: {
+      "title": "Actual results from this editor",
+      "description": "Explore four editing modes and specific body-edit requests. These are actual editor outputs from AI-created adult sample portraits. Results vary by photo.",
+      "coverage": "{cases} examples · {people} sample people · {modes} editing modes",
+      "before": "Original",
+      "after": "Actual result",
+      "compareLabel": "Compare the original sample and actual editor result",
+      "intensity": "Intensity {value}/100",
+      "requestLabel": "Instructions:",
+      "showMore": "Show 4 more examples",
+      "showLess": "Show fewer examples",
+      "naturalSlim": {
+        "title": "A naturally slimmer silhouette",
+        "description": "An overall slimming edit in an everyday outfit, across the waist, arms and thighs.",
+        "beforeAlt": "Original AI-created adult woman in a plum T-shirt and charcoal joggers standing in an urban courtyard",
+        "afterAlt": "Actual Slim mode result for the same woman in a plum T-shirt and charcoal joggers in the courtyard",
+        "instructions": ""
+      },
+      "muscle": {
+        "title": "A stronger athletic build",
+        "description": "A preset Muscle edit in a T-shirt and training shorts, across the shoulders, upper arms and chest.",
+        "beforeAlt": "Original AI-created adult man in an olive athletic T-shirt and grey training shorts standing on a running track",
+        "afterAlt": "Actual Muscle mode result for the same man in an olive T-shirt and training shorts, with a stronger athletic build",
+        "instructions": ""
+      },
+      "proportions": {
+        "title": "A longer-legged silhouette",
+        "description": "A preset Proportions edit exploring the leg-to-torso balance and waistline.",
+        "beforeAlt": "Original AI-created adult Black man in an ivory polo shirt and navy shorts standing in a modern plaza",
+        "afterAlt": "Actual Proportions mode result for the same Black man in an ivory polo and navy shorts with an adjusted leg-to-torso balance",
+        "instructions": ""
+      },
+      "breast": {
+        "title": "A fuller clothed bust",
+        "description": "Breast mode at a higher intensity, shown under the original crew-neck T-shirt.",
+        "beforeAlt": "Original AI-created adult woman in a cream T-shirt and brown trousers standing on a sunlit terrace",
+        "afterAlt": "Actual Breast mode result with a fuller bust silhouette under the same cream T-shirt on the terrace",
+        "instructions": ""
+      },
+      "shoulders": {
+        "title": "Broader shoulders only",
+        "description": "A focused request for shoulder width, rather than an all-over Muscle edit.",
+        "beforeAlt": "Original AI-created adult man in a teal T-shirt and navy chinos standing in a light-grey studio",
+        "afterAlt": "Actual Muscle mode result for the same man in a teal T-shirt after a shoulder-only editing request",
+        "instructions": "Make only my shoulders visibly broader and more athletic. Keep my waist, chest, arms and legs their original size. Keep the same clothes, face, pose and background."
+      },
+      "legProportions": {
+        "title": "Leg proportions, with a specific request",
+        "description": "A skirt outfit makes the leg line visible while extra instructions specify which body widths to preserve.",
+        "beforeAlt": "Original AI-created adult woman in an ivory top and burgundy above-knee skirt standing in a pale-grey studio",
+        "afterAlt": "Actual Proportions mode result for the same woman in an ivory top and burgundy skirt after a leg-proportion request",
+        "instructions": "Make my legs look slightly longer relative to my torso, with natural balanced adult proportions. Keep my waist, hips, chest and arms their original width. Keep the same clothes, face, pose and background."
+      },
+      "breastSubtle": {
+        "title": "A gentler bust adjustment",
+        "description": "A different person in a crew-neck dress, using a lower Breast intensity of 40.",
+        "beforeAlt": "Original AI-created adult East Asian woman with black hair in a deep green knee-length dress on a sunlit veranda",
+        "afterAlt": "Actual Breast mode result at intensity 40 for the same East Asian woman in a deep green knee-length dress",
+        "instructions": ""
+      },
+      "waistOnly": {
+        "title": "A slimmer waist only",
+        "description": "A custom Slim request that asks to leave the rest of the body unchanged.",
+        "beforeAlt": "Original AI-created adult man in a green tank top and dark trousers standing in a bright gym",
+        "afterAlt": "Actual Slim mode result with waist-only instructions applied to the same man in the green tank top",
+        "instructions": "Make only my waist visibly slimmer. Keep my arms, legs, shoulders and chest their original size. Keep everything else unchanged."
+      },
+      "fullerFigure": {
+        "title": "A slightly fuller figure",
+        "description": "Extra instructions can change the direction of a preset, including a request for more fullness.",
+        "beforeAlt": "Original AI-created adult blonde woman in a black sleeveless top and rust-orange knee-length skirt in a stone courtyard",
+        "afterAlt": "Actual Proportions mode result for the same blonde woman in a black top and rust-orange skirt after a slightly fuller figure request",
+        "instructions": "Make my overall figure slightly fuller with a gentle natural weight gain: a little more fullness in my waist, upper arms, hips and thighs. Do not slim any area. Keep healthy realistic adult proportions and the same clothes, face, pose and background."
+      },
+      "customCombination": {
+        "title": "Two changes in one request",
+        "description": "A combined request for broader shoulders and a slightly slimmer waist.",
+        "beforeAlt": "Original AI-created adult white man with auburn hair and a ginger beard in a charcoal T-shirt and pale training shorts on a terrace",
+        "afterAlt": "Actual Muscle mode result for the same white man in a charcoal T-shirt and pale shorts after combined shoulder and waist instructions",
+        "instructions": "Broaden my shoulders and make my waist slightly slimmer for a more defined V-shaped torso. Keep my arms, chest and legs their original size. Keep the same clothes, face, pose and background."
+      }
+    },
     showcase: {
       eyebrow: "Slim, Muscle & Proportions",
       heroCta: "Edit a photo",
@@ -1542,12 +1624,15 @@ export const en: Locale = {
       examplesSubtitle: "More portraits to help you picture each editing direction.",
       previewTitle: "Edit your photo",
       previewSubtitle: "Choose a photo, mode and intensity. Generate your first edit free without signing in, then compare and download the result.",
-      detailTitle: "Look beyond the silhouette",
-      detailSubtitle: "Check the surrounding details when you review a change to a portrait.",
+      detailTitle: "Check your result before downloading",
+      detailSubtitle: "Compare the face, clothing and background with the original.",
       detailFace: "Face and expression",
       detailClothes: "Clothing and seams",
       detailBackground: "Background lines",
-      detailNotice: "These concepts show details to review. Actual AI edits can change a face, clothing or background; compare the whole image before saving.",
+      detailFaceHint: "Check that facial features and expression still look right.",
+      detailClothesHint: "Review seams, fabric details and clothing coverage.",
+      detailBackgroundHint: "Look for bends in walls, doorframes and other straight lines.",
+      detailNotice: "AI edits can also change details you did not ask to edit. Review the whole image before saving.",
       closingTitle: "Start with a photo you like",
       closingDescription: "Choose a photo and an editing direction. Generate your first edit free, compare and download your result.",
       pricingNote: "Try one guest edit free without signing in. Further edits require an account with credits.",
@@ -1704,9 +1789,18 @@ export const en: Locale = {
         NETWORK: "Connection lost. Check the edit status before trying again."
       }
     },
+    modeGuide: {
+      cta: "Use {mode}",
+      descriptions: {
+        slim: "Slim the waist, abdomen, upper arms and thighs.",
+        muscle: "Add definition to the shoulders, arms and chest.",
+        proportions: "Adjust leg-to-body proportions and the waistline.",
+        breast: "Create a fuller bust silhouette under the original clothing."
+      }
+    },
     features: {
-      title: "Photo editing goals",
-      subtitle: "Choose a direction for your portrait and use the guides to prepare a clear starting photo.",
+      title: "Choose what to edit",
+      subtitle: "Pick a mode, then adjust intensity or add a specific instruction.",
       items: [
         {
           key: "slim",

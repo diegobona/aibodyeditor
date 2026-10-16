@@ -15,20 +15,17 @@ const MODES = [
   {
     id: 'slim', label: 'Slim', title: 'A slimmer silhouette',
     description: 'Explore a visibly slimmer waist, abdomen and upper arms in a clothed portrait.',
-    primarySubject: 'cream T-shirt', secondarySubject: 'mauve',
-    primarySource: '/examples/v3/slim-editorial.webp',
+    subject: 'mauve', source: '/examples/v3/slim-lifestyle.webp',
   },
   {
     id: 'muscle', label: 'Muscle', title: 'A more defined athletic look',
     description: 'Explore fuller shoulders, chest and upper arms for a more defined athletic silhouette.',
-    primarySubject: 'athletic tank top', secondarySubject: 'blue T-shirt',
-    primarySource: '/examples/v3/muscle-editorial.webp',
+    subject: 'blue T-shirt', source: '/examples/v3/muscle-lifestyle.webp',
   },
   {
     id: 'proportions', label: 'Proportions', title: 'A clearer waist-to-hip balance',
     description: 'Explore a more defined waist and balanced hip line with a clear contrast in the overall silhouette.',
-    primarySubject: 'navy jumpsuit', secondarySubject: 'sage',
-    primarySource: '/examples/v3/proportions-editorial.webp',
+    subject: 'sage', source: '/examples/v3/proportions-lifestyle.webp',
   },
 ] as const;
 
@@ -144,7 +141,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/body-edit/guest-session', route => route.fulfill({ json: { ownerId: 'guest:preview', remaining: 1 } }));
   });
-  test('SSR contains the primary photo, original alt, concepts and SEO links', async ({ page, request }) => {
+  test('SSR separates concept samples from actual results and preserves SEO links', async ({ page, request }) => {
     const response = await request.get('/?campaign=preview', {
       headers: { 'Accept-Language': 'zh-CN,zh;q=0.9' },
     });
@@ -187,17 +184,18 @@ test.describe('Upload-first homepage and honest local previews', () => {
     expect(rendered.faq).toContain('compare and download');
     expect(rendered.heroImages).toHaveLength(2);
     for (const image of rendered.heroImages) {
-      expect(image.src).toBe(MODES[0].primarySource);
-      expect(image.alt).toContain('cream T-shirt');
+      expect(image.src).toBe(MODES[0].source);
+      expect(image.alt).toContain('mauve');
       expect(image.loading).toBe('eager');
     }
-    const expectedAssets = MODES.flatMap((mode) => [
-      mode.primarySource, `/examples/v3/${mode.id}-lifestyle.webp`,
-    ]).sort();
+    const expectedAssets = [...MODES.map((mode) => mode.source), ...[
+      'breast', 'waist-only', 'natural-slim', 'muscle', 'proportions', 'shoulders',
+      'leg-proportions', 'breast-subtle', 'fuller-figure-unique', 'custom-combination-unique',
+    ].map((file) => `/examples/results-2026-10-16/${file}.webp`)].sort();
     expect([...new Set(rendered.images.map((image) => image.src))].sort()).toEqual(expectedAssets);
     for (const image of rendered.images) {
       expect(image.alt?.length).toBeGreaterThan(70);
-      expect(image.alt).toMatch(/^(Original|Edited) (Slim|Muscle|Proportions) concept:/);
+      expect(image.alt).toMatch(/^(?:(Original|Edited) (Slim|Muscle|Proportions) concept:|Original AI-created|Actual (Breast|Slim|Muscle|Proportions) mode result)/);
     }
     const tools = [
       { href: '/body-editor', text: 'Body Editor' },
@@ -259,8 +257,8 @@ test.describe('Upload-first homepage and honest local previews', () => {
       await expect(showcase.locator('[data-mode-caption]')).toContainText(mode.title);
       await expect(showcase.locator('[data-mode-caption]')).toHaveText(mode.title);
       for (const image of await showcase.getByRole('img').all()) {
-        await expect(image).toHaveAttribute('src', mode.primarySource);
-        await expect(image).toHaveAttribute('alt', new RegExp(mode.primarySubject));
+        await expect(image).toHaveAttribute('src', mode.source);
+        await expect(image).toHaveAttribute('alt', new RegExp(mode.subject));
         await expectDecoded(image);
       }
       await expect(page.locator(`#try input[type="radio"][value="${mode.id}"]`)).toBeChecked();
@@ -308,49 +306,43 @@ test.describe('Upload-first homepage and honest local previews', () => {
     for (const mode of [MODES[0], MODES[1], MODES[2], MODES[0]]) {
       await group.getByRole('button', { name: mode.label, exact: true }).click();
       for (const image of await showcase.getByRole('img').all()) await expectDecoded(image);
-      await expectComparisonDirection(showcase, mode.primarySource,
+      await expectComparisonDirection(showcase, mode.source,
         mode.id === 'slim' ? 'test-results/concept-direction/slim' : undefined);
     }
-    for (const mode of MODES) {
-      const example = page.locator(`#examples figure[data-secondary-mode="${mode.id}"]`);
-      await example.scrollIntoViewIfNeeded();
-      for (const image of await example.getByRole('img').all()) await expectDecoded(image);
-      await expectComparisonDirection(example, `/examples/v3/${mode.id}-lifestyle.webp`);
-    }
+    await expect(page.locator('#examples')).toHaveCount(0);
   });
 
-  test('cards, closeups and samples use the current primary image with the original half by default', async ({ page }) => {
+  test('mode cards preserve the photo while sample thumbnails load their original half', async ({ page }) => {
     const requests = await preventMutations(page);
     await visit(page);
-    await expect(page.locator('img[src="/examples/v2/slim-editorial.webp"]')).toHaveCount(0);
-    for (const mode of MODES) {
+    const editor = page.locator('#try');
+    const input = editor.getByLabel('Upload a photo to edit', { exact: true });
+    const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
+    await input.setInputFiles({ name: 'keep-local-preview.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    await expectDecoded(preview);
+    const blob = await preview.getAttribute('src');
+    for (const mode of [...MODES, { id: 'breast', label: 'Breast' }]) {
       const card = page.locator(`#features article[data-showcase-mode="${mode.id}"]`);
-      await card.scrollIntoViewIfNeeded();
-      const original = card.locator('img[alt^="Original"]');
-      const edited = card.locator('img[alt^="Edited"]');
-      await expect(original).toHaveAttribute('src', mode.primarySource);
-      await expect(edited).toHaveAttribute('src', mode.primarySource);
-      await expectPhotoHalf(original, 'original');
-      await expectPhotoHalf(edited, 'edited');
-
+      await expect(card.getByRole('heading', { level: 3 })).toHaveText(mode.label);
+      await expect(card.getByRole('img')).toHaveCount(0);
+      const link = card.getByRole('link', { name: `Use ${mode.label}`, exact: true });
+      await expect(link).toHaveAttribute('href', '#try');
+      await link.click();
+      await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
+      await expect(preview).toHaveAttribute('src', blob!);
+      expect(await input.evaluate((node) => (node as HTMLInputElement).files?.[0]?.name)).toBe('keep-local-preview.png');
+    }
+    for (const mode of MODES) {
       const sample = page.locator('#samples').getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-      await sample.scrollIntoViewIfNeeded();
-      await expect(sample.getByRole('img')).toHaveAttribute('src', mode.primarySource);
+      await expect(sample.getByRole('img')).toHaveAttribute('src', mode.source);
       await expectPhotoHalf(sample.getByRole('img'), 'original');
       await sample.click();
-      const preview = page.locator('#try').getByRole('img', { name: 'Preview of the photo you selected', exact: true });
       await expect(preview).toHaveAttribute('src', /^blob:/);
       await expectDecoded(preview);
     }
-    for (const mode of [MODES[0], MODES[1]]) {
-      const original = page.locator(`#details img[alt^="Original ${mode.label} concept:"]`);
-      const edited = page.locator(`#details img[alt^="Edited ${mode.label} concept:"]`);
-      await original.scrollIntoViewIfNeeded();
-      await expect(original).toHaveAttribute('src', mode.primarySource);
-      await expect(edited).toHaveAttribute('src', mode.primarySource);
-      await expectPhotoHalf(original, 'original');
-      await expectPhotoHalf(edited, 'edited');
-    }
+    await expect(page.locator('#details img')).toHaveCount(0);
+    await expect(page.locator('#details h2')).toHaveText('Check your result before downloading');
+    await expect(page.locator('#details h3')).toHaveCount(3);
     expect(requests).toEqual([]);
   });
 
@@ -376,66 +368,131 @@ test.describe('Upload-first homepage and honest local previews', () => {
     }
   });
 
-  test('all six photo resources decode with distinct subjects and proportional framing', async ({ page }) => {
+  test('concept samples and actual result resources use distinct subjects without repeated image sections', async ({ page }) => {
     await visit(page);
+    const showcase = page.locator('#hero-showcase');
+    const group = showcase.getByRole('group', { name: 'Explore editing concepts', exact: true });
     const decodedSources = new Set<string>();
     for (const mode of MODES) {
-      const card = page.locator(`#features article[data-showcase-mode="${mode.id}"]`);
-      await card.scrollIntoViewIfNeeded();
-      await expect(card.getByRole('heading', { level: 3 })).toHaveText(mode.title);
-      await expect(card.getByText(mode.description, { exact: true })).toBeVisible();
-      const example = page.locator(`#examples figure[data-secondary-mode="${mode.id}"]`);
-      for (const [container, source, subject] of [
-        [card, mode.primarySource, mode.primarySubject],
-        [example, `/examples/v3/${mode.id}-lifestyle.webp`, mode.secondarySubject],
-      ] as const) {
-        await container.scrollIntoViewIfNeeded();
-        await expect(container.getByRole('img')).toHaveCount(2);
-        for (const image of await container.getByRole('img').all()) {
-          await expect(image).toHaveAttribute('src', source);
-          await expect(image).toHaveAttribute('alt', new RegExp(subject));
-          await expectDecoded(image);
-          const framing = await image.evaluate((node) => {
-            const photo = node as HTMLImageElement;
-            const rect = photo.getBoundingClientRect();
-            return { displayed: rect.width / rect.height, natural: photo.naturalWidth / photo.naturalHeight };
-          });
-          expect(framing.displayed).toBeCloseTo(framing.natural, 2);
-          decodedSources.add((await image.getAttribute('src'))!);
-        }
+      await group.getByRole('button', { name: mode.label, exact: true }).click();
+      await showcase.scrollIntoViewIfNeeded();
+      for (const image of await showcase.getByRole('img').all()) {
+        await expect(image).toHaveAttribute('src', mode.source);
+        await expect(image).toHaveAttribute('alt', new RegExp(mode.subject));
+        await expectDecoded(image);
+        const framing = await image.evaluate((node) => {
+          const photo = node as HTMLImageElement;
+          const rect = photo.getBoundingClientRect();
+          return { displayed: rect.width / rect.height, natural: photo.naturalWidth / photo.naturalHeight };
+        });
+        expect(framing.displayed).toBeCloseTo(framing.natural, 2);
+        decodedSources.add((await image.getAttribute('src'))!);
       }
-      await expect(example.getByRole('slider')).toHaveAttribute('aria-label', `${mode.label}: ${COMPARE_LABEL}`);
     }
-    expect(decodedSources.size).toBe(6);
-    await expect(page.locator('#features').getByText(CONCEPT_NOTICE, { exact: true })).toBeVisible();
-    await expect(page.locator('#examples').getByText(CONCEPT_NOTICE, { exact: true })).toBeVisible();
+    await page.locator('#real-results').getByRole('button', { name: 'Show 4 more examples', exact: true }).click();
+    for (const [key, file, subject] of [
+      ['breast', 'breast', 'cream T-shirt'], ['waistOnly', 'waist-only', 'green tank top'],
+    ] as const) {
+      const result = page.locator(`#real-results article[data-real-result="${key}"]`);
+      await result.scrollIntoViewIfNeeded();
+      const original = result.locator('img[alt^="Original AI-created"]');
+      const actual = result.locator('img[alt^="Actual"]');
+      for (const image of [original, actual]) {
+        await expect(image).toHaveAttribute('src', `/examples/results-2026-10-16/${file}.webp`);
+        await expect(image).toHaveAttribute('alt', new RegExp(subject));
+        await expectDecoded(image);
+        decodedSources.add((await image.getAttribute('src'))!);
+      }
+      await expectPhotoHalf(original, 'original');
+      await expectPhotoHalf(actual, 'edited');
+      await expect(result.getByRole('slider')).toHaveAttribute('aria-label', 'Compare the original sample and actual editor result');
+    }
+    expect(decodedSources.size).toBe(5);
+    await expect(page.locator('#features img, #details img, #examples')).toHaveCount(0);
+    await expect(page.locator('#features article[data-showcase-mode]')).toHaveCount(4);
   });
 
-  test('primary and lifestyle sample links carry their photo and mode into the editor', async ({ page }) => {
+  test('actual gallery covers ten cases with diverse people and outfits, expands without generating, and fits mobile', async ({ page, request }) => {
+    const mutations = await preventMutations(page);
+    const html = await (await request.get('/')).text();
+    expect((html.match(/data-real-result=/g) ?? []).length).toBe(10);
+    for (const key of ['shoulders', 'waistOnly', 'fullerFigure', 'customCombination']) expect(html).toContain(`data-real-result="${key}"`);
+    await visit(page);
+    const gallery = page.locator('#real-results');
+    const cards = gallery.locator('article[data-real-result]');
+    await expect(cards).toHaveCount(10);
+    await expect(gallery.locator('article:visible')).toHaveCount(6);
+    await expect(gallery.getByText('10 examples · 10 sample people · 4 editing modes', { exact: true })).toBeVisible();
+    const metadata = await cards.evaluateAll(nodes => nodes.map(node => ({ subject: node.getAttribute('data-subject'), mode: node.getAttribute('data-result-mode') })));
+    expect(new Set(metadata.map(item => item.subject)).size).toBe(10);
+    const provenance = await (await request.get('/examples/results-2026-10-16/provenance.json')).json();
+    expect(provenance).toHaveLength(10);
+    expect(new Set(provenance.map((item: { sourceSha256: string }) => item.sourceSha256)).size).toBe(10);
+    expect([...new Set(metadata.map(item => item.mode))].sort()).toEqual(['breast', 'muscle', 'proportions', 'slim']);
+    for (const subject of ['city-woman', 'black-man', 'asian-dress-woman', 'shorts-man', 'skirt-woman']) {
+      await expect(gallery.locator(`[data-subject="${subject}"]`).first()).toBeVisible();
+    }
+    await page.locator('#try input[type="file"]').setInputFiles({ name: 'keep-gallery-original.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    const photo = page.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
+    const original = await photo.getAttribute('src');
+    const expand = gallery.getByRole('button', { name: 'Show 4 more examples', exact: true });
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await expand.click();
+    await expect(gallery.locator('article:visible')).toHaveCount(10);
+    await expect(gallery.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
+    await expect(gallery.locator('[data-subject="combination-white-man"]')).toBeVisible();
+    await expect(gallery.locator('[data-subject="combination-white-man"] img').first()).toHaveAttribute('alt', /white man/);
+    const files = new Set<string>();
+    for (const card of await cards.all()) {
+      await card.scrollIntoViewIfNeeded();
+      await expect(card.getByRole('heading', { level: 3 })).toBeVisible();
+      await expect(card.getByText(/Intensity \d+\/100/)).toBeVisible();
+      for (const image of await card.getByRole('img').all()) {
+        await expect(image).toHaveAttribute('loading', 'lazy');
+        await expectDecoded(image);
+        files.add((await image.getAttribute('src'))!);
+      }
+    }
+    expect(files.size).toBe(10);
+    const last = gallery.locator('[data-real-result="customCombination"]');
+    const range = last.getByRole('slider');
+    await range.press('Home');
+    await expect(last.locator('[data-comparison-before]')).toHaveCSS('clip-path', 'inset(0px 100% 0px 0px)');
+    await range.press('End');
+    await expect(last.locator('[data-comparison-before]')).toHaveCSS('clip-path', 'inset(0px 0% 0px 0px)');
+    await gallery.getByRole('button', { name: 'Show fewer examples', exact: true }).click();
+    await expect(gallery.locator('article:visible')).toHaveCount(6);
+    await expect(photo).toHaveAttribute('src', original!);
+    await gallery.screenshot({ path: 'test-results/gallery-expansion-2026-10-16/gallery-desktop-loaded.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await gallery.getByRole('button', { name: 'Show 4 more examples', exact: true }).click();
+    await expect(gallery.locator('article:visible')).toHaveCount(10);
+    await page.evaluate(() => window.scrollTo(0, document.querySelector('#real-results')!.getBoundingClientRect().top + window.scrollY - 80));
+    await page.screenshot({ path: 'test-results/gallery-expansion-2026-10-16/gallery-mobile-top.png' });
+    expect(mutations).toEqual([]);
+  });
+
+  test('sample thumbnail links carry their photo and mode into the editor', async ({ page }) => {
     const requests = await preventMutations(page);
     await visit(page);
     const editor = page.locator('#try [data-body-editor]');
     const preview = editor.getByRole('img', { name: 'Preview of the photo you selected', exact: true });
     for (const mode of MODES) {
-      for (const [selector, attribute] of [
-        ['#features article', 'data-showcase-mode'],
-        ['#examples figure', 'data-secondary-mode'],
-      ] as const) {
-        const container = page.locator(`${selector}[${attribute}="${mode.id}"]`);
-        const link = container.getByRole('link', { name: `Preview ${mode.label}`, exact: true });
-        await expect(link).toHaveAttribute('href', '#try');
-        const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
-        await link.click();
-        await expect(page).toHaveURL(/\/#try$/);
-        await expect(preview).toHaveAttribute('src', /^blob:/);
-        if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
-        await expectDecoded(preview);
-        await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
-        await expect(editor.getByRole('button', { name: 'Clear sample', exact: true })).toHaveCount(0);
-        await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
-        await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
-        await expect(editor.getByText(AVAILABILITY, { exact: true })).toBeVisible();
-      }
+      const link = page.locator('#samples').getByRole('link', { name: `Preview ${mode.label}`, exact: true });
+      await expect(link).toHaveAttribute('href', '#try');
+      await expect(link.getByRole('img')).toHaveAttribute('src', mode.source);
+      const previousPreview = await preview.count() ? await preview.getAttribute('src') : null;
+      await link.click();
+      await expect(page).toHaveURL(/\/#try$/);
+      await expect(preview).toHaveAttribute('src', /^blob:/);
+      if (previousPreview) await expect(preview).not.toHaveAttribute('src', previousPreview);
+      await expectDecoded(preview);
+      await expect(editor.getByRole('radio', { name: mode.label, exact: true })).toBeChecked();
+      await expect(editor.getByRole('button', { name: 'Clear sample', exact: true })).toHaveCount(0);
+      await expect(editor.getByText(SAMPLE_NOTICE, { exact: true })).toHaveCount(0);
+      await expect(editor.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+      await expect(editor.getByText(AVAILABILITY, { exact: true })).toBeVisible();
     }
     expect(requests).toEqual([]);
   });
@@ -511,7 +568,7 @@ test.describe('Upload-first homepage and honest local previews', () => {
       await test.step(`${width}px`, async () => {
         await page.setViewportSize({ width, height: 900 });
         await visit(page);
-        for (const section of ['#home-hero', '#features', '#try', '#samples', '#examples', '#details', '#pricing', '#faq', '#tools']) {
+        for (const section of ['#home-hero', '#features', '#try', '#samples', '#real-results', '#details', '#pricing', '#faq', '#tools']) {
           await page.locator(section).scrollIntoViewIfNeeded();
           const size = await page.evaluate(() => ({
             content: document.documentElement.scrollWidth,

@@ -1,0 +1,37 @@
+{
+  "method": "Built-in imagegen for fictional source portraits only. Edited results use the project's configured editor pipeline.",
+  "sources": [
+    {
+      "key": "city-woman",
+      "prompt": "Photorealistic natural full-length source portrait for a clothing-on adult body photo editor demonstration. One fictional Black adult woman age 32 with shoulder-length natural curls and a healthy softly curvy average build, standing relaxed facing camera, arms slightly away from torso with hands visible. Fitted plum short sleeve crew-neck athletic T-shirt, charcoal straight-leg joggers and white sneakers, all fully clothed and opaque. Bright paved urban pedestrian courtyard, simple straight wall lines and a plant, daylight, realistic normal body proportions and skin texture. Eye-level camera, complete head and feet, centered body, generous but modest margins, vertical 3:4 portrait. Neutral confident expression. Single original photograph only, no comparison, no body transformation, no lettering, logos, watermarks or overlays."
+    },
+    {
+      "key": "studio-man",
+      "prompt": "Photorealistic full-length source portrait for an adult body photo editing demo. One fictional East Asian adult man age 35 with short black hair and a naturally lean average build, modest shoulders, standing front-facing relaxed with arms slightly apart and hands at his sides. Fitted teal short sleeve crew-neck T-shirt, navy straight chinos and clean dark sneakers. Fully clothed opaque clothes, realistic adult anatomy. Bright light-grey photo studio with subtle floor shadow, eye-level lens, head and feet fully in frame, centered person occupying most of the height. Vertical 3:4 natural photograph, normal photographic texture. Single original portrait only, no before-and-after, no muscle enhancement, no words, no logos or watermark."
+    },
+    {
+      "key": "shorts-man",
+      "prompt": "Photorealistic full-length single ordinary source photograph for an adult clothing-on body editor demo. A fictional South Asian adult man age 31, short dark hair, healthy average build with modest shoulders and upper arms. Relaxed standing facing camera with arms at sides slightly apart, both hands visible. Wearing an opaque fitted olive short-sleeve crew-neck athletic T-shirt, grey knee-length training shorts, ankle socks and trainers. Outdoor running track with distant green trees, bright natural daylight, normal photographic texture, eye-level camera, complete head and shoes visible, centered vertical 3:4 portrait. Single person, no comparison, no body editing, no lettering, no brands, no logos, no watermark."
+    },
+    {
+      "key": "skirt-woman",
+      "prompt": "Photorealistic full-length single source photo of one fictional adult woman age 34 with fair skin and a short dark bob haircut, healthy average build with natural ordinary leg-to-torso proportions. Standing relaxed front-facing with arms at her sides slightly away, both hands visible. Fully clothed opaque ivory short-sleeve crew-neck blouse tucked into a plain dark burgundy A-line skirt ending just above the knees, comfortable neutral flat shoes, everyday professional outfit. Bright simple photography studio in warm pale grey with a subtle floor shadow. Eye-level camera, whole head and shoes visible with margins, centered vertical 3:4. Realistic adult face and skin, no body alteration, no comparison, no glamour pose, no text, logos or watermark."
+    },
+    {
+      "key": "black-man",
+      "prompt": "Photorealistic full-length original photograph for an adult clothing-on body photo editor demo. One fictional Black adult man age 34 with dark brown skin and short natural black hair, a healthy ordinary slightly stocky average build and normal leg-to-torso proportions. Relaxed front-facing stance, arms slightly apart, hands visible. Fully clothed in an opaque fitted ivory short-sleeve knitted polo shirt, navy tailored knee-length shorts and brown loafers. Bright modern pedestrian plaza with simple straight architectural lines, daylight, eye-level camera. Entire head and shoes visible with margins, centered vertical 3:4 single portrait, authentic natural skin and photographic texture. No body transformation, no before/after, no text, no labels, no brands or watermark."
+    },
+    {
+      "key": "asian-dress-woman",
+      "prompt": "Photorealistic full-length ordinary source photograph of one fictional East Asian adult woman age 35 with straight shoulder-length black hair, healthy medium build and natural normal body proportions. Fully clothed in an opaque deep green short-sleeve crew-neck knee-length everyday dress with a lightly fitted waist and flat tan shoes. Standing relaxed at a slight three-quarter angle facing camera, both arms at her sides slightly away, both hands visible, natural friendly expression. Bright calm veranda with a wooden doorway and potted plants, straight undistorted architectural lines and soft daylight. Eye-level camera, complete head and shoes in frame with margins, centered vertical 3:4 photographic portrait. Nonsexual everyday outfit, no body editing, no comparison, no text, no logos or watermark."
+    },
+    {
+      "key": "fuller-blonde-woman",
+      "prompt": "Photorealistic full-length original portrait for an adult clothing-on photo editing demonstration. One fictional white adult woman age 43 with fair skin, a distinctive wavy blonde bob haircut and a healthy naturally slender average build. Fully clothed in an opaque black sleeveless high crew-neck top, a rust-orange knee-length straight skirt, and simple flat brown sandals. Relaxed front-facing stance, arms gently separated from torso with hands visible. Bright stone courtyard with a pale wall and a few plants, straight architectural lines, natural daylight. Eye-level camera, complete head and feet in frame with modest margins, centered vertical 3:4 photograph, normal anatomy, natural skin and fabric texture. Single original source photograph only, no body editing, no before/after, no text, no logo or watermark. A unique person unlike the earlier Black woman in a purple T-shirt or brunette in an ivory top."
+    },
+    {
+      "key": "combination-white-man",
+      "prompt": "Photorealistic full-length original portrait for an adult clothing-on body editor demo. One fictional white adult man age 37 with fair slightly freckled skin, short auburn hair and a neat short ginger beard, clearly distinctive identity, healthy ordinary average build and modest shoulder width. Wearing an opaque fitted charcoal short-sleeve athletic crew-neck shirt, light stone-grey knee-length training shorts and navy trainers. Relaxed front-facing stance with arms slightly separated from torso, both hands visible. A bright outdoor stone terrace with simple pale beige walls and distant greenery, natural daylight, eye-level camera. Whole head and shoes in frame with margins, centered vertical 3:4 photograph. Natural adult anatomy, photographic texture, no transformation, no comparison, no words, no logos, no watermark. A different person from the prior East Asian man in a teal shirt and the gym man in a green tank."
+    }
+  ]
+}

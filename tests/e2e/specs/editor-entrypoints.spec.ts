@@ -166,7 +166,7 @@ test.describe('One editor, homepage and topic entry points', () => {
   test('the homepage is an overview and Body Editor is a substantial guide to the same editor', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await visit(page, '/');
-    await expect(page.locator('#features h2')).toHaveText('Photo editing goals');
+    await expect(page.locator('#features h2')).toHaveText('Choose what to edit');
     await expect(page.locator('#pricing h2')).toBeVisible();
     const homeTitle = await page.title();
 

@@ -11,6 +11,7 @@ import { routeHead } from "@/lib/seo";
 import { toolRoute } from "@/lib/tools";
 import { Section, SectionHeading } from "@/components/page-section";
 import { formatPrice, getCreditPacks } from "@/lib/public-offer";
+import { RealResultsGallery } from "@/components/home/real-results-gallery";
 import { UploadDropzone } from "@/components/home/upload-dropzone";
 import {
   BODY_EDITOR_MODES,
@@ -19,7 +20,7 @@ import {
   type EditorSample,
 } from "@/components/home/showcase-data";
 import { cn } from "@libs/ui/utils/cn";
-import type { BodyEditMode } from "../../../../../../config/body-editor";
+import { BODY_EDIT_MODES, type BodyEditMode } from "../../../../../../config/body-editor";
 
 /** Photo-led overview. Copy, meaningful image alt and keyword links remain SSR-visible. */
 export const Route = createFileRoute("/{-$lang}/(root)/")({
@@ -40,21 +41,15 @@ function HomePage() {
   const active = copy.modes[mode];
   const packs = getCreditPacks().filter((pack) => pack.price !== null);
 
-  const previewSample = (
-    selected: BodyEditorMode,
-    variant: "primary" | "secondary",
-  ) => {
+  const previewSample = (selected: BodyEditorMode) => {
     if (editingPending) return;
     setMode(selected);
     setEditMode(selected);
     setSample({
-      id: `${selected}-${variant}`,
+      id: `${selected}-secondary`,
       mode: selected,
-      src: SHOWCASE_IMAGES[selected][variant],
-      alt:
-        variant === "primary"
-          ? copy.modes[selected].beforeAlt
-          : copy.modes[selected].secondaryBeforeAlt,
+      src: SHOWCASE_IMAGES[selected].secondary,
+      alt: copy.modes[selected].secondaryBeforeAlt,
     });
   };
 
@@ -89,18 +84,18 @@ function HomePage() {
                       href="#try"
                       aria-label={copy.modes[value].cta}
                       aria-current={
-                        sample?.id === `${value}-primary` ? "true" : undefined
+                        sample?.id === `${value}-secondary` ? "true" : undefined
                       }
-                      onClick={() => previewSample(value, "primary")}
+                      onClick={() => previewSample(value)}
                       className={cn(
                         "flex flex-col overflow-hidden rounded-xl border border-border text-left transition-colors hover:border-primary focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:items-center",
-                        sample?.id === `${value}-primary` &&
+                        sample?.id === `${value}-secondary` &&
                           "border-primary ring-2 ring-primary/20",
                       )}
                     >
                       <DiptychPhoto
-                        src={SHOWCASE_IMAGES[value].primary}
-                        alt={copy.modes[value].beforeAlt}
+                        src={SHOWCASE_IMAGES[value].secondary}
+                        alt={copy.modes[value].secondaryBeforeAlt}
                         className="sm:w-12 sm:shrink-0"
                       />
                       <span className="flex min-h-10 items-center justify-center px-1 text-xs font-semibold text-foreground">
@@ -148,9 +143,9 @@ function HomePage() {
               </div>
               <PhotoComparison
                 key={mode}
-                src={SHOWCASE_IMAGES[mode].primary}
-                beforeAlt={active.beforeAlt}
-                afterAlt={active.afterAlt}
+                src={SHOWCASE_IMAGES[mode].secondary}
+                beforeAlt={active.secondaryBeforeAlt}
+                afterAlt={active.secondaryAfterAlt}
                 beforeLabel={copy.before}
                 afterLabel={copy.after}
                 controlLabel={copy.compareLabel}
@@ -169,6 +164,8 @@ function HomePage() {
         </div>
       </section>
 
+      <RealResultsGallery />
+
       <Section
         id="features"
         className="rounded-t-[36px] bg-card py-14 md:py-20"
@@ -177,43 +174,33 @@ function HomePage() {
           title={home.features.title}
           subtitle={home.features.subtitle}
         />
-        <div className="grid gap-5 md:grid-cols-3">
-          {BODY_EDITOR_MODES.map((value) => {
-            const item = copy.modes[value];
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {BODY_EDIT_MODES.map((value) => {
+            const label = home.upload.modes[value];
             return (
               <article
                 key={value}
                 data-showcase-mode={value}
                 className="overflow-hidden rounded-[28px] bg-background"
               >
-                <div className="grid grid-cols-2 gap-px">
-                  <DiptychPhoto
-                    src={SHOWCASE_IMAGES[value].primary}
-                    alt={item.beforeAlt}
-                  />
-                  <DiptychPhoto
-                    src={SHOWCASE_IMAGES[value].primary}
-                    side="after"
-                    alt={item.afterAlt}
-                  />
-                </div>
-                <div className="flex justify-between px-5 pt-3 text-[11px] font-medium text-muted-foreground">
-                  <span>{copy.before}</span>
-                  <span>{copy.after}</span>
-                </div>
-                <div className="p-5 pt-4">
-                  <h3 className="font-display text-2xl font-semibold text-foreground">
-                    {item.title}
+                <div className="flex h-full flex-col p-5">
+                  <h3 className="font-display text-xl font-semibold text-foreground">
+                    {label}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {item.description}
+                    {home.modeGuide.descriptions[value]}
                   </p>
                   <a
                     href="#try"
-                    onClick={() => previewSample(value, "primary")}
-                    className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-primary hover:underline underline-offset-4"
+                    aria-disabled={editingPending}
+                    onClick={(event) => {
+                      if (editingPending) { event.preventDefault(); return; }
+                      setEditMode(value);
+                      if (value !== "breast") setMode(value);
+                    }}
+                    className="mt-auto inline-flex min-h-10 items-center gap-2 pt-4 text-sm font-semibold text-primary hover:underline underline-offset-4"
                   >
-                    {item.cta}
+                    {home.modeGuide.cta.replace("{mode}", label)}
                     <ArrowUpRight className="size-4" aria-hidden="true" />
                   </a>
                 </div>
@@ -221,112 +208,23 @@ function HomePage() {
             );
           })}
         </div>
-        <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-          {copy.conceptNotice}
-        </p>
-      </Section>
-
-      <Section id="examples" className="bg-card py-14 md:py-20">
-        <SectionHeading
-          title={copy.examplesTitle}
-          subtitle={copy.examplesSubtitle}
-        />
-        <div className="grid gap-6 md:grid-cols-3">
-          {BODY_EDITOR_MODES.map((value) => (
-            <figure key={value} data-secondary-mode={value}>
-              <PhotoComparison
-                src={SHOWCASE_IMAGES[value].secondary}
-                beforeAlt={copy.modes[value].secondaryBeforeAlt}
-                afterAlt={copy.modes[value].secondaryAfterAlt}
-                beforeLabel={copy.before}
-                afterLabel={copy.after}
-                controlLabel={`${copy.modes[value].label}: ${copy.compareLabel}`}
-                hint={copy.compareHint}
-              />
-              <figcaption className="mt-4 flex items-center justify-between gap-3">
-                <span className="font-display text-xl font-semibold text-foreground">
-                  {copy.modes[value].title}
-                </span>
-                <a
-                  href="#try"
-                  onClick={() => previewSample(value, "secondary")}
-                  className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-primary hover:underline underline-offset-4"
-                >
-                  {copy.modes[value].cta}
-                  <ArrowUpRight className="size-4" aria-hidden="true" />
-                </a>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-        <p className="mt-6 text-xs text-muted-foreground">
-          {copy.conceptNotice}
-        </p>
       </Section>
 
       <Section id="details" className="py-14 md:py-20">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-          <div>
-            <SectionHeading
-              title={copy.detailTitle}
-              subtitle={copy.detailSubtitle}
-            />
-            <div className="flex flex-wrap gap-2">
-              {[copy.detailFace, copy.detailClothes, copy.detailBackground].map(
-                (label: string) => (
-                  <span
-                    key={label}
-                    className="rounded-full bg-accent px-3 py-2 text-xs font-semibold text-foreground"
-                  >
-                    {label}
-                  </span>
-                ),
-              )}
+        <SectionHeading title={copy.detailTitle} subtitle={copy.detailSubtitle} />
+        <div className="grid gap-5 md:grid-cols-3">
+          {[
+            { title: copy.detailFace, description: copy.detailFaceHint },
+            { title: copy.detailClothes, description: copy.detailClothesHint },
+            { title: copy.detailBackground, description: copy.detailBackgroundHint },
+          ].map((item) => (
+            <div key={item.title} className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="font-semibold">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
             </div>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-              {copy.detailNotice}
-            </p>
-          </div>
-          <div className="grid items-start gap-5 sm:grid-cols-2">
-            {(["slim", "muscle"] as const).map((value) => (
-              <figure
-                key={value}
-                className="overflow-hidden rounded-[24px] bg-card"
-              >
-                <div className="grid grid-cols-2 gap-px overflow-hidden">
-                  {(["before", "after"] as const).map((side) => (
-                    <div
-                      key={side}
-                      className="relative aspect-[3/4] overflow-hidden"
-                    >
-                      <div
-                        className="absolute inset-0 scale-[2.3]"
-                        style={{
-                          transformOrigin:
-                            value === "slim" ? "50% 12%" : "50% 20%",
-                        }}
-                      >
-                        <DiptychPhoto
-                          src={SHOWCASE_IMAGES[value].primary}
-                          side={side}
-                          alt={
-                            side === "before"
-                              ? copy.modes[value].beforeAlt
-                              : copy.modes[value].afterAlt
-                          }
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <figcaption className="flex justify-between px-3 py-3 text-[11px] text-muted-foreground">
-                  <span>{copy.before}</span>
-                  <span>{copy.after}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          ))}
         </div>
+        <p className="mt-5 text-xs leading-relaxed text-muted-foreground">{copy.detailNotice}</p>
       </Section>
 
       <Section id="how-it-works" className="bg-card py-14 md:py-20">
