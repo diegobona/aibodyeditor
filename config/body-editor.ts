@@ -30,6 +30,7 @@ export function normalizeBodyEditIntensity(value: unknown = BODY_EDIT_INTENSITY.
 }
 
 export const bodyEditConfig = {
+  resultRetentionDays: 30,
   model: "gpt-image-2.5-1k",
   baseURL: "https://api.tu-zi.com/v1",
   maxInputBytes: 10 * 1024 * 1024,

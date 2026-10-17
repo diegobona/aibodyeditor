@@ -3,6 +3,7 @@ import { prepareBodyImageEdit, type BodyImageEditOptions } from '../../../../lib
 import { normalizeBodyEditInstructions } from '../../../../libs/ai/body-edit-instructions';
 import { isBodyEditUuid, type BodyEditorService } from '../../../../libs/ai/body-editor-service';
 import { BodyEditError, type BodyEditOutcome } from '../../../../libs/credits/body-edit-types';
+import { bodyEditExpiresAt, type BodyEditHistory } from '../../../../libs/credits/body-edit-history';
 
 const noStore = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 const statuses: Record<string, number> = {
@@ -58,6 +59,7 @@ async function boundedForm(request: Request): Promise<FormData> {
 export function createBodyEditHandlers(deps: {
   getUser(request: Request): Promise<{ id: string; banned?: boolean } | null>;
   service: BodyEditorService;
+  history?: BodyEditHistory;
   getConfig(): Promise<{ available: boolean; costCredits: number; freeTrialEdits: number; guestTrialEdits?: number }> | { available: boolean; costCredits: number; freeTrialEdits: number; guestTrialEdits?: number };
   guest?: {
     service: BodyEditorService;
@@ -104,6 +106,28 @@ export function createBodyEditHandlers(deps: {
     return readOwned(request, (service, id) => service.getJob({ userId: id, jobId }));
   };
   return {
+    async history(request: Request) {
+      try {
+        const current = await user(request);
+        if (!current?.id) throw new BodyEditError('UNAUTHORIZED', 401);
+        if (!deps.history) throw new BodyEditError('NOT_CONFIGURED', 503);
+        const rawPage = new URL(request.url).searchParams.get('page') ?? '0';
+        if (!/^\d{1,4}$/.test(rawPage)) throw new BodyEditError('INVALID_INPUT', 400);
+        return json(await deps.history.list(current.id, Number(rawPage)));
+      } catch (error) { return failure(error); }
+    },
+    async remove(request: Request, jobId: string) {
+      try {
+        if (request.headers.get('Origin') !== new URL(request.url).origin) throw new BodyEditError('INVALID_ORIGIN', 403);
+        const current = await user(request);
+        if (!current?.id) throw new BodyEditError('UNAUTHORIZED', 401);
+        if (!isBodyEditUuid(jobId)) throw new BodyEditError('NOT_FOUND', 404);
+        if (!deps.history) throw new BodyEditError('NOT_CONFIGURED', 503);
+        await deps.history.remove(current.id, jobId);
+        return json({ deleted: true });
+      } catch (error) { return failure(error); }
+    },
+    async cleanupHistory() { return deps.history ? deps.history.cleanup() : 0; },
     async config(_request?: Request) {
       try {
         const { available, costCredits, freeTrialEdits, guestTrialEdits } = await deps.getConfig();
@@ -177,7 +201,7 @@ export function createBodyEditHandlers(deps: {
     async image(request: Request, jobId: string) {
       try {
         const { job } = await owned(request, jobId);
-        if (job.status !== 'succeeded' || !job.resultKey) throw new BodyEditError('NOT_FOUND', 404);
+        if (job.status !== 'succeeded' || !job.resultKey || bodyEditExpiresAt(job.createdAt).getTime() <= Date.now()) throw new BodyEditError('NOT_FOUND', 404);
         const image = await deps.readImage(job.resultKey); if (!image) throw new BodyEditError('NOT_FOUND', 404);
         if (!bodyEditConfig.allowedMimeTypes.includes(image.mimeType as any) || image.bytes.byteLength > bodyEditConfig.maxOutputBytes) throw new BodyEditError('STORAGE_ERROR', 502);
         const extension = image.mimeType.slice('image/'.length);

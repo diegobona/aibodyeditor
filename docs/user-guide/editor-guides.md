@@ -1,5 +1,11 @@
 # Editing photos with AI Body Editor
 
+## My works
+
+While signed in, choose **My works** in the header (or the mobile menu) to view your successful saved results. Each card shows the editing mode, intensity, creation date and expiry date. Open the image for a larger view, download it, or choose Delete and confirm to permanently remove the result. Viewing and downloading do not generate a new edit or use credits; deleting a finished result does not refund its generation cost.
+
+Results are available for 30 days from creation. Download anything you want to keep. Expired results stop being accessible immediately; deployed Cloudflare Workers clean stored files hourly, and visiting My works also cleans the signed-in user's expired results. Guest results are not imported into an account's history. Original uploads remain local and are not archived in My works.
+
 AI Body Editor uses the same editor on its homepage and three topic guides. The homepage uploader is directly below the short title at the top, with ten real editing examples to try. The selected example's saved comparison is beside it on desktop and below it on mobile. Tools opens advice about body reshaping, slimming and clothed bust proportions.
 
 Choose one JPG, PNG or WebP image up to 10 MB. Use a clear, clothed adult portrait that you have permission to edit. Selecting the file creates a local preview; it is sent for processing only when you submit an edit.
@@ -58,3 +64,5 @@ Use **Clear photo** beside **Choose another photo** to remove the current photo 
 Before a photo is loaded, hover over or focus the disabled top **Only apply settings** option to see its upload prerequisite.
 
 Changing a saved case's mode, intensity or extra instructions clears its displayed result immediately and prompts you to select **Edit Photo**. The original photo and adjustable outline remain available. Returning to the old values does not restore the saved image; selecting the case again does. Parameter changes do not generate an image or use credits.
+
+The header uses the purple body-contour mark and a compact wordmark. The homepage keeps its H1 while reducing its visual size and top spacing. On desktop, the editor adapts to the viewport height so its photo panels, bottom information and Edit Photo action fit in the first screen. Photo replacement and clearing sit in the Original panel header so they do not cover the portrait. The settings area scrolls internally when needed; mobile retains its Original/Result tabs and natural page scrolling.

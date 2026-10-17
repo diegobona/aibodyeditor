@@ -1,5 +1,13 @@
 # MVP live validation — 2026-10-16
 
+## My works — 2026-10-17
+
+- Added protected, noindex `/my-works` with desktop/mobile header links, 24-result pagination, authenticated blob previews, large-image dialog, download, deletion confirmation, empty and retry states. No additional AI calls or charges.
+- `GET /api/body-edit/history?page=0` returns only successful, unexpired, non-deleted results for the signed-in user. `DELETE /api/body-edit/:id` requires the owner session and matching Origin. Deleting clears private storage first and then the job's result reference; billing/idempotency records remain intact. No schema migration is needed.
+- The shared retention setting is 30 days. Image GET rejects expired results; history access cleans the owner's expired files. The custom Cloudflare entry schedules hourly bounded cleanup after deployment (up to 1,000 files/run). Node development cleans on history access; it does not run the Cloudflare schedule. No account deletion UI was added.
+- Focused verification: six history/repository/permission tests plus 90 existing API tests passed; two browser tests passed for auth protection and preview/download/confirm-delete/empty/retry flow. Browser fixtures made no generation requests and did not touch existing users' images.
+- Typecheck and Cloudflare production build passed. A local Worker preview on port 7011 returned SSR homepage HTML with its H1 and editor; the existing Node server on 7001 was preserved. The hourly schedule is configured but is not deployed or run automatically by Node development.
+
 Exactly two new generation requests used the configured Rabbit gateway and the
 actual guest HTTP handlers, Neon reservations and private Node result storage.
 Inputs were existing fictional, clothed-adult sample originals. No requests were
@@ -176,3 +184,9 @@ The user's next real Breast 100 edit succeeded in 27.663 seconds. The stored PNG
 The workbench now reuses `BodyEditComparison` with no original/comparison control, fetching the private result with same-origin credentials and displaying a blob URL. Optional wrapper/frame classes preserve its full-height direct result layout. The shared loader retains two bounded automatic GET retries, manual Reload image, size/MIME validation and object URL cleanup. The redundant workbench image error/retry state has been removed.
 
 The existing image recovered in the user's actual browser without resubmitting generation: the result decoded at 1086×1448 from a blob URL, showing Breast 100 and the existing download link. Screenshot and targeted diagnostics are in `test-results/result-preview-recovery/`. No new provider call was made for this repair.
+
+## Brand mark and desktop viewport layout (2026-10-17)
+
+The header now pairs a custom purple SVG body-contour/AI-spark mark with a compact sans-serif wordmark. Header height is 56px, its horizontal alignment matches the editor, and the homepage keeps one SSR H1 at 20–24px. Reduced section spacing and thumbnails bring the workbench higher in the page. Desktop workbench height follows `100dvh - 236px`, bounded to 320–720px; its settings scroll internally. The empty uploader drops its mobile minimum height on desktop so it fits the same frame. Replacement/clear controls sit in the Original header rather than covering the face. Saved diptychs explicitly clip their edited half, including when shorter photo frames create horizontal letterboxing.
+
+Focused browser checks passed at 1024×600, 1280×720, 1366×768 and 1440×900 for empty and selected cases. Both the editor bottom and upload canvas stay in the first viewport, with a visible edit action. SSR keeps one H1 and the SVG returns 200. Clear-photo regression passed after the toolbar move. Typecheck/build passed; the final uploader CSS adjustment passed the focused viewport E2E (3.4 seconds). Evidence: `test-results/brand-first-viewport.png` and `test-results/brand-first-viewport-*.log`. No provider generation or account data was changed.

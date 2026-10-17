@@ -77,6 +77,36 @@ test.describe('Editor workbench and explicit example selection', () => {
     expect(mutations.get(page), 'Preset browsing must not generate images').toEqual([]);
   });
 
+  test('new brand mark and smaller SSR H1 keep the complete desktop editor in the first viewport', async ({ page, request }) => {
+    const html = await (await request.get('/')).text();
+    expect((html.match(/<h1(?:\s|>)/g) ?? [])).toHaveLength(1);
+    expect(html).toContain('/body-editor-mark.svg');
+    const mark = await request.get('/body-editor-mark.svg');
+    expect(mark.status()).toBe(200); expect(await mark.text()).toContain('viewBox="0 0 48 48"');
+    await visit(page);
+    await expectDecoded(page.locator('header [data-brand-logo]'));
+    expect(await page.locator('#try h1').evaluate(node => parseFloat(getComputedStyle(node).fontSize))).toBeLessThanOrEqual(24);
+    for (const [width, height] of [[1024, 600], [1280, 720], [1366, 768], [1440, 900]]) {
+      await page.setViewportSize({ width, height });
+      const box = (await page.locator('[data-body-editor]').boundingBox())!;
+      expect(box.y + box.height, `${width}×${height}: editor bottom`).toBeLessThanOrEqual(height - 8);
+      const uploader = (await page.locator('[data-body-editor] label').filter({ hasText: 'Drop a photo here or click to upload' }).boundingBox())!;
+      expect(uploader.y + uploader.height).toBeLessThanOrEqual(box.y + box.height);
+      await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeInViewport();
+    }
+    await choose(page, 'naturalSlim'); await expectRecipe(page, 'naturalSlim');
+    for (const [width, height] of [[1024, 600], [1280, 720], [1366, 768], [1440, 900]]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      const box = (await page.locator('[data-body-editor]').boundingBox())!;
+      expect(box.y + box.height, `${width}×${height}: sample editor bottom`).toBeLessThanOrEqual(height - 8);
+      await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeInViewport();
+      await expect(page.locator('[data-photo-panel="original"]')).toBeInViewport();
+      await expect(page.locator('[data-photo-panel="result"]')).toBeInViewport();
+      if (width === 1366) await page.screenshot({ path: 'test-results/brand-first-viewport.png' });
+    }
+  });
+
   test('example strip hides its scrollbar, slowly scrolls automatically and retains exact case selection', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await visit(page);

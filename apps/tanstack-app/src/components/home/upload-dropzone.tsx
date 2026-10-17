@@ -311,6 +311,16 @@ export function UploadDropzone({
   const input = <input ref={inputRef} id={inputId} type="file" accept={bodyEditConfig.allowedMimeTypes.join(",")}
     disabled={locked} className="sr-only" aria-label={copy.inputLabel}
     onChange={(event) => pickFile(event.target.files?.[0])} />;
+  const photoActions = <div className="flex shrink-0 items-center gap-1.5">
+    <button type="button" disabled={locked} aria-label={copy.replace} title={copy.replace} onClick={() => inputRef.current?.click()}
+      className={cn("flex items-center justify-center gap-1.5 rounded-full border border-primary bg-primary text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50", workbench ? "min-h-9 px-2.5" : "min-h-10 px-3")}>
+      <RefreshCw className="size-4 shrink-0" aria-hidden="true" /><span className={workbench ? "hidden sm:inline" : undefined}>{copy.replace}</span>
+    </button>
+    <button type="button" disabled={locked} aria-label={copy.clear} title={copy.clear} onClick={clearPhoto}
+      className={cn("flex items-center justify-center gap-1.5 rounded-full bg-card/95 text-xs font-medium text-muted-foreground shadow-sm hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50", workbench ? "min-h-8 border px-2 text-[11px]" : "min-h-10 px-3")}>
+      <X className="size-3.5" aria-hidden="true" /><span className={workbench ? "hidden sm:inline lg:hidden xl:inline" : undefined}>{copy.clear}</span>
+    </button>
+  </div>;
   const photo = (
     <div className={cn("relative", workbench && "h-full min-h-0")} onDragOver={(event) => {
       event.preventDefault(); if (!locked) setDragging(true);
@@ -318,21 +328,12 @@ export function UploadDropzone({
       {file && previewUrl ? <>
         <BodyContourPreview file={file} previewUrl={previewUrl} mode={mode} intensity={intensity}
           disabled={locked} alt={copy.previewAlt} copy={editCopy.contourPreview}
-          className={workbench ? "flex h-full flex-col rounded-none border-0 [&>div:last-child]:min-h-24" : undefined}
+          className={workbench ? "flex h-full flex-col rounded-none border-0 [&>div:last-child]:min-h-20" : undefined}
           frameClassName={workbench ? "h-[420px] sm:h-[480px] lg:h-auto lg:min-h-0 lg:flex-1" : undefined} />
-        <div className="absolute right-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-2">
-          <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
-            className="flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
-            <RefreshCw className="size-3.5" aria-hidden="true" />{copy.replace}
-          </button>
-          <button type="button" disabled={locked} aria-label={copy.clear} onClick={clearPhoto}
-            className="flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
-            <X className="size-3.5" aria-hidden="true" />{copy.clear}
-          </button>
-        </div>
+        {!workbench && <div className="absolute right-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-2">{photoActions}</div>}
       </> : <label htmlFor={inputId} className={cn(
         "flex min-h-80 flex-col items-center justify-center gap-4 border-2 border-dashed p-8 text-center transition-colors",
-        workbench ? "h-full rounded-2xl" : "rounded-[20px]",
+        workbench ? "h-full min-h-0 rounded-2xl" : "rounded-[20px]",
         locked ? "cursor-wait" : "cursor-pointer", dragging ? "border-primary bg-accent" : "border-input bg-background hover:border-primary/60") }>
         <span className="flex size-16 items-center justify-center rounded-2xl bg-accent text-primary">
           {loadingSample ? <LoaderCircle className="size-8 animate-spin" aria-hidden="true" /> : <ImageUp className="size-8" aria-hidden="true" />}
@@ -405,7 +406,7 @@ export function UploadDropzone({
     <div className={cn(workbench ? "overflow-hidden rounded-3xl border bg-card shadow-sm" : "rounded-[28px] bg-card p-3 shadow-sm", className)}
       data-body-editor data-layout={layout} data-photo-source={photoSource ?? "empty"} aria-busy={loadingSample}>
       {input}
-      {workbench ? <div className="grid min-w-0 lg:h-[720px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_304px]">
+      {workbench ? <div className="grid min-w-0 lg:h-[calc(100dvh-236px)] lg:min-h-[320px] lg:max-h-[720px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_288px]">
         <div className="min-w-0 lg:col-span-2 lg:min-h-0">
           {(file && previewUrl) || editing.result ? <>
             <div role="tablist" aria-label={workspace.photoViews} className="flex border-b p-2 lg:hidden">
@@ -416,12 +417,12 @@ export function UploadDropzone({
             <div className="grid h-full min-w-0 lg:grid-cols-2">
               <section id={inputId + "-original"} aria-label={workspace.original} data-photo-panel="original"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex lg:border-r", mobileView === "original" ? "flex" : "hidden")}>
-                <div className="flex h-12 shrink-0 items-center border-b px-4 text-xs font-semibold">{workspace.original}</div>
+                <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold"><span>{workspace.original}</span>{file && previewUrl && photoActions}</div>
                 <div className="min-h-0 flex-1">{photo}</div>
               </section>
               <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
-                <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
+                <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
                   <span>{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span>{download}
                 </div>
                 <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result && !needsSampleResult ? reference?.id : undefined}
@@ -439,22 +440,23 @@ export function UploadDropzone({
                     </div> : needsSampleResult ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground">
                       <Sparkles className="size-7 text-primary/60" aria-hidden="true" /><p className="text-sm font-medium">{workspace.sampleSettingsChanged}</p>
                     </div> : reference ? <svg role="img" aria-label={reference.afterAlt ?? editCopy.afterAlt} viewBox="0 0 768 1024" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-hidden">
-                      <image href={reference.src} x={-768} width={1536} height={1024} />
+                      <defs><clipPath id={inputId + "-sample-result-clip"}><rect width={768} height={1024} /></clipPath></defs>
+                      <image href={reference.src} x={-768} width={1536} height={1024} clipPath={`url(#${inputId}-sample-result-clip)`} />
                     </svg>
                     : <div className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground"><Sparkles className="size-7 text-primary/60" /><p className="text-sm font-medium">{workspace.resultPlaceholder}</p><p className="text-xs leading-relaxed">{workspace.resultPlaceholderHint}</p></div>}
                 </div></div>
-                <div className="flex min-h-24 shrink-0 flex-col justify-center gap-1 border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+                <div className="flex min-h-20 shrink-0 flex-col justify-center gap-1 border-t px-4 py-2 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
                   {resultSettings && <p data-result-settings className="font-semibold text-foreground">{copy.modes[resultSettings.mode]} · {t.home.realResults.intensity.replace("{value}", String(resultSettings.intensity ?? BODY_EDIT_INTENSITY.default))}</p>}
                   {settingsChanged && resultExists ? <p role="status" className="text-primary">{workspace.currentSettingsDiffer}</p> : <p>{editing.result ? workspace.reviewResult : pending ? editCopy.pending : unresolved ? editCopy.checkEdit : reference ? workspace.sampleNote : workspace.resultPlaceholderHint}</p>}
                 </div>
               </section>
             </div>
-          </> : <div className="h-full min-h-[380px] p-4 sm:min-h-[460px] sm:p-6">{photo}</div>}
+          </> : <div className="h-full min-h-[380px] p-4 sm:min-h-[460px] sm:p-6 lg:min-h-0 lg:p-4">{photo}</div>}
         </div>
         <aside data-editor-settings className="flex min-h-0 min-w-0 flex-col border-t lg:border-l lg:border-t-0">
-          <h2 className="flex h-12 shrink-0 items-center border-b px-5 text-sm font-semibold">{workspace.settingsTitle}</h2>
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">{controls}</div>
-          <div className="shrink-0 border-t p-5">{action}{notices}</div>
+          <h2 className="flex h-11 shrink-0 items-center border-b px-4 text-sm font-semibold">{workspace.settingsTitle}</h2>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">{controls}</div>
+          <div className="shrink-0 border-t p-4">{action}{notices}</div>
         </aside>
       </div> : <>
         {editing.result ? <div className="px-1 pb-2">

@@ -1,6 +1,18 @@
 import type { Locale } from './types'
 
 export const zhCN: Locale = {
+  myWorks: {
+    metadata: { title: "我的作品 | AI Body Editor", description: "查看、下载和删除已保存的身体编辑结果。" },
+    title: "我的作品", description: "在这里查看你保存的编辑结果。",
+    retention: "生成结果保存 {days} 天，到期自动删除。请下载你希望保留的图片。",
+    empty: "还没有作品", emptyHint: "登录后成功生成的编辑结果会显示在这里。",
+    editPhoto: "编辑照片", loading: "正在加载作品…", loadError: "无法加载作品，请重试。",
+    imageError: "图片暂不可用", retry: "重试", preview: "查看大图", imageAlt: "你的{mode}编辑结果",
+    intensity: "强度 {value}/100", expires: "到期时间：{date}", download: "下载", delete: "删除",
+    deleteTitle: "删除这张图片？", deleteDescription: "这将永久删除已保存的图片。本次编辑已消耗的积分不会退还。",
+    cancel: "取消", deleting: "正在删除…", deleteError: "图片删除失败，请重试。",
+    downloadError: "图片下载失败，请重试。", previous: "上一页", next: "下一页", page: "第 {page} 页",
+  },
   common: {
     welcome: "欢迎使用 TinyShip",
     siteName: "TinyShip",
@@ -2028,7 +2040,7 @@ export const zhCN: Locale = {
       intensityHint: "点击生成后应用。",
       instructionsToggle: "额外修改说明（选填）",
       instructionsLabel: "额外身体修改说明",
-      instructionsPlaceholder: "只收细腰部，手臂和腿部保持不变。",
+      instructionsPlaceholder: "例如：只收细腰部，手臂和腿部保持不变。",
       instructionsExample: "例如：让肩膀稍微宽一点。",
       instructionsHint: "修改说明在生成时生效，轮廓预览仅反映模式和强度。",
       instructionsCounter: "{count}/{max} 字符",

@@ -1,5 +1,22 @@
 # E2E 测试流程目录
 
+## My works — verified (2026-10-17)
+
+- Signed-in users can open My works from desktop/mobile navigation and see only their successful saved outputs, newest first, with mode, strength and expiry.
+- Preview and download fetch the existing private result; browsing never generates an image or charges credits.
+- Deletion requires confirmation, removes the stored image, preserves billing records, and cannot affect another user's result. Guest/cross-origin deletion is rejected.
+- Empty, loading, retry and pagination states work. Results expire after 30 days; expired files are cleaned on access and by the deployed hourly Worker schedule.
+- My works is protected and noindex; no sitemap entry. Verify with the related unit and browser specs only.
+- Results: `body-edit-history.test.ts` + existing `body-edit-api.test.ts`: 96 passed. `my-works.spec.ts`: 2 passed (16.6s), no generation requests.
+
+## Brand mark and first-viewport editor fit — verified (2026-10-17)
+
+- Replace the text-only header with an original purple SVG body-contour/AI-spark mark and a compact wordmark. Keep its translated home-link name.
+- Keep one visible SSR H1, reduce its font and top/example spacing, and size the desktop workbench to the available viewport height. Its bottom, photo footers and edit button must be visible without page scrolling at 1024×600, 1280×720, 1366×768 and 1440×900, both empty and with a selected sample. Keep mobile tabs and natural page scrolling.
+- Verify only the mark, H1 and viewport fit; no generation requests.
+
+Verification: the focused desktop-fit test passed for all four sizes, empty and selected, with the uploader itself inside the editor bounds (final run 3.4 s). Clear photo also passed after its controls moved to the Original header (two targeted scenarios, 4.8 s). One SSR H1 remains at 24px; the new SVG asset returns 200. The shorter landscape frame revealed diptych paint outside its logical viewBox; an explicit SVG clip now restricts the saved case to its edited half. Typecheck passed (12.203 s); Workers build passed (31.09 s), followed by the final CSS/uploader-boundary E2E. Screenshot: `test-results/brand-first-viewport.png`. No generation, database changes or broad audit.
+
 ## Invalidate saved case image when settings change — verified (2026-10-17)
 
 - Changing a case's mode, intensity or extra instructions immediately removes its saved result and shows an explicit Edit Photo generation hint. Retain the original and current controls/outline. Returning controls to the old values does not restore the old result; choosing a case again does.

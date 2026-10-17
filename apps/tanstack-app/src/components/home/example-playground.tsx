@@ -61,24 +61,24 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
 
   return (
     <>
-    <section id="home-hero" className="pb-10 pt-5 md:pb-14 md:pt-7">
-      <div id="try" className="mx-auto w-full max-w-[1600px] scroll-mt-20 px-3 sm:px-6">
-        <h1 className="mb-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{t.home.hero.title}</h1>
-        <section id="samples" aria-labelledby="sample-heading" className="mb-4 min-w-0">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h2 id="sample-heading" className="text-sm font-semibold">{copy.title}</h2>
+    <section id="home-hero" className="pb-8 pt-2 md:pb-10">
+      <div id="try" className="mx-auto w-full max-w-[1600px] scroll-mt-16 px-3 sm:px-6">
+        <h1 className="mb-2 font-sans text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{t.home.hero.title}</h1>
+        <section id="samples" aria-labelledby="sample-heading" className="mb-2 min-w-0">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <h2 id="sample-heading" className="text-xs font-semibold">{copy.title}</h2>
             <SettingsOnlyToggle checked={settingsOnly} disabled={!photoSource || pending} needsPhoto={!photoSource && !pending} onChange={setSettingsOnly} />
           </div>
           <div className="flex min-w-0 items-center gap-2">
             <button type="button" aria-label={copy.previousExamples} onClick={() => rail.current?.scrollBy({ left: -440, behavior: "smooth" })}
               className="hidden size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-primary sm:flex"><ChevronLeft className="size-4" /></button>
-            <div ref={rail} data-example-rail role="group" aria-label={copy.selectorLabel} className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div ref={rail} data-example-rail role="group" aria-label={copy.selectorLabel} className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {REAL_RESULT_CASES.map((value) => (
                 <button key={value.key} type="button" data-example={value.key} data-subject={value.subject}
                   aria-label={copy.chooseLabel.replace("{name}", copy.labels[value.key])} aria-pressed={selected === value.key}
                   disabled={pending} onClick={() => choose(value.key)}
-                  className={cn("flex w-40 shrink-0 items-center gap-2 overflow-hidden rounded-2xl border p-1.5 text-left focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50", selected === value.key ? "border-primary bg-accent ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/60")}>
-                  <DiptychPhoto src={REAL_RESULT_IMAGES[value.key]} alt={t.home.realResults[value.key].beforeAlt} className="w-11 shrink-0 rounded-xl" />
+                  className={cn("flex w-40 shrink-0 items-center gap-2 overflow-hidden rounded-xl border p-1 text-left focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50", selected === value.key ? "border-primary bg-accent ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/60")}>
+                  <DiptychPhoto src={REAL_RESULT_IMAGES[value.key]} alt={t.home.realResults[value.key].beforeAlt} className="w-9 shrink-0 rounded-lg" />
                   <span className="min-w-0 text-xs font-semibold leading-snug">{copy.labels[value.key]}</span>
                 </button>
               ))}

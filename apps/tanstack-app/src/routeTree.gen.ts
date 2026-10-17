@@ -25,6 +25,7 @@ import { Route as ApiBlogIndexRouteImport } from './routes/api/blog/index'
 import { Route as Char123LangChar125rootSkinnyFilterRouteImport } from './routes/{-$lang}/(root)/skinny-filter'
 import { Route as Char123LangChar125rootPaymentSuccessRouteImport } from './routes/{-$lang}/(root)/payment-success'
 import { Route as Char123LangChar125rootPaymentCancelRouteImport } from './routes/{-$lang}/(root)/payment-cancel'
+import { Route as Char123LangChar125rootMyWorksRouteImport } from './routes/{-$lang}/(root)/my-works'
 import { Route as Char123LangChar125rootDashboardRouteImport } from './routes/{-$lang}/(root)/dashboard'
 import { Route as Char123LangChar125rootBreastExpansionRouteImport } from './routes/{-$lang}/(root)/breast-expansion'
 import { Route as Char123LangChar125rootBodyEditorRouteImport } from './routes/{-$lang}/(root)/body-editor'
@@ -44,6 +45,7 @@ import { Route as ApiPaymentCancelRouteImport } from './routes/api/payment/cance
 import { Route as ApiCreditsTransactionsRouteImport } from './routes/api/credits/transactions'
 import { Route as ApiCreditsStatusRouteImport } from './routes/api/credits/status'
 import { Route as ApiCreditsBalanceRouteImport } from './routes/api/credits/balance'
+import { Route as ApiBodyEditHistoryRouteImport } from './routes/api/body-edit/history'
 import { Route as ApiBodyEditGuestSessionRouteImport } from './routes/api/body-edit/guest-session'
 import { Route as ApiBodyEditJobIdRouteImport } from './routes/api/body-edit/$jobId'
 import { Route as ApiBlogSlugRouteImport } from './routes/api/blog/$slug'
@@ -176,6 +178,12 @@ const Char123LangChar125rootPaymentCancelRoute =
     path: '/payment-cancel',
     getParentRoute: () => Char123LangChar125rootRouteRoute,
   } as any)
+const Char123LangChar125rootMyWorksRoute =
+  Char123LangChar125rootMyWorksRouteImport.update({
+    id: '/my-works',
+    path: '/my-works',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
 const Char123LangChar125rootDashboardRoute =
   Char123LangChar125rootDashboardRouteImport.update({
     id: '/dashboard',
@@ -277,6 +285,11 @@ const ApiCreditsBalanceRoute = ApiCreditsBalanceRouteImport.update({
   id: '/api/credits/balance',
   path: '/api/credits/balance',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBodyEditHistoryRoute = ApiBodyEditHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => ApiBodyEditRoute,
 } as any)
 const ApiBodyEditGuestSessionRoute = ApiBodyEditGuestSessionRouteImport.update({
   id: '/guest-session',
@@ -546,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
+  '/api/body-edit/history': typeof ApiBodyEditHistoryRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -565,6 +579,7 @@ export interface FileRoutesByFullPath {
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
@@ -626,6 +641,7 @@ export interface FileRoutesByTo {
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
+  '/api/body-edit/history': typeof ApiBodyEditHistoryRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -645,6 +661,7 @@ export interface FileRoutesByTo {
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
@@ -709,6 +726,7 @@ export interface FileRoutesById {
   '/api/blog/$slug': typeof ApiBlogSlugRoute
   '/api/body-edit/$jobId': typeof ApiBodyEditJobIdRouteWithChildren
   '/api/body-edit/guest-session': typeof ApiBodyEditGuestSessionRoute
+  '/api/body-edit/history': typeof ApiBodyEditHistoryRoute
   '/api/credits/balance': typeof ApiCreditsBalanceRoute
   '/api/credits/status': typeof ApiCreditsStatusRoute
   '/api/credits/transactions': typeof ApiCreditsTransactionsRoute
@@ -728,6 +746,7 @@ export interface FileRoutesById {
   '/{-$lang}/(root)/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/(root)/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/(root)/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/(root)/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/(root)/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/(root)/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/(root)/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
@@ -792,6 +811,7 @@ export interface FileRouteTypes {
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
     | '/api/body-edit/guest-session'
+    | '/api/body-edit/history'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -811,6 +831,7 @@ export interface FileRouteTypes {
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
+    | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
     | '/{-$lang}/skinny-filter'
@@ -872,6 +893,7 @@ export interface FileRouteTypes {
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
     | '/api/body-edit/guest-session'
+    | '/api/body-edit/history'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -891,6 +913,7 @@ export interface FileRouteTypes {
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
+    | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
     | '/{-$lang}/skinny-filter'
@@ -954,6 +977,7 @@ export interface FileRouteTypes {
     | '/api/blog/$slug'
     | '/api/body-edit/$jobId'
     | '/api/body-edit/guest-session'
+    | '/api/body-edit/history'
     | '/api/credits/balance'
     | '/api/credits/status'
     | '/api/credits/transactions'
@@ -973,6 +997,7 @@ export interface FileRouteTypes {
     | '/{-$lang}/(root)/body-editor'
     | '/{-$lang}/(root)/breast-expansion'
     | '/{-$lang}/(root)/dashboard'
+    | '/{-$lang}/(root)/my-works'
     | '/{-$lang}/(root)/payment-cancel'
     | '/{-$lang}/(root)/payment-success'
     | '/{-$lang}/(root)/skinny-filter'
@@ -1187,6 +1212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LangChar125rootPaymentCancelRouteImport
       parentRoute: typeof Char123LangChar125rootRouteRoute
     }
+    '/{-$lang}/(root)/my-works': {
+      id: '/{-$lang}/(root)/my-works'
+      path: '/my-works'
+      fullPath: '/{-$lang}/my-works'
+      preLoaderRoute: typeof Char123LangChar125rootMyWorksRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
     '/{-$lang}/(root)/dashboard': {
       id: '/{-$lang}/(root)/dashboard'
       path: '/dashboard'
@@ -1319,6 +1351,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/credits/balance'
       preLoaderRoute: typeof ApiCreditsBalanceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/body-edit/history': {
+      id: '/api/body-edit/history'
+      path: '/history'
+      fullPath: '/api/body-edit/history'
+      preLoaderRoute: typeof ApiBodyEditHistoryRouteImport
+      parentRoute: typeof ApiBodyEditRoute
     }
     '/api/body-edit/guest-session': {
       id: '/api/body-edit/guest-session'
@@ -1671,6 +1710,7 @@ interface Char123LangChar125rootRouteRouteChildren {
   Char123LangChar125rootBodyEditorRoute: typeof Char123LangChar125rootBodyEditorRoute
   Char123LangChar125rootBreastExpansionRoute: typeof Char123LangChar125rootBreastExpansionRoute
   Char123LangChar125rootDashboardRoute: typeof Char123LangChar125rootDashboardRoute
+  Char123LangChar125rootMyWorksRoute: typeof Char123LangChar125rootMyWorksRoute
   Char123LangChar125rootPaymentCancelRoute: typeof Char123LangChar125rootPaymentCancelRoute
   Char123LangChar125rootPaymentSuccessRoute: typeof Char123LangChar125rootPaymentSuccessRoute
   Char123LangChar125rootSkinnyFilterRoute: typeof Char123LangChar125rootSkinnyFilterRoute
@@ -1684,6 +1724,7 @@ const Char123LangChar125rootRouteRouteChildren: Char123LangChar125rootRouteRoute
     Char123LangChar125rootBreastExpansionRoute:
       Char123LangChar125rootBreastExpansionRoute,
     Char123LangChar125rootDashboardRoute: Char123LangChar125rootDashboardRoute,
+    Char123LangChar125rootMyWorksRoute: Char123LangChar125rootMyWorksRoute,
     Char123LangChar125rootPaymentCancelRoute:
       Char123LangChar125rootPaymentCancelRoute,
     Char123LangChar125rootPaymentSuccessRoute:
@@ -1776,11 +1817,13 @@ const ApiBodyEditJobIdRouteWithChildren =
 interface ApiBodyEditRouteChildren {
   ApiBodyEditJobIdRoute: typeof ApiBodyEditJobIdRouteWithChildren
   ApiBodyEditGuestSessionRoute: typeof ApiBodyEditGuestSessionRoute
+  ApiBodyEditHistoryRoute: typeof ApiBodyEditHistoryRoute
 }
 
 const ApiBodyEditRouteChildren: ApiBodyEditRouteChildren = {
   ApiBodyEditJobIdRoute: ApiBodyEditJobIdRouteWithChildren,
   ApiBodyEditGuestSessionRoute: ApiBodyEditGuestSessionRoute,
+  ApiBodyEditHistoryRoute: ApiBodyEditHistoryRoute,
 }
 
 const ApiBodyEditRouteWithChildren = ApiBodyEditRoute._addFileChildren(

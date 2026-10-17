@@ -123,14 +123,15 @@ export default function Header({ className }: HeaderProps) {
 
   return (
     <header className={`sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-md ${className ?? ""}`}>
-      <div className="container mx-auto max-w-6xl px-4 md:px-6">
-        <div className="flex h-[72px] items-center justify-between gap-4">
+      <div className="mx-auto w-full max-w-[1600px] px-3 sm:px-6">
+        <div className="flex h-14 items-center justify-between gap-4">
           <Link
             to="/{-$lang}"
             params={{ lang: langParam }}
-            className="font-display text-[22px] font-semibold tracking-tight text-foreground"
+            className="inline-flex shrink-0 items-center gap-2.5 rounded-lg text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           >
-            {t.toolPages.common.homeName}
+            <img data-brand-logo src="/body-editor-mark.svg" alt="" aria-hidden="true" width={36} height={36} className="size-9 shrink-0" />
+            <span className="font-sans text-lg font-bold tracking-[-0.035em] sm:text-[19px]">{t.toolPages.common.homeName}</span>
           </Link>
 
           {/* Native disclosure keeps every keyword link in the server HTML. */}
@@ -172,6 +173,7 @@ export default function Header({ className }: HeaderProps) {
 
           <div className="hidden items-center gap-2 md:flex">
             <LanguageMenu />
+            {user && <a href={localizedPath('/my-works', currentLocale)} className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">{t.myWorks.title}</a>}
             {isPending ? (
               <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
             ) : user ? (
@@ -250,6 +252,7 @@ export default function Header({ className }: HeaderProps) {
           <div className="container flex flex-col gap-2 border-t border-border px-4 py-4">
             {user ? (
               <>
+                <a href={localizedPath('/my-works', currentLocale)} className="rounded-xl px-3 py-3 text-base font-medium hover:bg-muted">{t.myWorks.title}</a>
                 <a href={localizedPath("/dashboard", currentLocale)} className="rounded-xl px-3 py-3 text-base font-medium hover:bg-muted">
                   {t.header.userMenu.personalSettings}
                 </a>

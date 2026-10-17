@@ -13,6 +13,7 @@ export const CANONICAL_HOST = new URL(SITE_URL).host // aibodyeditor.net
  * Matched after stripping a locale prefix (`/de/dashboard` -> `/dashboard`).
  */
 export const NOINDEX_PREFIXES = [
+  '/my-works',
   '/dashboard',
   '/admin',
   '/api',
@@ -25,7 +26,7 @@ export const NOINDEX_PREFIXES = [
 ] as const
 
 /** Prefixes disallowed in robots.txt (exactly what the SEO spec asks for). */
-export const ROBOTS_DISALLOW = ['/dashboard', '/admin', '/api', '/signin', '/signup'] as const
+export const ROBOTS_DISALLOW = ['/dashboard', '/admin', '/api', '/signin', '/signup', '/my-works'] as const
 
 function matchesPrefix(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`)

@@ -5,7 +5,8 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
-	"main": "@tanstack/react-start/server-entry",
+	"main": "src/server.ts",
+	"triggers": { "crons": ["17 * * * *"] },
 	"observability": {
 		"enabled": true
 	},

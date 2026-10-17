@@ -5,6 +5,7 @@ import { getApiKey, getBaseUrl } from '../../../../libs/ai/config';
 import { createBodyEditorService } from '../../../../libs/ai/body-editor-service';
 import { prepareBodyImageEdit, type BodyImageEditOptions } from '../../../../libs/ai/body-edit';
 import { createBodyEditRepository } from '../../../../libs/credits/body-edit-repository';
+import { createBodyEditHistory } from '../../../../libs/credits/body-edit-history';
 import { createBodyGuestRepository } from '../../../../libs/credits/body-guest-repository';
 import { guestIdentity, guestNetworkHash } from '../../../../libs/ai/body-guest-session';
 import { bodyGuestConfig } from '../../../../config/body-guest';
@@ -51,6 +52,7 @@ export async function getBodyEditHandlers(request?: Request) {
   const service = createBodyEditorService({ ...pipeline, repository });
   return createBodyEditHandlers({
     service,
+    ...(dialect !== 'd1' && storage ? { history: createBodyEditHistory(dbOptions, storage) } : {}),
     getConfig: async () => ({ available: await available(), costCredits: BODY_EDIT_CREDIT_COST, freeTrialEdits: creditsConfig.publicOffer.freeTrialEdits, guestTrialEdits: bodyGuestConfig.freeEdits }),
     ...(guestRepository ? { guest: {
       service: createBodyEditorService({ ...pipeline, repository: guestRepository }),

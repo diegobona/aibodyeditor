@@ -207,6 +207,7 @@ const PAGES = {
   paymentSuccess: { path: '/payment-success', indexable: false, meta: (t) => t.payment.metadata.success },
   paymentCancel: { path: '/payment-cancel', indexable: false, meta: (t) => t.payment.metadata.cancel },
   dashboard: { path: '/dashboard', indexable: false, meta: (t) => t.dashboard.metadata },
+  myWorks: { path: '/my-works', indexable: false, meta: (t) => t.myWorks.metadata },
   admin: { path: '/admin', indexable: false, meta: (t) => t.admin.metadata },
   notFound: { path: '/404', indexable: false, meta: (t) => t.notFound.metadata },
 } satisfies Record<string, PageDefinition>

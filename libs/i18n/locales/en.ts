@@ -1,6 +1,18 @@
 import type { Locale } from './types'
 
 export const en: Locale = {
+  myWorks: {
+    metadata: { title: "My Works | AI Body Editor", description: "View, download and delete your saved body edits." },
+    title: "My works", description: "Your saved edits, all in one place.",
+    retention: "Results are saved for {days} days, then automatically deleted. Download the images you want to keep.",
+    empty: "No saved edits yet", emptyHint: "Your successful edits will appear here when you generate while signed in.",
+    editPhoto: "Edit a photo", loading: "Loading your works…", loadError: "Your works couldn’t load. Please try again.",
+    imageError: "Image unavailable", retry: "Try again", preview: "View image", imageAlt: "Your {mode} edit",
+    intensity: "Intensity {value}/100", expires: "Expires {date}", download: "Download", delete: "Delete",
+    deleteTitle: "Delete this image?", deleteDescription: "This permanently removes the saved image. Credits used for this edit are not refunded.",
+    cancel: "Cancel", deleting: "Deleting…", deleteError: "The image couldn’t be deleted. Please try again.",
+    downloadError: "The image couldn’t be downloaded. Please try again.", previous: "Previous", next: "Next", page: "Page {page}",
+  },
   common: {
     welcome: "Welcome to AI Body Editor",
     siteName: "AI Body Editor",
@@ -1747,7 +1759,7 @@ export const en: Locale = {
       intensityHint: "Applies when you generate.",
       instructionsToggle: "Extra instructions (optional)",
       instructionsLabel: "Extra body-edit instructions",
-      instructionsPlaceholder: "Only slim my waist; keep my arms and legs unchanged.",
+      instructionsPlaceholder: "e.g., Only slim my waist; keep my arms and legs unchanged.",
       instructionsExample: "Example: Make my shoulders slightly wider.",
       instructionsHint: "Instructions apply when you generate. The outline only reflects the mode and intensity.",
       instructionsCounter: "{count}/{max} characters",
