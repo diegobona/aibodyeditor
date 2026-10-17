@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { bodyEditConfig, LEGACY_BODY_EDIT_INTENSITIES } from '../../config/body-editor';
-import { BODY_EDIT_CREDIT_COST } from '../../config/credits';
+import { BODY_EDIT_CREDIT_COST, BODY_EDIT_WELCOME_CREDITS } from '../../config/credits';
 import { BodyImageEditError, prepareBodyImageEdit, type editBodyImage, type BodyImageEditOptions } from './body-edit';
 import { BodyEditError, type BodyEditRepository, type BodyEditResultStore, type BodyEditOutcome } from '../credits/body-edit-types';
 
@@ -59,7 +59,7 @@ export function createBodyEditorService(deps: {
         jobId: (deps.newJobId ?? (() => crypto.randomUUID()))(), userId: input.userId, requestId: input.requestId.toLowerCase(),
         inputHash, mode: prepared.mode, intensity: prepared.intensity, model: prepared.model,
         costCredits: BODY_EDIT_CREDIT_COST,
-        trialCredits: 0,
+        trialCredits: BODY_EDIT_WELCOME_CREDITS,
         now: started, deadlineAt: new Date(started.getTime() + bodyEditConfig.timeoutMs + bodyEditConfig.resultTimeoutMs + 10_000),
       });
       if (reserved.reused) return reserved;

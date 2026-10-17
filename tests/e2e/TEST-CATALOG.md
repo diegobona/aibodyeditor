@@ -1,5 +1,23 @@
 # E2E 测试流程目录
 
+## Guest → welcome credits → credit packs — verified (2026-10-17)
+
+- A browser guest can generate one successful free result and download it. A further edit opens an in-place sign-in/sign-up dialog, retaining photo, result and all settings.
+- The first authenticated editor visit grants 10 ordinary welcome credits once per account. Refresh, repeated login, concurrent initialization and direct generation cannot grant twice; legacy trial ledger records count as already granted.
+- Welcome credits can fund either a new generation or continuation. Continue itself only loads the existing result; a subsequent generation costs 10. Failed generation returns the debit, without granting another bonus.
+- Signing in/signing up keeps the editor in place; email-verification state remains in the dialog. A successful login refreshes balance without automatically generating.
+- After balance falls below 10, the main action opens a credit-pack dialog. While purchases are unavailable, the dialog states that clearly. It can be dismissed without losing images/settings; quota exhaustion is informational, rather than a red technical error.
+- Verification: 151 focused unit tests passed, including grants, repeat/concurrent initialization, legacy grant compatibility, refunds, authentication and origin checks. Twelve related browser scenarios passed across real-handler guest/account flows, continuation and existing login/insufficient-credit regressions. These cover ordinary generation and continued guest output spending the same welcome balance, signup without a new tab, no automatic generation on login, refund/retry and no second grant after reload. Typecheck passed (11.5s), Cloudflare build passed (30.0s, existing chunk-size warnings), and Workers SSR returned 200 with the welcome-credit FAQ. External AI/auth/storage used fixtures; no real paid generation or deployment.
+
+## Continue editing a generated result — verified (2026-10-17)
+
+- Credit eligibility update — verified: each new account edit costs 10 credits; Continue editing requires a signed-in account with a current balance of at least 10. A guest is prompted to sign in without losing the result. A balance of 9 is rejected; 10 is accepted, including granted credits. Loading the result never debits credits; only the next generation does. Preview and download remain available independently of this gate.
+- Continue editing appears only for an actual successful generated result, on both the homepage workbench and compact tool editor. Saved example previews do not expose this action.
+- Clicking loads the existing private output as the next original, preserves editable settings, clears result/metadata/case selection and returns mobile users to the original view. It does not generate, delete or charge anything.
+- Only a subsequent Edit Photo starts a new request using the continued file bytes and current mode/intensity/instructions. The one-time guest allowance is not restored; account generation reserves 10 credits and refunds its stored cost on failure.
+- A failed load preserves the previous original and result and allows retry. Block duplicate actions and setting/photo changes during preparation.
+- Verification: 136 focused API/service/repository unit tests passed; four browser scenarios passed (8.9s), covering exact bytes/fresh settings, guest login, current balance 9/10, failed GET/retry, mobile original-tab reset and compact editing. Typecheck passed (12.1s), Cloudflare production build passed (29.9s, existing chunk-size warnings), and Workers SSR returned 200 with the 10-credit FAQ. No real generation or debit was performed.
+
 ## Actual output specifications — verified (2026-10-17)
 
 - After a generated image loads, show its actual decoded width/height, format and downloaded file byte size in the editor result footer. Do not infer these from CSS display dimensions or case previews.

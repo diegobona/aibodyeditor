@@ -17,7 +17,7 @@ const toggle = (page: Page) => editor(page).getByRole('button', { name: 'Extra i
 const instructions = (page: Page) => editor(page).getByLabel('Extra body-edit instructions', { exact: true });
 const generate = (page: Page) => editor(page).getByRole('button', { name: 'Edit Photo', exact: true });
 const json = (route: Route, body: unknown, status = 200) => route.fulfill({ status, json: body });
-const success = () => ({ jobId: JOB, status: 'succeeded', result: { imageUrl: `/api/body-edit/${JOB}/image`, downloadUrl: `/api/body-edit/${JOB}/image?download=1`, mode: 'slim', intensity: 70 }, credits: { charged: 15, balance: 50 }, reused: false });
+const success = () => ({ jobId: JOB, status: 'succeeded', result: { imageUrl: `/api/body-edit/${JOB}/image`, downloadUrl: `/api/body-edit/${JOB}/image?download=1`, mode: 'slim', intensity: 70 }, credits: { charged: 10, balance: 40 }, reused: false });
 
 type Fixture = {
   account: boolean;
@@ -38,10 +38,11 @@ async function setup(page: Page, options: { account?: boolean; remaining?: numbe
   await page.route('**/body-preview/worker.js', route => route.fulfill({ contentType: 'application/javascript', body: 'self.onmessage=()=>self.postMessage({type:"error"});' }));
   await page.route('**/api/body-edit**', async route => {
     const request = route.request(), url = new URL(request.url());
+    if (url.pathname.endsWith('/account')) return json(route, { ownerId: USER, balance: 50, bonusGranted: false, welcomeCredits: 10 });
     if (url.pathname.endsWith('/guest-session')) return json(route, { ownerId: 'guest:instructions', remaining: state.remaining });
     if (url.pathname.endsWith('/image')) return route.fulfill({ body: PNG, contentType: 'image/png' });
     if (request.method() === 'GET' && url.pathname === '/api/body-edit' && !url.search)
-      return json(route, { available: true, costCredits: 15, freeTrialEdits: 0, guestTrialEdits: 1 });
+      return json(route, { available: true, costCredits: 10, freeTrialEdits: 1, guestTrialEdits: 1 });
     if (request.method() === 'POST') {
       state.posts.push(await new Request(request.url(), { method: 'POST', headers: request.headers(), body: request.postDataBuffer()! }).formData());
     } else state.lookups.push(url.pathname + url.search);
@@ -50,7 +51,7 @@ async function setup(page: Page, options: { account?: boolean; remaining?: numbe
   const ready = !state.account ? page.waitForResponse(response => response.url().endsWith('/api/body-edit/guest-session')) : undefined;
   await page.goto('/');
   await ready;
-  const action = state.account || state.remaining > 0 ? 'Edit Photo' : 'Sign in to continue';
+  const action = state.account || state.remaining > 0 ? 'Edit Photo' : 'Sign in for a free edit';
   await expect(editor(page).getByRole('button', { name: action, exact: true })).toBeEnabled();
   return state;
 }
@@ -186,12 +187,12 @@ test.describe('Optional body-edit instructions', () => {
     await editor(page).locator('fieldset').getByText('Breast', { exact: true }).click();
     await editor(page).getByRole('slider', { name: 'Intensity', exact: true }).press('End');
     const photo = await editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true }).getAttribute('src');
-    await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await expect(instructions(page)).toHaveValue(NOTES);
-    await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
     await dialog.locator('#email').fill('instructions@example.invalid');
     await dialog.locator('#password').fill('FixturePass123!');
     await dialog.getByRole('button', { name: 'Sign in', exact: true }).click();

@@ -20,8 +20,10 @@ import { Link } from "@tanstack/react-router";
 
 export function SignupForm({
   className,
+  onSuccess,
+  onSignin,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: React.HTMLAttributes<HTMLDivElement> & { onSuccess?: () => void | Promise<void>; onSignin?: () => void }) {
   const navigate = useNavigate();
   const { t, langParam, tWithParams } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -91,6 +93,8 @@ export function SignupForm({
     if (config.auth.requireEmailVerification) {
       setVerificationEmail(formData.email);
       setIsVerificationEmailSent(true);
+    } else if (onSuccess) {
+      await onSuccess();
     } else {
       const params = new URLSearchParams(window.location.search);
       const returnTo = params.get("returnTo");
@@ -238,13 +242,13 @@ export function SignupForm({
         </div>
         <div className="text-center text-sm">
           {t.auth.signup.haveAccount}{" "}
-          <Link
+          {onSignin ? <button type="button" className="text-primary underline underline-offset-4" onClick={onSignin}>{t.auth.signup.signinLink}</button> : <Link
             to="/{-$lang}/signin"
             params={{ lang: langParam }}
             className="text-primary underline underline-offset-4 hover:underline"
           >
             {t.auth.signup.signinLink}
-          </Link>
+          </Link>}
         </div>
       </form>
     </div>

@@ -35,9 +35,9 @@ describe('normalized instructions with persistent idempotency and billing', () =
     const input = { userId: kind === 'paid' ? 'u1' : 'guest:instructions-test', requestId, mode: 'slim' as const, intensity: 73,
       image: { bytes: PNG, mimeType: 'image/png' as const }, instructions: ' \r\nOnly slim waist.\rKeep arms.\r\n ' };
     const first = await service.submit(input);
-    expect(first).toMatchObject({ balance: kind === 'paid' ? 30 : 0, reused: false, job: { status: 'succeeded' } });
+    expect(first).toMatchObject({ balance: kind === 'paid' ? 45 : 0, reused: false, job: { status: 'succeeded' } });
     expect(await service.submit({ ...input, instructions: 'Only slim waist.\nKeep arms.' }))
-      .toMatchObject({ balance: kind === 'paid' ? 30 : 0, reused: true, job: { id: first.job.id } });
+      .toMatchObject({ balance: kind === 'paid' ? 45 : 0, reused: true, job: { id: first.job.id } });
     await expect(service.submit({ ...input, instructions: 'Make hips fuller.' }))
       .rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT', status: 409, jobId: first.job.id });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -45,8 +45,11 @@ describe('normalized instructions with persistent idempotency and billing', () =
     const jobs = sqlite.prepare(kind === 'paid' ? 'SELECT * FROM body_image_edit' : 'SELECT * FROM body_guest_edit').all();
     expect(jobs).toHaveLength(1);
     const ledger = sqlite.prepare('SELECT * FROM credit_transaction').all();
-    expect(ledger).toHaveLength(kind === 'paid' ? 1 : 0);
-    if (kind === 'paid') expect(ledger[0]).toMatchObject({ type: 'consumption', amount: '-15', description: 'ai_body_edit' });
+    expect(ledger).toHaveLength(kind === 'paid' ? 2 : 0);
+    if (kind === 'paid') expect(ledger).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'consumption', amount: '-10', description: 'ai_body_edit' }),
+      expect.objectContaining({ type: 'bonus', amount: '10', description: 'body_edit_trial' }),
+    ]));
     const persisted = JSON.stringify({ jobs, ledger, outcome: first });
     expect(persisted).not.toContain('Only slim waist.');
     expect(persisted).not.toContain('"instructions"');

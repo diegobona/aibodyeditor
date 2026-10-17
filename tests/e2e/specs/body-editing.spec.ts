@@ -7,20 +7,21 @@ const PNG = readFileSync(resolve('apps/tanstack-app/public/favicon-32x32.png'));
 const JOB = '89c2cd5c-1602-4b81-8d96-21b7a79be307';
 const USER = 'body-edit-ui-fixture';
 const SESSION = { session: { id: 'session-ui', token: 'fixture', userId: USER, expiresAt: '2099-01-01T00:00:00Z', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, user: { id: USER, name: 'Editor Test', email: 'ui@example.invalid', emailVerified: true, image: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } };
-const success = (mode = 'slim', intensity = 70) => ({ jobId: JOB, status: 'succeeded', result: { imageUrl: '/api/body-edit/' + JOB + '/image', downloadUrl: '/api/body-edit/' + JOB + '/image?download=1', mode, intensity }, credits: { charged: 15, balance: 0 }, reused: false });
+const success = (mode = 'slim', intensity = 70) => ({ jobId: JOB, status: 'succeeded', result: { imageUrl: '/api/body-edit/' + JOB + '/image', downloadUrl: '/api/body-edit/' + JOB + '/image?download=1', mode, intensity }, credits: { charged: 10, balance: 40 }, reused: false });
 const json = (route: Route, body: unknown, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 const formOf = (route: Route) => new Request(route.request().url(), { method: 'POST', headers: { 'Content-Type': route.request().headers()['content-type'] }, body: route.request().postDataBuffer()! }).formData();
 async function setup(page: Page, handler: (route: Route) => Promise<void>, signedIn = true) {
   await page.route('**/api/auth/**', route => json(route, route.request().url().includes('get-session') && signedIn ? SESSION : null));
   await page.context().route('**/api/body-edit**', async route => {
     const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/account')) return json(route, { ownerId: USER, balance: 50, bonusGranted: false, welcomeCredits: 10 });
     if (url.pathname.endsWith('/guest-session')) return json(route, { ownerId: 'guest:fixture', remaining: 0 });
     if (url.pathname.endsWith('/image')) return route.fulfill({ body: PNG, contentType: 'image/png', headers: { 'Cache-Control': 'private, no-store', ...(url.searchParams.has('download') ? { 'Content-Disposition': 'attachment; filename="edited.png"' } : {}) } });
-    if (route.request().method() === 'GET' && url.pathname === '/api/body-edit' && !url.search) return json(route, { available: true, costCredits: 15, freeTrialEdits: 1 });
+    if (route.request().method() === 'GET' && url.pathname === '/api/body-edit' && !url.search) return json(route, { available: true, costCredits: 10, freeTrialEdits: 1 });
     return handler(route);
   });
   await page.goto('/');
-  await expect(page.getByRole('button', { name: signedIn ? 'Edit Photo' : 'Sign in to continue', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: signedIn ? 'Edit Photo' : 'Sign in for a free edit', exact: true })).toBeEnabled();
 }
 async function upload(page: Page) { await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG }); }
 const editor = (page: Page) => page.locator('[data-body-editor]');
@@ -232,7 +233,8 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     await upload(page); const preview = editor(page).getByRole('img', { name: 'Preview of the photo you selected' });
     const source = await preview.getAttribute('src');
     await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
-    await expect(editor(page).getByRole('alert')).toContainText('You need more credits for this edit.');
+    await expect(page.getByRole('dialog')).toContainText('Credit packs aren’t available yet.');
+    await page.getByRole('button', { name: 'Back to editor', exact: true }).click();
     await expect(preview).toHaveAttribute('src', source!);
   });
   test('samples preview a live outline and send only the original portrait half', async ({ page }) => {
@@ -290,7 +292,7 @@ test.describe('Actual editing UI contract (provider requests are mocked)', () =>
     await upload(page); await editor(page).getByText('Breast', { exact: true }).click();
     await selectStrength(page, 93);
     const source = await editor(page).getByRole('img').getAttribute('src');
-    await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+    await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
     await expect(page.getByRole('dialog')).toContainText('Your selected photo will stay here.');
     await expect(page.getByRole('dialog').getByRole('link', { name: 'Sign up', exact: true })).toHaveAttribute('target', '_blank');
     await page.getByRole('button', { name: 'Close', exact: true }).click();

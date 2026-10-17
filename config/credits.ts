@@ -12,7 +12,8 @@ export type FixedConsumptionConfig = number | {
   models?: Record<string, number>;
 };
 
-export const BODY_EDIT_CREDIT_COST = 15;
+export const BODY_EDIT_CREDIT_COST = 10;
+export const BODY_EDIT_WELCOME_CREDITS = 10;
 
 export const creditsConfig = {
   /**
@@ -27,8 +28,8 @@ export const creditsConfig = {
    * paid Offer is emitted.
    */
   publicOffer: {
-    /** Account editing requires credits; the browser guest trial is configured separately. */
-    freeTrialEdits: 0,
+    /** One account welcome grant, usable for any body edit; guest quota is separate. */
+    freeTrialEdits: BODY_EDIT_WELCOME_CREDITS / BODY_EDIT_CREDIT_COST,
     /** Credits deducted per photo edit. null = not decided yet. */
     creditsPerEdit: BODY_EDIT_CREDIT_COST as number | null,
     packs: [

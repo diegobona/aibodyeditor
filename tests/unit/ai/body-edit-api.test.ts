@@ -84,7 +84,7 @@ function outcome(overrides: Partial<BodyEditJob> = {}, reused = false): BodyEdit
 }
 
 function setup() {
-  const getUser = vi.fn<(request: Request) => Promise<{ id: string; banned?: boolean } | null>>(async () => ({ id: 'user-owner' }));
+  const getUser = vi.fn<(request: Request) => Promise<{ id: string; banned?: boolean; creditBalance?: number } | null>>(async () => ({ id: 'user-owner' }));
   const service = {
     submit: vi.fn<BodyEditorService['submit']>(async () => outcome()),
     getJob: vi.fn<BodyEditorService['getJob']>(async () => outcome({}, true)),
@@ -133,6 +133,75 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+});
+
+describe('Continue editing account credit eligibility', () => {
+  const request = () => new Request(`${API_URL}/${JOB_ID}/image?continue=1`);
+
+  test('requires login before fetching the continued image', async () => {
+    const { handlers, getUser, service, readImage } = setup();
+    getUser.mockResolvedValue(null);
+    await expectError(await handlers.image(request(), JOB_ID), 401, 'UNAUTHORIZED');
+    expect(service.getJob).not.toHaveBeenCalled();
+    expect(readImage).not.toHaveBeenCalled();
+    expect(service.submit).not.toHaveBeenCalled();
+  });
+
+  test.each([undefined, 0, 9, NaN])('rejects current balance %s without affecting ordinary preview or download', async balance => {
+    const { handlers, getUser, service, readImage } = setup();
+    getUser.mockResolvedValue({ id: 'user-owner', creditBalance: balance });
+    await expectError(await handlers.image(request(), JOB_ID), 402, 'INSUFFICIENT_CREDITS');
+    expect(readImage).not.toHaveBeenCalled();
+    expect((await handlers.image(jobRequest(), JOB_ID)).status).toBe(200);
+    expect((await handlers.image(jobRequest(true), JOB_ID)).status).toBe(200);
+    expect(service.submit).not.toHaveBeenCalled();
+  });
+
+  test.each([10, 300])('accepts balance %s, without purchase provenance or a debit', async balance => {
+    const { handlers, getUser, service } = setup();
+    getUser.mockResolvedValue({ id: 'user-owner', creditBalance: balance });
+    const response = await handlers.image(request(), JOB_ID);
+    expect(response.status).toBe(200);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(PNG);
+    expect(getUser).toHaveBeenCalledTimes(1);
+    expect(service.submit).not.toHaveBeenCalled();
+  });
+
+  test('a sufficient balance does not bypass ownership or an account ban', async () => {
+    const { handlers, getUser, service, readImage } = setup();
+    getUser.mockResolvedValue({ id: 'user-owner', creditBalance: 300, banned: true });
+    await expectError(await handlers.image(request(), JOB_ID), 403, 'FORBIDDEN');
+    getUser.mockResolvedValue({ id: 'user-owner', creditBalance: 300 });
+    service.getJob.mockResolvedValue(outcome({ userId: 'other-user' }));
+    await expectError(await handlers.image(request(), JOB_ID), 403, 'FORBIDDEN');
+    expect(readImage).not.toHaveBeenCalled();
+  });
+});
+
+describe('welcome account initialization boundary', () => {
+  const request = (origin = ORIGIN) => new Request(`${API_URL}/account`, { method: 'POST', headers: { Origin: origin } });
+  test('initializes the authenticated account only and returns private balance data', async () => {
+    const { getUser, service, getConfig, readImage } = setup();
+    const initializeAccount = vi.fn(async () => ({ balance: 10, bonusGranted: true, welcomeCredits: 10 }));
+    const handlers = createBodyEditHandlers({ getUser, service, getConfig, readImage, initializeAccount });
+    const response = await handlers.account(request());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(await response.json()).toEqual({ ownerId: 'user-owner', balance: 10, bonusGranted: true, welcomeCredits: 10 });
+    expect(initializeAccount).toHaveBeenCalledExactlyOnceWith('user-owner', expect.any(Date));
+    expect(service.submit).not.toHaveBeenCalled();
+  });
+  test('denies foreign origins, guests and bans before issuing a grant', async () => {
+    const { getUser, service, getConfig, readImage } = setup();
+    const initializeAccount = vi.fn(async () => ({ balance: 10, bonusGranted: true, welcomeCredits: 10 }));
+    const handlers = createBodyEditHandlers({ getUser, service, getConfig, readImage, initializeAccount });
+    await expectError(await handlers.account(request('https://other.example')), 403, 'INVALID_ORIGIN');
+    getUser.mockResolvedValue(null);
+    await expectError(await handlers.account(request()), 401, 'UNAUTHORIZED');
+    getUser.mockResolvedValue({ id: 'user-owner', banned: true });
+    await expectError(await handlers.account(request()), 403, 'FORBIDDEN');
+    expect(initializeAccount).not.toHaveBeenCalled();
+  });
 });
 
 describe('body edit API authentication and projection', () => {

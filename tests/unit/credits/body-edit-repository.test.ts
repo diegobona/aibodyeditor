@@ -6,7 +6,7 @@ import { createBodyEditRepository } from '../../../libs/credits/body-edit-reposi
 import type { BodyEditRepository, ReserveBodyEdit } from '../../../libs/credits/body-edit-types';
 
 let sqlite: Database.Database;
-let repo: BodyEditRepository;
+let repo: ReturnType<typeof createBodyEditRepository>;
 const start = new Date('2026-10-14T12:00:00Z');
 let serial = 0;
 function input(overrides: Partial<ReserveBodyEdit> = {}): ReserveBodyEdit {
@@ -32,6 +32,30 @@ beforeEach(() => {
 afterEach(() => sqlite?.close());
 
 describe('persistent body edit billing', () => {
+  test('initialization grants ten ordinary credits once, including simultaneous requests and another account', async () => {
+    const results = await Promise.all([repo.initializeAccount('u1', start), repo.initializeAccount('u1', start)]);
+    expect(results).toEqual([{ balance: 10, bonusGranted: true, welcomeCredits: 10 }, { balance: 10, bonusGranted: false, welcomeCredits: 10 }]);
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]).toMatchObject({ id: 'body_edit_trial:u1', type: 'bonus', amount: '10', description: 'body_edit_trial' });
+    expect(await repo.initializeAccount('u2', start)).toMatchObject({ balance: 10, bonusGranted: true });
+    await repo.reserve(input({ costCredits: 10, trialCredits: 10 }));
+    expect(balance()).toBe(0);
+    expect(await repo.initializeAccount('u1', start)).toMatchObject({ balance: 0, bonusGranted: false });
+  });
+  test('legacy trial grants are not reissued; spent welcome credits are refunded without another grant', async () => {
+    const first = input();
+    await repo.reserve(first);
+    expect(await repo.initializeAccount('u1', start)).toMatchObject({ balance: 0, bonusGranted: false });
+    await repo.fail('u1', first.jobId, 'TIMEOUT', start);
+    expect(await repo.initializeAccount('u1', start)).toMatchObject({ balance: 15, bonusGranted: false });
+    expect(rows().filter((row: any) => row.type === 'bonus')).toHaveLength(1);
+  });
+  test('missing and banned accounts cannot claim welcome credits', async () => {
+    await expect(repo.initializeAccount('missing', start)).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    sqlite.prepare('UPDATE user SET banned=1 WHERE id=?').run('u1');
+    await expect(repo.initializeAccount('u1', start)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(rows()).toHaveLength(0);
+  });
   test('stores exact continuous strength and reads historical named strengths without another debit', async () => {
     const request = input({ intensity: 73 });
     const first = await repo.reserve(request);

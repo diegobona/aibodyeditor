@@ -1,4 +1,5 @@
 import { bodyEditConfig, LEGACY_BODY_EDIT_INTENSITIES, normalizeBodyEditIntensity } from '../../../../config/body-editor';
+import { BODY_EDIT_CREDIT_COST } from '../../../../config/credits';
 import { prepareBodyImageEdit, type BodyImageEditOptions } from '../../../../libs/ai/body-edit';
 import { normalizeBodyEditInstructions } from '../../../../libs/ai/body-edit-instructions';
 import { isBodyEditUuid, type BodyEditorService } from '../../../../libs/ai/body-editor-service';
@@ -57,8 +58,9 @@ async function boundedForm(request: Request): Promise<FormData> {
 
 /** HTTP boundary is independently testable; auth, billing and storage are server dependencies. */
 export function createBodyEditHandlers(deps: {
-  getUser(request: Request): Promise<{ id: string; banned?: boolean } | null>;
+  getUser(request: Request): Promise<{ id: string; banned?: boolean; creditBalance?: number } | null>;
   service: BodyEditorService;
+  initializeAccount?(userId: string, now: Date): Promise<{ balance: number; bonusGranted: boolean; welcomeCredits: number }>;
   history?: BodyEditHistory;
   getConfig(): Promise<{ available: boolean; costCredits: number; freeTrialEdits: number; guestTrialEdits?: number }> | { available: boolean; costCredits: number; freeTrialEdits: number; guestTrialEdits?: number };
   guest?: {
@@ -86,8 +88,8 @@ export function createBodyEditHandlers(deps: {
     if (!guest) throw new BodyEditError('UNAUTHORIZED', 401);
     return { id: guest.id, service: deps.guest!.service };
   };
-  const readOwned = async (request: Request, read: (service: BodyEditorService, id: string) => Promise<BodyEditOutcome>) => {
-    const current = await user(request);
+  const readOwned = async (request: Request, read: (service: BodyEditorService, id: string) => Promise<BodyEditOutcome>, resolvedUser?: Awaited<ReturnType<typeof user>>) => {
+    const current = resolvedUser === undefined ? await user(request) : resolvedUser;
     if (current?.id) {
       try {
         const result = await read(deps.service, current.id);
@@ -101,11 +103,20 @@ export function createBodyEditHandlers(deps: {
     if (result.job.userId !== guest.id) throw new BodyEditError('FORBIDDEN', 403);
     return result;
   };
-  const owned = async (request: Request, jobId: string) => {
+  const owned = async (request: Request, jobId: string, resolvedUser?: Awaited<ReturnType<typeof user>>) => {
     if (!isBodyEditUuid(jobId)) throw new BodyEditError('NOT_FOUND', 404);
-    return readOwned(request, (service, id) => service.getJob({ userId: id, jobId }));
+    return readOwned(request, (service, id) => service.getJob({ userId: id, jobId }), resolvedUser);
   };
   return {
+    async account(request: Request) {
+      try {
+        if (request.headers.get('Origin') !== new URL(request.url).origin) throw new BodyEditError('INVALID_ORIGIN', 403);
+        const current = await user(request);
+        if (!current?.id) throw new BodyEditError('UNAUTHORIZED', 401);
+        if (!deps.initializeAccount) throw new BodyEditError('NOT_CONFIGURED', 503);
+        return json({ ownerId: current.id, ...await deps.initializeAccount(current.id, new Date()) });
+      } catch (error) { return failure(error); }
+    },
     async history(request: Request) {
       try {
         const current = await user(request);
@@ -200,7 +211,13 @@ export function createBodyEditHandlers(deps: {
     },
     async image(request: Request, jobId: string) {
       try {
-        const { job } = await owned(request, jobId);
+        const current = await user(request);
+        if (new URL(request.url).searchParams.get('continue') === '1') {
+          if (!current?.id) throw new BodyEditError('UNAUTHORIZED', 401);
+          const balance = current.creditBalance ?? 0;
+          if (!Number.isFinite(balance) || balance < BODY_EDIT_CREDIT_COST) throw new BodyEditError('INSUFFICIENT_CREDITS', 402);
+        }
+        const { job } = await owned(request, jobId, current);
         if (job.status !== 'succeeded' || !job.resultKey || bodyEditExpiresAt(job.createdAt).getTime() <= Date.now()) throw new BodyEditError('NOT_FOUND', 404);
         const image = await deps.readImage(job.resultKey); if (!image) throw new BodyEditError('NOT_FOUND', 404);
         if (!bodyEditConfig.allowedMimeTypes.includes(image.mimeType as any) || image.bytes.byteLength > bodyEditConfig.maxOutputBytes) throw new BodyEditError('STORAGE_ERROR', 502);

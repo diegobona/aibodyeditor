@@ -33,16 +33,19 @@ function backend() {
       provider: 'openai' as const, model: 'gpt-image-2.5-1k', mode: 'slim' as const, intensity: 70 };
   } };
   const guestRepo = createBodyGuestRepository({ dialect: 'sqlite', sqlite: db, networkHash: 'e2e-network' });
+  const accountRepo = createBodyEditRepository({ dialect: 'sqlite', sqlite: db });
   const handlers = createBodyEditHandlers({
-    getUser: async () => state.account ? { id: 'account' } : null,
-    service: createBodyEditorService({ ...pipeline, repository: createBodyEditRepository({ dialect: 'sqlite', sqlite: db }) }),
-    getConfig: () => ({ available: true, costCredits: 15, freeTrialEdits: 0, guestTrialEdits: 1 }),
+    getUser: async () => state.account ? { id: 'account', creditBalance: Number((db.prepare('SELECT credit_balance FROM user WHERE id=?').get('account') as { credit_balance: string }).credit_balance) } : null,
+    initializeAccount: (id, now) => accountRepo.initializeAccount(id, now),
+    service: createBodyEditorService({ ...pipeline, repository: accountRepo }),
+    getConfig: () => ({ available: true, costCredits: 10, freeTrialEdits: 1, guestTrialEdits: 1 }),
     guest: { service: createBodyEditorService({ ...pipeline, repository: guestRepo }),
       getIdentity: guestIdentity, allowance: (id, now) => guestRepo.allowance(id, now) },
     readImage: storage.get,
   });
   async function install(context: BrowserContext) {
     await context.route('**/api/auth/**', async route => {
+      if (route.request().method() === 'POST' && /\/sign-(?:in|up)\/email/.test(route.request().url())) state.account = true;
       const stamp = new Date().toISOString();
       const body = state.account ? { session: { id: 'session', token: 'fixture', userId: 'account', expiresAt: '2099-01-01T00:00:00Z' },
         user: { id: 'account', name: 'Fixture', email: 'fixture@example.invalid', emailVerified: true, createdAt: stamp, updatedAt: stamp } } : null;
@@ -53,7 +56,8 @@ function backend() {
       const request = new Request(req.url(), { method: req.method(), headers: await req.allHeaders(),
         ...(req.method() === 'POST' ? { body: req.postDataBuffer() ?? undefined } : {}) });
       let response: Response;
-      if (url.pathname.endsWith('/guest-session')) response = await handlers.guestSession(request);
+      if (url.pathname.endsWith('/account')) response = await handlers.account(request);
+      else if (url.pathname.endsWith('/guest-session')) response = await handlers.guestSession(request);
       else if (url.pathname === '/api/body-edit') response = req.method() === 'POST' ? await handlers.submit(request)
         : url.searchParams.has('requestId') ? await handlers.lookup(request) : await handlers.config();
       else {
@@ -93,10 +97,11 @@ test('one guest edit, private download and refresh persist the exhausted quota',
     } finally { await stranger.close(); }
     const initialized = page.waitForResponse(r => r.url().endsWith('/api/body-edit/guest-session') && r.status() === 200);
     await page.reload(); await initialized;
+    await page.getByRole('tab', { name: 'Result', exact: true }).click();
     await expect(editor(page).getByText('Your edited photo', { exact: true })).toBeVisible();
-    await editor(page).getByRole('button', { name: 'Edit another photo', exact: true }).click();
-    await expect(editor(page).getByRole('button', { name: 'Sign in to continue', exact: true })).toBeVisible();
-    await upload(page); await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+    await page.getByRole('tab', { name: 'Original', exact: true }).click();
+    await expect(editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true })).toBeVisible();
+    await upload(page); await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
     await expect(page.getByRole('dialog')).toContainText('Your selected photo will stay here.');
     expect(fixture.state.calls).toBe(1);
     expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(0);
@@ -131,19 +136,85 @@ test('signing in and reloading still recovers the cookie-owned guest result', as
     await editor(page).getByRole('link', { name: 'Download photo' }).click();
     expect((await downloadEvent).suggestedFilename()).toMatch(/\.png$/);
     expect(fixture.state.calls).toBe(1);
-    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(0);
+    await expect(editor(page)).toContainText('Balance: 10 credits');
+    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(1);
   } finally { fixture.close(); }
 });
 
-test('signed-in account with zero balance gets no extra trial', async ({ page, context }) => {
+test('welcome credits can continue a guest result; one generation spends them and opens packs without regranting', async ({ page, context }) => {
+  const fixture = backend();
+  try {
+    await fixture.install(context); await openGuest(page); await upload(page);
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(editor(page).getByRole('button', { name: 'Continue editing', exact: true })).toBeVisible();
+    const original = await editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true }).getAttribute('src');
+    await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('10 welcome credits');
+    await dialog.getByLabel('Email', { exact: true }).fill('fixture@example.invalid');
+    await dialog.getByLabel('Password', { exact: true }).fill('Fixture-password-123');
+    await dialog.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(editor(page)).toContainText('Balance: 10 credits');
+    await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toHaveAttribute('src', original!);
+    await editor(page).getByRole('button', { name: 'Continue editing', exact: true }).click();
+    await expect(editor(page)).toHaveAttribute('data-photo-source', 'generated');
+    expect(fixture.state.calls).toBe(1);
+    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(1);
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(editor(page).getByRole('button', { name: 'Get credits', exact: true })).toBeVisible();
+    expect(fixture.state.calls).toBe(2);
+    const ledger = fixture.db.prepare('SELECT * FROM credit_transaction').all();
+    expect(ledger).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'bonus', amount: '10' }), expect.objectContaining({ type: 'consumption', amount: '-10' }),
+    ]));
+    await editor(page).getByRole('button', { name: 'Get credits', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('Credit packs aren’t available yet.');
+    await page.getByRole('button', { name: 'Back to editor', exact: true }).click();
+    await page.reload();
+    await expect(editor(page).getByRole('button', { name: 'Get credits', exact: true })).toBeVisible();
+    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(2);
+    expect(fixture.state.calls).toBe(2);
+  } finally { fixture.close(); }
+});
+
+test('inline signup preserves settings and welcome credits fund a fresh image, including refund', async ({ page, context }) => {
+  const fixture = backend();
+  try {
+    await fixture.install(context); await openGuest(page); await upload(page);
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true })).toBeVisible();
+    await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Sign up', exact: true }).click();
+    await dialog.getByLabel('Name', { exact: true }).fill('Fixture');
+    await dialog.getByLabel('Email', { exact: true }).fill('fixture@example.invalid');
+    await dialog.getByLabel('Password', { exact: true }).fill('Fixture-password-123');
+    await dialog.getByRole('button', { name: 'Create account', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(editor(page)).toContainText('Balance: 10 credits');
+    expect(context.pages()).toHaveLength(1);
+    fixture.state.failNext = true;
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(editor(page).getByRole('alert')).toContainText('credits for this edit were returned');
+    await expect(editor(page)).toContainText('Balance: 10 credits');
+    await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(editor(page).getByRole('button', { name: 'Get credits', exact: true })).toBeVisible();
+    const bonuses = fixture.db.prepare("SELECT * FROM credit_transaction WHERE type='bonus'").all();
+    expect(bonuses).toHaveLength(1);
+    expect(fixture.state.calls).toBe(3);
+  } finally { fixture.close(); }
+});
+
+test('signed-in account receives welcome credits before generation', async ({ page, context }) => {
   const fixture = backend(); fixture.state.account = true;
   try {
     await fixture.install(context); await page.goto('/');
     await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
     await upload(page); await editor(page).getByRole('button', { name: 'Edit Photo', exact: true }).click();
-    await expect(editor(page).getByRole('alert')).toContainText('credits');
-    expect(fixture.state.calls).toBe(0);
-    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(0);
+    await expect(editor(page).getByRole('button', { name: 'Get credits', exact: true })).toBeVisible();
+    expect(fixture.state.calls).toBe(1);
+    expect(fixture.db.prepare('SELECT * FROM credit_transaction').all()).toHaveLength(2);
     expect(fixture.db.prepare('SELECT * FROM body_guest_edit').all()).toHaveLength(0);
   } finally { fixture.close(); }
 });

@@ -19,9 +19,11 @@ import { localizedPath } from "@/lib/i18n-path";
 export function LoginForm({
   className,
   onSuccess,
+  onSignup,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
   onSuccess?: () => void | Promise<void>;
+  onSignup?: () => void;
 }) {
   const { t, locale, langParam, tWithParams } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -198,7 +200,7 @@ export function LoginForm({
         </div>
         <div className="text-center text-sm">
           {t.auth.signin.noAccount}{" "}
-          <Link
+          {onSignup ? <button type="button" className="underline underline-offset-4" onClick={onSignup}>{t.auth.signin.signupLink}</button> : <Link
             to="/{-$lang}/signup"
             params={{ lang: langParam }}
             target={onSuccess ? "_blank" : undefined}
@@ -206,7 +208,7 @@ export function LoginForm({
             className="underline underline-offset-4"
           >
             {t.auth.signin.signupLink}
-          </Link>
+          </Link>}
         </div>
       </form>
     </div>

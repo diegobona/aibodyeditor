@@ -13,13 +13,13 @@ function setup() {
   const guestService = { submit: vi.fn(async () => result), getJob: vi.fn(async () => result), getRequest: vi.fn(async () => result) };
   const service = { submit: vi.fn(async () => { throw new BodyEditError('INSUFFICIENT_CREDITS', 402); }),
     getJob: vi.fn(async () => { throw new BodyEditError('NOT_FOUND', 404); }), getRequest: vi.fn(async () => { throw new BodyEditError('NOT_FOUND', 404); }) };
-  const getUser = vi.fn(async (): Promise<{ id: string; banned?: boolean } | null> => null);
+  const getUser = vi.fn(async (): Promise<{ id: string; banned?: boolean; creditBalance?: number } | null> => null);
   const getIdentity = vi.fn(async (_request: Request, create: boolean) => create
     ? { id: 'guest:owner', cookie: 'body_edit_guest=opaque; HttpOnly; Secure; Path=/api/body-edit' }
     : { id: 'guest:owner' });
   const allowance = vi.fn(async () => 1);
   const handlers = createBodyEditHandlers({ getUser, service,
-    getConfig: async () => ({ available: true, costCredits: 15, freeTrialEdits: 0, guestTrialEdits: 1 }),
+    getConfig: async () => ({ available: true, costCredits: 10, freeTrialEdits: 0, guestTrialEdits: 1 }),
     guest: { service: guestService, getIdentity, allowance }, readImage: async () => ({ bytes, mimeType: 'image/png' }) });
   return { handlers, service, guestService, getUser, getIdentity, allowance };
 }
@@ -91,4 +91,17 @@ test('guest polling, lookup and download use cookie ownership even after signing
   expect((await handlers.lookup(new Request(origin + '/api/body-edit?requestId=' + requestId))).status).toBe(200);
   getIdentity.mockResolvedValue({ id: 'guest:other' });
   expect((await handlers.image(req, jobId)).status).toBe(403);
+});
+
+test('guest result continuation requires account credits while preview and download remain accessible', async () => {
+  const { handlers, getUser, guestService, service } = setup();
+  const url = origin + '/api/body-edit/' + jobId + '/image';
+  expect((await handlers.image(new Request(url), jobId)).status).toBe(200);
+  expect((await handlers.image(new Request(url + '?continue=1'), jobId)).status).toBe(401);
+  getUser.mockResolvedValue({ id: 'account', creditBalance: 9 });
+  expect((await handlers.image(new Request(url + '?continue=1'), jobId)).status).toBe(402);
+  getUser.mockResolvedValue({ id: 'account', creditBalance: 10 });
+  expect((await handlers.image(new Request(url + '?continue=1'), jobId)).status).toBe(200);
+  expect(guestService.submit).not.toHaveBeenCalled();
+  expect(service.submit).not.toHaveBeenCalled();
 });

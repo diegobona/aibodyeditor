@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
+import { ChevronDown, Download, ImageUp, LoaderCircle, PencilLine, RefreshCw, Sparkles, X } from "lucide-react";
 import { authClientReact } from "@libs/auth/authClient";
 import { Button } from "@libs/react-shared/ui/button";
 import { Textarea } from "@libs/react-shared/ui/textarea";
@@ -13,9 +13,11 @@ import {
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
 import { ImageFileDetails } from '@libs/react-shared/components/image-file-details';
 import type { ImageFileMetadata } from '@libs/react-shared/utils/image-file-metadata';
+import { loadBodyEditResultFile } from '@libs/react-shared/utils/body-edit-result-file';
 import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
 import { BodyContourPreview } from "@libs/react-shared/components/body-contour-preview";
 import { useBodyEdit } from "@libs/react-shared/hooks/use-body-edit";
+import { useBodyEditAccount } from "@libs/react-shared/hooks/use-body-edit-account";
 import { cn } from "@libs/ui/utils/cn";
 import {
   BODY_EDIT_MODES,
@@ -27,6 +29,7 @@ import {
 import { BODY_EDIT_CREDIT_COST } from "../../../../../config/credits";
 import { useTranslation } from "@/hooks/use-translation";
 import { LoginForm } from "@/components/login-form";
+import { SignupForm } from "@/components/signup-form";
 import type { EditorPhotoSource, EditorSample, EditorSettings } from "./showcase-data";
 
 /** Load the original half as a photo for the shared outline and editing flow. */
@@ -102,6 +105,7 @@ export function UploadDropzone({
     editCopy = t.home.editing;
   const session = authClientReact.useSession();
   const editing = useBodyEdit(session.data?.user?.id, session.isPending);
+  const wallet = useBodyEditAccount(session.data?.user?.id, session.isPending);
   const inputId = useId(),
     inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -116,8 +120,15 @@ export function UploadDropzone({
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),
     [preparing, setPreparing] = useState(false);
+  const [signup, setSignup] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
   const [loadingSample, setLoadingSample] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [continuing, setContinuing] = useState(false);
+  const continuationRequest = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+  const currentOwner = useRef(session.data?.user?.id ?? 'guest');
+  currentOwner.current = session.data?.user?.id ?? 'guest';
   const [reference, setReference] = useState<EditorSample>();
   const [sampleNeedsGeneration, setSampleNeedsGeneration] = useState(false);
   const [generatedSettings, setGeneratedSettings] = useState<EditorSettings>();
@@ -129,9 +140,10 @@ export function UploadDropzone({
   const mode = selectedMode ?? localMode,
     pending = editing.pending || preparing;
   const unresolved = editing.error?.uncertain === true,
-    locked = pending || unresolved;
+    locked = pending || unresolved || continuing;
   const available = editing.config?.available,
     cost = editing.config?.costCredits ?? BODY_EDIT_CREDIT_COST;
+  const needsCredits = Boolean(session.data?.user && wallet.account && wallet.account.balance < cost);
   const aliases: Record<string, string> = {
     UNAUTHORIZED: "UNAUTHENTICATED",
     INVALID_ORIGIN: "FORBIDDEN",
@@ -146,6 +158,10 @@ export function UploadDropzone({
     ? (editCopy.errors[code as keyof typeof editCopy.errors] ??
       editCopy.errors.UNKNOWN)
     : "";
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; continuationRequest.current?.abort(); };
+  }, []);
   useEffect(() => {
     onPendingChange?.(locked);
   }, [locked, onPendingChange]);
@@ -205,7 +221,17 @@ export function UploadDropzone({
   }, [mode]);
   useEffect(() => {
     if (code === "UNAUTHENTICATED" || code === "TRIAL_EXHAUSTED") setSigninOpen(true);
+    if (code === 'INSUFFICIENT_CREDITS') { setCreditsOpen(true); void wallet.refresh(); }
   }, [code]);
+  useEffect(() => {
+    if (editing.result && editing.result.credits.charged > 0) wallet.setBalance(editing.result.credits.balance);
+  }, [editing.result, wallet.setBalance]);
+  useEffect(() => {
+    if (editing.error?.refunded && !editing.error.guest) void wallet.refresh();
+  }, [editing.error]);
+  useEffect(() => {
+    if (session.data?.user?.id) setSigninOpen(false);
+  }, [session.data?.user?.id]);
   const pickFile = (candidate: File | undefined) => {
     if (!candidate || locked) return;
     if (
@@ -242,6 +268,8 @@ export function UploadDropzone({
   };
   const handleSubmit = async () => {
     if (locked || loadingSample || startLock.current) return;
+    if (session.data?.user && wallet.error) { await wallet.refresh(); return; }
+    if (needsCredits) { setCreditsOpen(true); return; }
     if (!file) {
       inputRef.current?.click();
       return;
@@ -286,7 +314,41 @@ export function UploadDropzone({
     } catch { setError(editCopy.errors.RESULT_UNAVAILABLE); }
     finally { setDownloading(false); }
   };
+  const continueEditing = async () => {
+    if (!editing.result || locked || loadingSample || startLock.current || session.isPending || wallet.loading) return;
+    if (!session.data?.user?.id) { setSigninOpen(true); return; }
+    if (wallet.error) { await wallet.refresh(); return; }
+    if (needsCredits) { setCreditsOpen(true); return; }
+    const result = editing.result;
+    const owner = currentOwner.current;
+    const controller = new AbortController();
+    continuationRequest.current = controller;
+    startLock.current = true;
+    setContinuing(true); setError('');
+    const timer = setTimeout(() => controller.abort(), 20_000);
+    try {
+      const nextOriginal = await loadBodyEditResultFile({ imageUrl: result.result.imageUrl, jobId: result.jobId, origin: window.location.origin, signal: controller.signal });
+      if (!mounted.current || controller.signal.aborted || currentOwner.current !== owner) return;
+      editing.reset();
+      setReference(undefined); setGeneratedSettings(undefined); setResultMetadata(null);
+      setSampleNeedsGeneration(false);
+      setFile(nextOriginal); setPhotoSource('generated'); setMobileView('original');
+      if (inputRef.current) inputRef.current.value = '';
+      onSampleClear?.();
+    } catch (error) {
+      if (mounted.current && currentOwner.current === owner) {
+        if (error instanceof Error && error.message === 'UNAUTHORIZED') setSigninOpen(true);
+        else if (error instanceof Error && error.message === 'INSUFFICIENT_CREDITS') { setCreditsOpen(true); void wallet.refresh(); }
+        else setError(editCopy.continueEditingError);
+      }
+    }
+    finally {
+      clearTimeout(timer); startLock.current = false; continuationRequest.current = null;
+      if (mounted.current) setContinuing(false);
+    }
+  };
   const clearPhoto = () => {
+    // Clear only local editor state; previous saved results remain in My works.
     if (locked) return;
     editing.reset(); setReference(undefined); setGeneratedSettings(undefined);
     setSampleNeedsGeneration(false);
@@ -388,22 +450,29 @@ export function UploadDropzone({
     </div>
   </>;
   const action = <Button type="button" size="lg" className={cn("h-12 rounded-full px-6 text-base", workbench && "w-full")}
-    disabled={pending || loadingSample || session.isPending}
+    disabled={pending || loadingSample || continuing || session.isPending || wallet.loading}
     onClick={unresolved ? () => { void editing.recover(); } : () => { void handleSubmit(); }}>
     {pending && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
-    {unresolved ? editCopy.checkEdit : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
+    {unresolved ? editCopy.checkEdit : wallet.error ? editCopy.retryBalance : needsCredits ? editCopy.getCredits : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
   </Button>;
   const notices = <>
-    {(error || editError) && <p role="alert" id={inputId + "-error"} className="mt-3 text-sm font-medium text-destructive">
+    {(error || (editError && !['INSUFFICIENT_CREDITS', 'TRIAL_EXHAUSTED'].includes(code))) && <p role="alert" id={inputId + "-error"} className="mt-3 text-sm font-medium text-destructive">
       {error || editError}{editing.error?.refunded && <span className="mt-1 block">{editing.error.guest ? editCopy.guestRetryNote : editCopy.refunded}</span>}
     </p>}
-    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{editing.isGuest ? editing.guestRemaining === 0 ? editCopy.guestUsedNote : editCopy.trialNote : editCopy.costNote.replace("{credits}", String(cost))}</p>
-    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.availability}</p>
+    <p className="mt-3 text-xs leading-relaxed text-muted-foreground" role="status">{editing.isGuest ? editing.guestRemaining === 0 ? editCopy.guestUsedNote : editCopy.trialNote
+      : wallet.loading ? editCopy.loadingBalance : wallet.error ? editCopy.balanceError : editCopy.balanceNote.replace('{balance}', String(wallet.account?.balance ?? 0)).replace('{credits}', String(cost))}</p>
+    {wallet.account?.bonusGranted && <p className="mt-1 text-xs text-primary" role="status">{editCopy.welcomeNote.replace('{credits}', String(wallet.account.welcomeCredits))}</p>}
   </>;
   const download = editing.result && <Button asChild variant="outline" size="sm" className="rounded-full">
-    <a href={editing.result.result.downloadUrl} download title={t.imageDetails.downloadOriginal} aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
-      <Download className="size-4" aria-hidden="true" />{editCopy.download}
+    <a href={editing.result.result.downloadUrl} download title={t.imageDetails.downloadOriginal} aria-label={editCopy.download} aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
+      <Download className="size-4" aria-hidden="true" /><span className={workbench ? 'hidden xl:inline' : undefined}>{editCopy.download}</span>
     </a>
+  </Button>;
+  const continueAction = editing.result && <Button type="button" variant="outline" size="sm" disabled={locked || loadingSample || session.isPending || wallet.loading}
+    title={editCopy.continueEditingRequirement.replace('{credits}', String(BODY_EDIT_CREDIT_COST))}
+    aria-label={editCopy.continueEditing} onClick={() => void continueEditing()} className="h-8 rounded-full border-primary/30 px-2.5 text-xs text-primary hover:bg-accent">
+    {continuing ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> : <PencilLine className="size-3.5" aria-hidden="true" />}
+    {continuing ? editCopy.preparingNextEdit : editCopy.continueEditing}
   </Button>;
   return (
     <div className={cn(workbench ? "overflow-hidden rounded-3xl border bg-card shadow-sm" : "rounded-[28px] bg-card p-3 shadow-sm", className)}
@@ -426,7 +495,7 @@ export function UploadDropzone({
               <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
                 <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
-                  <span>{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span>{download}
+                  <span className="min-w-0 truncate">{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span><div className="flex shrink-0 items-center gap-1.5">{continueAction}{download}</div>
                 </div>
                 <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result && !needsSampleResult ? reference?.id : undefined}
                   className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
@@ -447,7 +516,7 @@ export function UploadDropzone({
                       <defs><clipPath id={inputId + "-sample-result-clip"}><rect width={768} height={1024} /></clipPath></defs>
                       <image href={reference.src} x={-768} width={1536} height={1024} clipPath={`url(#${inputId}-sample-result-clip)`} />
                     </svg>
-                    : <div className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground"><Sparkles className="size-7 text-primary/60" /><p className="text-sm font-medium">{workspace.resultPlaceholder}</p><p className="text-xs leading-relaxed">{workspace.resultPlaceholderHint}</p></div>}
+                    : <div className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground"><Sparkles className="size-7 text-primary/60" /><p className="text-sm font-medium">{photoSource === 'generated' ? editCopy.continueEditingReady : workspace.resultPlaceholder}</p><p className="text-xs leading-relaxed">{workspace.resultPlaceholderHint}</p></div>}
                 </div></div>
                 <div className="flex min-h-20 shrink-0 flex-col justify-center gap-1 border-t px-4 py-2 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
                   {resultSettings && <p data-result-settings className="font-semibold text-foreground">{copy.modes[resultSettings.mode]} · {t.home.realResults.intensity.replace("{value}", String(resultSettings.intensity ?? BODY_EDIT_INTENSITY.default))}</p>}
@@ -472,14 +541,23 @@ export function UploadDropzone({
             loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult}
             onMetadataChange={metadata => setResultMetadata(metadata && { jobId: editing.result!.jobId, metadata })} />
           {resultMetadata?.jobId === editing.result.jobId && <ImageFileDetails metadata={resultMetadata.metadata} copy={t.imageDetails} locale={locale} className="mt-3" />}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button>{download}</div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" disabled={locked} className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button><div className="flex flex-wrap items-center gap-2">{continueAction}{download}</div></div>
         </div> : <>{photo}{controls}<div className="mt-4 flex justify-end">{action}</div></>}
         <div className="px-2 pb-1">{notices}</div>
       </>}
       <Dialog open={signinOpen} onOpenChange={setSigninOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editCopy.signinTitle}</DialogTitle><DialogDescription>{editCopy.signinDescription}</DialogDescription></DialogHeader>
-          <LoginForm onSuccess={async () => { await session.refetch(); setSigninOpen(false); editing.reset(); setError(""); }} />
+          <DialogHeader><DialogTitle>{signup ? t.auth.signup.title : editCopy.signinTitle}</DialogTitle><DialogDescription>{editCopy.signinDescription}</DialogDescription></DialogHeader>
+          {signup ? <SignupForm onSignin={() => setSignup(false)} onSuccess={async () => { await session.refetch(); setSigninOpen(false); setError(''); }} />
+            : <LoginForm onSignup={() => setSignup(true)} onSuccess={async () => { await session.refetch(); setSigninOpen(false); setError(''); }} />}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={creditsOpen} onOpenChange={setCreditsOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editCopy.creditsTitle}</DialogTitle><DialogDescription>{editCopy.creditsDescription.replace('{credits}', String(cost))}</DialogDescription></DialogHeader>
+          <p className="text-sm text-muted-foreground">{editCopy.packsUnavailable}</p>
+          <p className="text-xs text-muted-foreground">{editCopy.packTerms}</p>
+          <Button type="button" onClick={() => setCreditsOpen(false)}>{editCopy.backToEditor}</Button>
         </DialogContent>
       </Dialog>
     </div>

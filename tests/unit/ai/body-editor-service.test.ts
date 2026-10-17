@@ -8,7 +8,7 @@ const id = '12345678-1234-4234-8234-123456789012';
 afterEach(() => vi.restoreAllMocks());
 function setup() {
   const jobs = new Map<string, BodyEditJob>();
-  let balance = 15; // An existing prepaid balance; new account trials are no longer granted.
+  let balance = 0; // A new account receives its one-time welcome credits.
   let trial = false;
   const repo: BodyEditRepository = {
     reserve: vi.fn(async (input: ReserveBodyEdit) => {
@@ -123,8 +123,8 @@ describe('body editor domain', () => {
   test('reserves billing once, stores only the output, and reuses a completed request', async () => {
     const { service, repo, edit, store, input } = setup();
     const first = await service.submit(input);
-    expect(first).toMatchObject({ job: { status: 'succeeded', costCredits: 15 }, balance: 0, reused: false });
-    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ trialCredits: 0, costCredits: 15, inputHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    expect(first).toMatchObject({ job: { status: 'succeeded', costCredits: 10 }, balance: 0, reused: false });
+    expect(repo.reserve).toHaveBeenCalledWith(expect.objectContaining({ trialCredits: 10, costCredits: 10, inputHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
     expect(store.put).toHaveBeenCalledWith(id, PNG, 'image/png');
     expect(await service.submit(input)).toMatchObject({ job: { status: 'succeeded' }, reused: true });
     expect(edit).toHaveBeenCalledTimes(1);
@@ -147,7 +147,7 @@ describe('body editor domain', () => {
   test('refunds provider failure and reuses the failed job without retrying', async () => {
     const { service, repo, edit, input } = setup();
     edit.mockRejectedValue(Object.assign(new Error('Private upstream text'), { code: 'TIMEOUT' }));
-    expect(await service.submit(input)).toMatchObject({ job: { status: 'failed', errorCode: 'TIMEOUT', refunded: true }, balance: 15 });
+    expect(await service.submit(input)).toMatchObject({ job: { status: 'failed', errorCode: 'TIMEOUT', refunded: true }, balance: 10 });
     expect(await service.submit(input)).toMatchObject({ job: { status: 'failed' }, reused: true });
     expect(edit).toHaveBeenCalledTimes(1);
     expect(repo.fail).toHaveBeenCalledTimes(1);
@@ -158,7 +158,7 @@ describe('body editor domain', () => {
     const error = Object.assign(new BodyImageEditError('INVALID_RESPONSE', 'private upstream message', 200, 'req-provider-unit'),
       { diagnostic: { reason: 'result_origin', resultHost: 'other.example.test' } });
     edit.mockRejectedValue(error);
-    expect(await service.submit(input)).toMatchObject({ job: { status: 'failed', refunded: true }, balance: 15 });
+    expect(await service.submit(input)).toMatchObject({ job: { status: 'failed', refunded: true }, balance: 10 });
     expect(warn).toHaveBeenCalledWith('[body-edit] failed', expect.objectContaining({ jobId: id,
       model: 'gpt-image-2.5-1k', stage: 'provider', code: 'INVALID_RESPONSE', providerRequestId: 'req-provider-unit',
       diagnostic: { reason: 'result_origin', resultHost: 'other.example.test' } }));

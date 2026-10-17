@@ -15,7 +15,7 @@ export type EditorSample = {
 };
 
 export type EditorSettings = { mode: BodyEditMode; intensity: BodyEditIntensity; instructions: string };
-export type EditorPhotoSource = "local" | "sample" | null;
+export type EditorPhotoSource = "local" | "sample" | "generated" | null;
 
 /** Actual editor outputs paired with their fictional sample originals. */
 export const REAL_RESULT_IMAGES = {

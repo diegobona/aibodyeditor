@@ -28,9 +28,10 @@ async function publicFixtures(page: Page) {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.startsWith('/api/auth/')) return route.fulfill({ json: null });
+    if (path === '/api/body-edit/account') return route.fulfill({ json: { ownerId: 'continuation-user', balance: 300, bonusGranted: false, welcomeCredits: 10 } });
     if (path === '/api/body-edit/guest-session') return route.fulfill({ json: { ownerId: 'guest:presets', remaining: 1 } });
     if (path === '/api/body-edit' && request.method() === 'GET') {
-      return route.fulfill({ json: { available: true, costCredits: 15, guestTrialEdits: 1, freeTrialEdits: 0 } });
+      return route.fulfill({ json: { available: true, costCredits: 10, guestTrialEdits: 1, freeTrialEdits: 0 } });
     }
     // Keep contour analysis local and deterministic; these tests exercise preset selection.
     if (path === '/body-preview/worker.js') {
@@ -652,5 +653,143 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect(generated).toHaveCount(0); await expect(download).toHaveCount(0);
     await expect(specifications).toHaveCount(0);
     await expect(page.locator('#hero-showcase')).toContainText('Your edited photo will appear here');
+  });
+
+  test('Continue editing reuses exact result bytes and only a later Edit Photo submits fresh settings', async ({ page }) => {
+    await page.route('**/api/auth/get-session**', route => route.fulfill({ json: {
+      session: { id: 'continuation-session', userId: 'continuation-user', expiresAt: new Date(Date.now() + 86_400_000).toISOString() },
+      user: { id: 'continuation-user', email: 'continuation@example.com', name: 'Continuation fixture', emailVerified: true },
+    } }));
+    const imageUrl = '/mock-continuation-result.png';
+    const submissions: { requestId: string; mode: string; intensity: string; instructions: string; bytes: Buffer; name: string }[] = [];
+    await page.route('**' + imageUrl + '*', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const request = route.request();
+      const form = await new Request(request.url(), { method: 'POST', headers: request.headers(), body: request.postDataBuffer()! }).formData();
+      const image = form.get('image') as File;
+      submissions.push({ requestId: String(form.get('requestId')), mode: String(form.get('mode')), intensity: String(form.get('intensity')), instructions: String(form.get('instructions') ?? ''), bytes: Buffer.from(await image.arrayBuffer()), name: image.name });
+      return route.fulfill({ json: { jobId: submissions.length === 1 ? '11111111-1111-4111-8111-111111111111' : '22222222-2222-4222-8222-222222222222', status: 'succeeded',
+        result: { imageUrl, downloadUrl: imageUrl, mode: form.get('mode'), intensity: Number(form.get('intensity')) }, credits: { charged: 10, balance: 300 - submissions.length * 10 }, reused: false } });
+    });
+    await page.goto('/');
+    await expect(page.locator('header').getByRole('link', { name: 'My works', exact: true })).toBeVisible();
+    await choose(page, 'shoulders'); await expectRecipe(page, 'shoulders');
+    const proceed = page.getByRole('button', { name: 'Continue editing', exact: true });
+    await expect(proceed).toHaveCount(0);
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    await proceed.click();
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'generated');
+    await expect(page.locator('#hero-showcase img')).toHaveCount(0);
+    await expect(page.locator('[data-photo-panel="result"] [data-image-details]')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toContainText('Ready for your next edit');
+    await expect(page.locator('#samples [aria-pressed="true"]')).toHaveCount(0);
+    await expect(page.locator('input[type="radio"][value="muscle"]')).toBeChecked();
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('80');
+    await expect(page.locator('[data-body-editor] textarea')).toHaveValue(recipe('shoulders').instructions);
+    await expectDecoded(preview(page)); expect(submissions).toHaveLength(1);
+    await page.locator('[data-editor-settings]').getByText('Breast', { exact: true }).click();
+    await page.getByRole('slider', { name: 'Intensity', exact: true }).press('End');
+    await page.locator('[data-body-editor] textarea').fill('Keep my waist and shoulders unchanged.');
+    expect(submissions).toHaveLength(1);
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    expect(submissions).toHaveLength(2);
+    expect(submissions[1]).toMatchObject({ mode: 'breast', intensity: '100', instructions: 'Keep my waist and shoulders unchanged.', name: 'ai-body-edit-11111111-1111-4111-8111-111111111111.png' });
+    expect(submissions[1].bytes).toEqual(PREVIEW_PNG);
+    expect(submissions[1].requestId).not.toBe(submissions[0].requestId);
+  });
+
+  test('Continue editing requires guest login and preserves both images', async ({ page }) => {
+    const imageUrl = '/mock-guest-continuation.png'; let posts = 0, continuationGets = 0;
+    await page.route('**' + imageUrl + '*', route => {
+      if (new URL(route.request().url()).searchParams.has('continue')) continuationGets++;
+      return route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG });
+    });
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback(); posts++;
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded', result: { imageUrl, downloadUrl: imageUrl, mode: 'muscle', intensity: 80 }, credits: { charged: 0, balance: 0 }, reused: false } });
+    });
+    await visit(page); await choose(page, 'shoulders');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    const original = await preview(page).getAttribute('src');
+    const result = await page.locator('#hero-showcase img').getAttribute('src');
+    const proceed = page.getByRole('button', { name: 'Continue editing', exact: true });
+    await proceed.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(preview(page)).toHaveAttribute('src', original!);
+    await expect(page.locator('#hero-showcase img')).toHaveAttribute('src', result!);
+    expect(posts).toBe(1); expect(continuationGets).toBe(0);
+  });
+
+  test('Continue editing checks the current balance, preserves failures and accepts exactly 10', async ({ page }) => {
+    await page.route('**/api/auth/get-session**', route => route.fulfill({ json: {
+      session: { id: 'continuation-session', userId: 'continuation-user', expiresAt: new Date(Date.now() + 86_400_000).toISOString() },
+      user: { id: 'continuation-user', email: 'continuation@example.com', name: 'Continuation fixture', emailVerified: true },
+    } }));
+    const imageUrl = '/mock-balance-continuation.png'; let balance = 9, fail = false, posts = 0;
+    await page.route('**' + imageUrl + '*', route => {
+      if (new URL(route.request().url()).searchParams.get('continue') === '1') {
+        if (balance < 10) return route.fulfill({ status: 402, json: { error: { code: 'INSUFFICIENT_CREDITS' } } });
+        if (fail) return route.fulfill({ status: 502, json: { error: { code: 'RESULT_UNAVAILABLE' } } });
+      }
+      return route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG });
+    });
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback(); posts++;
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded', result: { imageUrl, downloadUrl: imageUrl, mode: 'muscle', intensity: 80 }, credits: { charged: 10, balance: 300 }, reused: false } });
+    });
+    await page.goto('/');
+    await expect(page.locator('header').getByRole('link', { name: 'My works', exact: true })).toBeVisible();
+    await choose(page, 'shoulders');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    const original = await preview(page).getAttribute('src');
+    const result = await page.locator('#hero-showcase img').getAttribute('src');
+    const proceed = page.getByRole('button', { name: 'Continue editing', exact: true });
+    await proceed.click();
+    await expect(page.getByRole('dialog')).toContainText('Credit packs aren’t available yet.');
+    await page.getByRole('button', { name: 'Back to editor', exact: true }).click();
+    await expect(preview(page)).toHaveAttribute('src', original!);
+    await expect(page.locator('#hero-showcase img')).toHaveAttribute('src', result!);
+    balance = 10; fail = true; await proceed.click();
+    await expect(page.getByRole('alert')).toContainText('This result couldn’t be loaded for editing. Please try again.');
+    await expect(page.locator('#hero-showcase img')).toHaveAttribute('src', result!);
+    fail = false; await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Result', exact: true }).click();
+    await proceed.click();
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'generated');
+    await expect(page.getByRole('tab', { name: 'Original', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expectDecoded(preview(page));
+    await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    expect(posts).toBe(1);
+  });
+
+  test('Continue editing also restores controls in the compact tool editor', async ({ page }) => {
+    await page.route('**/api/auth/get-session**', route => route.fulfill({ json: {
+      session: { id: 'continuation-session', userId: 'continuation-user', expiresAt: new Date(Date.now() + 86_400_000).toISOString() },
+      user: { id: 'continuation-user', email: 'continuation@example.com', name: 'Continuation fixture', emailVerified: true },
+    } }));
+    const imageUrl = '/mock-compact-continuation.png'; let posts = 0;
+    await page.route('**' + imageUrl + '*', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback(); posts++;
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded', result: { imageUrl, downloadUrl: imageUrl, mode: 'slim', intensity: 70 }, credits: { charged: 10, balance: 290 }, reused: false } });
+    });
+    await page.goto('/body-editor');
+    await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
+    await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'original.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('[data-result-source]'));
+    await page.getByRole('button', { name: 'Continue editing', exact: true }).click();
+    await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'generated');
+    await expect(page.locator('[data-result-source]')).toHaveCount(0);
+    await expect(page.locator('input[type="radio"][value="slim"]')).toBeChecked();
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('70');
+    await expectDecoded(preview(page)); expect(posts).toBe(1);
+    await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled();
   });
 });

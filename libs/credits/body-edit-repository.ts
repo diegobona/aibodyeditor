@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { normalizeBodyEditIntensity } from '../../config/body-editor';
+import { BODY_EDIT_WELCOME_CREDITS } from '../../config/credits';
 import { TransactionTypeCode } from './utils';
 import { BodyEditError, type BodyEditJob, type BodyEditOutcome, type BodyEditRepository, type ReserveBodyEdit } from './body-edit-types';
 
@@ -33,7 +34,9 @@ function metadata(job: Pick<BodyEditJob, 'id' | 'model' | 'mode' | 'intensity'>)
 }
 
 /** Each transition owns its transaction; provider work never holds a DB transaction open. */
-export function createBodyEditRepository(options: Options): BodyEditRepository {
+export function createBodyEditRepository(options: Options): BodyEditRepository & {
+  initializeAccount(userId: string, now: Date): Promise<{ balance: number; bonusGranted: boolean; welcomeCredits: number }>;
+} {
   if (options.dialect === 'sqlite') {
     const db = options.sqlite;
     const transaction = <T>(fn: () => T): T => db.transaction(fn).immediate();
@@ -54,7 +57,21 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
       return job(row.user_id, row.id);
     };
     const expire = (row: any, now: Date) => row.status === 'processing' && Number(row.deadline_at) <= now.getTime() ? refund(row, 'TIMEOUT', now) : row;
+    const welcome = (userId: string, amount: number, now: Date) => {
+      if (amount <= 0 || db.prepare('SELECT id FROM credit_transaction WHERE id = ?').get(trialId(userId))) return false;
+      db.prepare('UPDATE user SET credit_balance = credit_balance + ?, updated_at = ? WHERE id = ?')
+        .run(amount, Math.floor(now.getTime() / 1000), userId);
+      ledger(trialId(userId), userId, 'bonus', amount, TransactionTypeCode.BODY_EDIT_TRIAL, JSON.stringify({ operation: 'body_edit', edits: 1 }), now);
+      return true;
+    };
     return {
+      async initializeAccount(userId, now) {
+        return transaction(() => {
+          assertUser(account(userId), true);
+          const bonusGranted = welcome(userId, BODY_EDIT_WELCOME_CREDITS, now);
+          return { balance: Number(account(userId).credit_balance), bonusGranted, welcomeCredits: BODY_EDIT_WELCOME_CREDITS };
+        });
+      },
       async reserve(input) {
         return transaction(() => {
           assertUser(account(input.userId), true);
@@ -63,11 +80,7 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
             if (existing.input_hash !== input.inputHash) throw new BodyEditError('IDEMPOTENCY_CONFLICT', 409, existing.id);
             return outcome(expire(existing, input.now), true);
           }
-          if (input.trialCredits > 0 && !db.prepare('SELECT id FROM credit_transaction WHERE id = ?').get(trialId(input.userId))) {
-            db.prepare('UPDATE user SET credit_balance = credit_balance + ?, updated_at = ? WHERE id = ?')
-              .run(input.trialCredits, Math.floor(input.now.getTime() / 1000), input.userId);
-            ledger(trialId(input.userId), input.userId, 'bonus', input.trialCredits, TransactionTypeCode.BODY_EDIT_TRIAL, JSON.stringify({ operation: 'body_edit', edits: 1 }), input.now);
-          }
+          welcome(input.userId, input.trialCredits, input.now);
           const debit = db.prepare('UPDATE user SET credit_balance = credit_balance - ?, updated_at = ? WHERE id = ? AND CAST(credit_balance AS REAL) >= ?')
             .run(input.costCredits, Math.floor(input.now.getTime() / 1000), input.userId, input.costCredits);
           if (!debit.changes) throw new BodyEditError('INSUFFICIENT_CREDITS', 402);
@@ -126,7 +139,20 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
     return (await client.query("UPDATE body_image_edit SET status = 'failed', error_code = $1, refunded = true, updated_at = $2 WHERE id = $3 AND status = 'processing' RETURNING *", [code, now, row.id])).rows[0];
   };
   const expire = (client: PgClient, row: any, now: Date) => row.status === 'processing' && new Date(row.deadline_at).getTime() <= now.getTime() ? refund(client, row, 'TIMEOUT', now) : row;
+  const welcome = async (client: PgClient, userId: string, amount: number, now: Date) => {
+    if (amount <= 0 || (await client.query('SELECT id FROM credit_transaction WHERE id = $1', [trialId(userId)])).rows.length) return false;
+    await client.query('UPDATE "user" SET credit_balance = credit_balance + $1, updated_at = $2 WHERE id = $3', [amount, now, userId]);
+    await ledger(client, trialId(userId), userId, 'bonus', amount, TransactionTypeCode.BODY_EDIT_TRIAL, JSON.stringify({ operation: 'body_edit', edits: 1 }), now);
+    return true;
+  };
   return {
+    async initializeAccount(userId, now) {
+      return transaction(async client => {
+        assertUser(await account(client, userId, true), true);
+        const bonusGranted = await welcome(client, userId, BODY_EDIT_WELCOME_CREDITS, now);
+        return { balance: Number((await account(client, userId)).credit_balance), bonusGranted, welcomeCredits: BODY_EDIT_WELCOME_CREDITS };
+      });
+    },
     async reserve(input) {
       return transaction(async (client) => {
         assertUser(await account(client, input.userId, true), true);
@@ -135,10 +161,7 @@ export function createBodyEditRepository(options: Options): BodyEditRepository {
           if (existing.input_hash !== input.inputHash) throw new BodyEditError('IDEMPOTENCY_CONFLICT', 409, existing.id);
           return outcome(client, await expire(client, existing, input.now), true);
         }
-        if (input.trialCredits > 0 && !(await client.query('SELECT id FROM credit_transaction WHERE id = $1', [trialId(input.userId)])).rows.length) {
-          await client.query('UPDATE "user" SET credit_balance = credit_balance + $1, updated_at = $2 WHERE id = $3', [input.trialCredits, input.now, input.userId]);
-          await ledger(client, trialId(input.userId), input.userId, 'bonus', input.trialCredits, TransactionTypeCode.BODY_EDIT_TRIAL, JSON.stringify({ operation: 'body_edit', edits: 1 }), input.now);
-        }
+        await welcome(client, input.userId, input.trialCredits, input.now);
         const debit = await client.query('UPDATE "user" SET credit_balance = credit_balance - $1, updated_at = $2 WHERE id = $3 AND credit_balance >= $1 RETURNING credit_balance', [input.costCredits, input.now, input.userId]);
         if (!debit.rows.length) throw new BodyEditError('INSUFFICIENT_CREDITS', 402);
         const created = (await client.query('INSERT INTO body_image_edit (id,user_id,request_id,input_hash,mode,intensity,model,cost_credits,created_at,updated_at,deadline_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$10) RETURNING *',

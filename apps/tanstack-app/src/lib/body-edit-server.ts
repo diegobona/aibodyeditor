@@ -39,7 +39,7 @@ export async function getBodyEditHandlers(request?: Request) {
   const missing = async (): Promise<never> => { throw new BodyEditError('NOT_CONFIGURED', 503); };
   const dbOptions = dialect === 'sqlite' ? { dialect: 'sqlite' as const, sqlite: database.sqliteInstance }
     : { dialect: 'pg' as const, pool: database.pool, withFresh: database.withFreshRequestClient };
-  const repository = dialect === 'd1' ? { reserve: missing, get: missing, getByRequest: missing, succeed: missing, fail: missing } : createBodyEditRepository(dbOptions);
+  const repository = dialect === 'd1' ? { initializeAccount: missing, reserve: missing, get: missing, getByRequest: missing, succeed: missing, fail: missing } : createBodyEditRepository(dbOptions);
   const networkHash = request ? await guestNetworkHash(request, process.env.BETTER_AUTH_SECRET ?? '', database.isWorkersRuntime) : undefined;
   const guestRepository = dialect === 'd1' ? undefined : createBodyGuestRepository({ ...dbOptions, networkHash });
   const pipeline = { storage: storage ?? { put: missing, get: missing, delete: missing },
@@ -52,6 +52,7 @@ export async function getBodyEditHandlers(request?: Request) {
   const service = createBodyEditorService({ ...pipeline, repository });
   return createBodyEditHandlers({
     service,
+    initializeAccount: (id, now) => repository.initializeAccount(id, now),
     ...(dialect !== 'd1' && storage ? { history: createBodyEditHistory(dbOptions, storage) } : {}),
     getConfig: async () => ({ available: await available(), costCredits: BODY_EDIT_CREDIT_COST, freeTrialEdits: creditsConfig.publicOffer.freeTrialEdits, guestTrialEdits: bodyGuestConfig.freeEdits }),
     ...(guestRepository ? { guest: {
@@ -66,8 +67,8 @@ export async function getBodyEditHandlers(request?: Request) {
       const { auth } = await import('@libs/auth');
       const session = await auth.api.getSession({ headers: new Headers(request.headers) });
       if (!session?.user?.id) return null;
-      const [current] = await database.db.select({ id: database.user.id, banned: database.user.banned }).from(database.user).where(eq(database.user.id, session.user.id)).limit(1);
-      return current ? { id: current.id, banned: Boolean(current.banned) } : null;
+      const [current] = await database.db.select({ id: database.user.id, banned: database.user.banned, creditBalance: database.user.creditBalance }).from(database.user).where(eq(database.user.id, session.user.id)).limit(1);
+      return current ? { id: current.id, banned: Boolean(current.banned), creditBalance: Number(current.creditBalance) } : null;
     },
     readImage: async (key) => { if (!storage) throw new BodyEditError('NOT_CONFIGURED', 503); return storage.get(key); },
   });
