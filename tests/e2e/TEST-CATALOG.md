@@ -1,5 +1,33 @@
 # E2E 测试流程目录
 
+## Invalidate saved case image when settings change — verified (2026-10-17)
+
+- Changing a case's mode, intensity or extra instructions immediately removes its saved result and shows an explicit Edit Photo generation hint. Retain the original and current controls/outline. Returning controls to the old values does not restore the old result; choosing a case again does.
+- This local change performs no generation or credit operation. Preserve existing actual generated-result handling, pending locks and exact submitted settings. Verify only these affected case flows.
+
+Verification: all three targeted scenarios passed across the initial run and a two-case rerun (5.9 s): mode/intensity/instructions each remove the saved result, returning the intensity does not restore it, selecting the case again restores the reference, the original remains, settings-only changes invalidate the reference, and Breast 100 submission/recovery retains the current settings. The initial run hit the existing auth-readiness timeout and one test counted the placeholder icon as an image; its selector was narrowed to actual image elements. Typecheck passed (13.04 s); Workers build passed (32.704 s). No live generation or credit use.
+
+## Top settings-only hint and simplified gallery Try — verified (2026-10-17)
+
+- Hovering or keyboard-focusing the disabled top settings-only option while no photo is loaded explains that a photo must be uploaded first, with EN/ZH copy. Do not show this hint for an enabled option or when an existing edit is the reason for the disabled state.
+- Gallery cards have no settings-only switches. Try always loads the chosen case's photo and exact recipe, irrespective of the top-strip preference, without generating an edit. Verify the hint and affected Try behavior only.
+
+Verification: the final lightweight CSS hover/keyboard hint passed its targeted E2E (1.9 s). The gallery Try contract and existing top-strip settings-retention scenario each passed in targeted runs; combined runs also encountered the existing intermittent initial hydration/auth-readiness timeout. Final typecheck passed (12.565 s), Workers build passed (31.842 s). No live generation. Screenshot: `test-results/settings-only-upload-hint.png`.
+
+## Clear selected photo — verified (2026-10-17)
+
+- Add Clear photo beside Choose another photo. One click removes the selected photo, outline, case selection and displayed result, resets the file input and returns to the empty uploader. No server deletion, generation or credit use.
+- Disable clearing during pending/uncertain edits. Check sample clearing, uploading the same file again and the existing pending lock only.
+
+Verification: both targeted E2E scenarios passed (5.6 s): clearing a sample, choosing/clearing the same local file twice, and disabling Clear photo during pending generation. Typecheck passed (17.211 s); Workers build passed (59.554 s; existing chunk warnings). No live generation or database changes.
+
+## Automatically scrolling example strip — verified (2026-10-17)
+
+- Hide the top strip's native horizontal scrollbar and slowly scroll through the ten examples automatically, reversing gently at either end. Hover, keyboard focus, touch interaction, pending edits and reduced-motion preferences pause automatic movement; selection and manual navigation remain available.
+- Check the hidden scrollbar, automatic movement and one exact recipe selection. No generation or broad audit.
+
+Verification: the single targeted E2E passed (3.3 s), confirming hidden native scrollbar, automatic movement and exact Breast Subtle recipe selection with ten cases. Typecheck passed (22.695 s); Workers build passed (1m17.268s; existing chunk warnings). No generation calls. Screenshot: `test-results/example-auto-scroll.png`.
+
 ## Workbench private result image loading — verified (2026-10-17)
 
 - The workbench loads existing private results using a same-origin authenticated fetch and displays a decoded blob URL, reusing the compact editor's loader. Direct image requests to the Node dev API may return static HTML/404 and must not be used.

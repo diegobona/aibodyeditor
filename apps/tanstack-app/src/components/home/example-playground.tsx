@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DiptychPhoto } from "@libs/react-shared/components/photo-comparison";
 import { cn } from "@libs/ui/utils/cn";
@@ -25,6 +25,30 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
   const [settingsOnly, setSettingsOnly] = useState(false);
   const rail = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const element = rail.current;
+    if (!element || pending || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0, last = 0, position = element.scrollLeft, direction = 1;
+    const move = (now: number) => {
+      const elapsed = last ? Math.min(now - last, 50) : 0;
+      last = now;
+      const limit = element.scrollWidth - element.clientWidth;
+      if (document.hidden || element.matches(":hover, :focus-within, :active") || limit <= 0) {
+        position = element.scrollLeft;
+      } else {
+        // Keep fractional pixels so slow movement also works with integer scrollLeft.
+        if (Math.abs(element.scrollLeft - position) > 2) position = element.scrollLeft;
+        position += direction * elapsed * 0.018;
+        if (position >= limit) { position = limit; direction = -1; }
+        if (position <= 0) { position = 0; direction = 1; }
+        element.scrollLeft = position;
+      }
+      frame = requestAnimationFrame(move);
+    };
+    frame = requestAnimationFrame(move);
+    return () => cancelAnimationFrame(frame);
+  }, [pending]);
+
   const choose = (key: ExampleKey, onlySettings = settingsOnly) => {
     if (pending) return;
     const chosen = REAL_RESULT_CASES.find((value) => value.key === key)!;
@@ -43,12 +67,12 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
         <section id="samples" aria-labelledby="sample-heading" className="mb-4 min-w-0">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h2 id="sample-heading" className="text-sm font-semibold">{copy.title}</h2>
-            <SettingsOnlyToggle checked={settingsOnly} disabled={!photoSource || pending} onChange={setSettingsOnly} />
+            <SettingsOnlyToggle checked={settingsOnly} disabled={!photoSource || pending} needsPhoto={!photoSource && !pending} onChange={setSettingsOnly} />
           </div>
           <div className="flex min-w-0 items-center gap-2">
             <button type="button" aria-label={copy.previousExamples} onClick={() => rail.current?.scrollBy({ left: -440, behavior: "smooth" })}
               className="hidden size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-primary sm:flex"><ChevronLeft className="size-4" /></button>
-            <div ref={rail} role="group" aria-label={copy.selectorLabel} className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain pb-2">
+            <div ref={rail} data-example-rail role="group" aria-label={copy.selectorLabel} className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {REAL_RESULT_CASES.map((value) => (
                 <button key={value.key} type="button" data-example={value.key} data-subject={value.subject}
                   aria-label={copy.chooseLabel.replace("{name}", copy.labels[value.key])} aria-pressed={selected === value.key}
@@ -68,8 +92,8 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
           sample={sample} onSampleClear={() => { setSample(undefined); setSelected(undefined); }} />
       </div>
     </section>
-    <RealResultsGallery pending={pending} settingsOnlyDisabled={!photoSource || pending} onTry={(key, onlySettings) => {
-      choose(key, onlySettings);
+    <RealResultsGallery pending={pending} onTry={(key) => {
+      choose(key, false);
       rail.current?.querySelector(`[data-example="${key}"]`)?.scrollIntoView({ block: "nearest", inline: "center" });
     }} />
     </>

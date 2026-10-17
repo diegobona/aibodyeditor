@@ -1810,6 +1810,7 @@ export const zhCN: Locale = {
       selectorLabel: "选择编辑案例",
       chooseLabel: "试试{name}",
       settingsOnly: "仅应用设置",
+      settingsOnlyPhotoRequired: "请先上传照片，再使用「仅应用设置」。",
       previousExamples: "向前查看案例",
       nextExamples: "查看更多案例",
       sampleResult: "已保存的案例结果",
@@ -1823,6 +1824,7 @@ export const zhCN: Locale = {
       generationIncomplete: "尚未获得新的生成结果",
       resultPlaceholderHint: "选择设置后，点击“编辑照片”生成结果。",
       currentSettingsDiffer: "设置已更改，再次生成以更新结果。",
+      sampleSettingsChanged: "设置已更改，点击“编辑照片”生成新结果。",
       sampleNote: "这是本编辑器根据 AI 成年人样照实际生成的结果。点击“编辑照片”按当前设置重新生成。",
       reviewResult: "下载前请检查面部、衣服和背景细节。",
       labels: {
@@ -2009,6 +2011,7 @@ export const zhCN: Locale = {
       },
       submit: "编辑照片",
       replace: "选择另一张照片",
+      clear: "清除图片",
       previewAlt: "你选择的照片的预览",
       errors: {
         type: "请选择 JPG、PNG 或 WebP 图片。",

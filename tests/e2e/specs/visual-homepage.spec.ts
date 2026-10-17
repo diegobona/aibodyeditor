@@ -77,6 +77,56 @@ test.describe('Editor workbench and explicit example selection', () => {
     expect(mutations.get(page), 'Preset browsing must not generate images').toEqual([]);
   });
 
+  test('example strip hides its scrollbar, slowly scrolls automatically and retains exact case selection', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await visit(page);
+    const rail = page.locator('[data-example-rail]');
+    await expect(rail).toHaveCSS('scrollbar-width', 'none');
+    await page.mouse.move(0, 0);
+    await expect.poll(() => rail.evaluate(element => element.scrollLeft)).toBeGreaterThan(8);
+    await choose(page, 'breastSubtle'); await expectRecipe(page, 'breastSubtle');
+    await expect(page.locator('#samples [data-example]')).toHaveCount(10);
+    await page.screenshot({ path: 'test-results/example-auto-scroll.png' });
+  });
+
+  test('Clear photo resets a sample and allows the same uploaded file to be chosen again', async ({ page }) => {
+    await visit(page); await choose(page, 'breast'); await expectRecipe(page, 'breast');
+    const clear = page.getByRole('button', { name: 'Clear photo', exact: true });
+    await expect(clear).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Choose another photo', exact: true })).toBeVisible();
+    await clear.click();
+    const editor = page.locator('[data-body-editor]');
+    await expect(editor).toHaveAttribute('data-photo-source', 'empty');
+    await expect(preview(page)).toHaveCount(0);
+    await expect(page.locator('#samples [aria-pressed=true]')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toHaveCount(0);
+    for (let i = 0; i < 2; i++) {
+      await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'same-photo.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
+      await expect(editor).toHaveAttribute('data-photo-source', 'local');
+      await expectDecoded(preview(page));
+      await clear.click();
+      await expect(editor).toHaveAttribute('data-photo-source', 'empty');
+      await expect(editor.locator('input[type=file]')).toHaveValue('');
+    }
+  });
+
+  test('disabled top settings-only option explains the upload prerequisite on hover and keyboard focus', async ({ page }) => {
+    await page.goto('/');
+    const hint = page.getByRole('tooltip');
+    const text = 'Upload a photo to use “Only apply settings”.';
+    const topHintTrigger = page.locator('#samples [data-settings-only-hint]');
+    await expect(toggle(page)).toBeDisabled();
+    await topHintTrigger.hover();
+    await expect(hint).toHaveText(text);
+    await page.screenshot({ path: 'test-results/settings-only-upload-hint.png' });
+    await page.mouse.move(0, 0); await expect(hint).toBeHidden();
+    await page.keyboard.press('Tab');
+    await topHintTrigger.focus();
+    await expect(hint).toHaveText(text);
+    await topHintTrigger.press('Tab'); await expect(hint).toBeHidden();
+    await expect(page.locator('#real-results').getByRole('switch')).toHaveCount(0);
+  });
+
   test('SSR and hydrated initial state are empty with ten distinct examples and the existing SEO links', async ({ page, request }) => {
     const response = await request.get('/?campaign=preview', { headers: { 'Accept-Language': 'zh-CN' } });
     expect(response.status()).toBe(200);
@@ -130,9 +180,9 @@ test.describe('Editor workbench and explicit example selection', () => {
     const provenance = await (await request.get('/examples/results-2026-10-16/provenance.json')).json();
     expect(new Set(provenance.map((x: {sourceSha256: string}) => x.sourceSha256)).size).toBe(10);
     await visit(page);
-    await expect(page.getByRole('switch', { name: 'Only apply settings', exact: true })).toHaveCount(11);
-    await expect(page.locator('#real-results').getByRole('switch')).toHaveCount(10);
-    await expect(page.locator('[data-real-result]').getByRole('switch')).toHaveCount(10);
+    await expect(page.getByRole('switch', { name: 'Only apply settings', exact: true })).toHaveCount(1);
+    await expect(page.locator('#real-results').getByRole('switch')).toHaveCount(0);
+    await expect(page.locator('[data-real-result]').getByRole('switch')).toHaveCount(0);
     for (const control of await page.getByRole('switch').all()) {
       await expect(control).not.toBeChecked(); await expect(control).toBeDisabled();
     }
@@ -178,11 +228,10 @@ test.describe('Editor workbench and explicit example selection', () => {
     const original = await preview(page).getAttribute('src');
     await toggle(page).check();
     await expect(preview(page)).toHaveAttribute('src', original!);
-    await page.locator('[data-real-result=breast]').getByRole('switch').check();
-    await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
+    await choose(page, 'breast'); await expectRecipe(page, 'breast');
     await expect(preview(page)).toHaveAttribute('src', original!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
-    await expect(page.locator('[data-photo-panel="result"]').getByRole('status')).toHaveText('Settings changed. Generate again to update this result.');
+    await expect(page.locator('#hero-showcase image')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toContainText('Settings changed. Select Edit Photo to generate a new result.');
     await input.setInputFiles({ name: 'another.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
     await expect(editor).toHaveAttribute('data-photo-source', 'local');
     await expect(page.locator('#hero-showcase image')).toHaveCount(0);
@@ -198,7 +247,31 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'fullerFigure');
     await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('33');
     await page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true }).fill('Only change my waist.');
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'fullerFigure');
+    await expect(page.locator('#hero-showcase image')).toHaveCount(0);
+  });
+
+  test('changing any case parameter clears only its saved result and never generates automatically', async ({ page }) => {
+    await visit(page);
+    const hint = 'Settings changed. Select Edit Photo to generate a new result.';
+    for (const field of ['mode', 'intensity', 'instructions']) {
+      await choose(page, 'breast'); await expectRecipe(page, 'breast');
+      await expect(page.locator('#hero-showcase image')).toHaveCount(1);
+      const original = await preview(page).getAttribute('src');
+      if (field === 'mode') await page.locator('[data-body-editor] fieldset').getByText('Slim', { exact: true }).click();
+      if (field === 'intensity') await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('71');
+      if (field === 'instructions') {
+        await page.getByRole('button', { name: 'Extra instructions (optional)', exact: true }).click();
+        await page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true }).fill('Keep my waist unchanged.');
+      }
+      await expect(page.locator('#hero-showcase image, #hero-showcase img')).toHaveCount(0);
+      await expect(page.locator('#hero-showcase')).toContainText(hint);
+      await expect(preview(page)).toHaveAttribute('src', original!);
+      await expect(page.getByRole('link', { name: 'Download photo', exact: true })).toHaveCount(0);
+      if (field === 'intensity') {
+        await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('70');
+        await expect(page.locator('#hero-showcase image')).toHaveCount(0);
+      }
+    }
   });
 
   test('desktop panels align and mobile tabs and the case strip fit 320–1440px without page overflow', async ({ page }) => {
@@ -236,38 +309,28 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect.poll(() => group.evaluate(n => n.scrollLeft)).toBeGreaterThan(100);
   });
 
-  test('each case has an independent default-off option and Try ignores the top-strip preference', async ({ page }) => {
+  test('gallery cards have only Try and always load their own photo despite the top-strip preference', async ({ page }) => {
     await visit(page);
     await choose(page, 'shoulders');
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
     const first = await preview(page).getAttribute('src');
-    const breast = page.locator('[data-real-result=breast]').getByRole('switch');
-    const subtle = page.locator('[data-real-result=breastSubtle]').getByRole('switch');
     await toggle(page).check();
-    for (const option of await page.locator('#real-results').getByRole('switch').all()) await expect(option).not.toBeChecked();
+    await expect(page.locator('#real-results').getByRole('switch')).toHaveCount(0);
+    await expect(page.getByRole('switch')).toHaveCount(1);
     await expect(preview(page)).toHaveAttribute('src', first!);
     await page.locator('[data-try-example=waistOnly]').click(); await expectRecipe(page, 'waistOnly');
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
     await expect(preview(page)).not.toHaveAttribute('src', first!);
     const waistPhoto = await preview(page).getAttribute('src');
-    await breast.check(); await toggle(page).uncheck();
-    await expect(breast).toBeChecked(); await expect(subtle).not.toBeChecked();
-    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
-    await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
-    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
-    await subtle.check(); await breast.uncheck();
-    await expect(subtle).toBeChecked(); await expect(toggle(page)).not.toBeChecked();
-    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
+    await expect(toggle(page)).toBeChecked();
     await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breast');
     await expect(preview(page)).not.toHaveAttribute('src', waistPhoto!);
-    await expect(breast).not.toBeChecked(); await expect(subtle).toBeChecked();
+    await expect(toggle(page)).toBeChecked();
     const breastPhoto = await preview(page).getAttribute('src');
     await page.locator('[data-try-example=breastSubtle]').click(); await expectRecipe(page, 'breastSubtle');
-    await expect(preview(page)).toHaveAttribute('src', breastPhoto!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breast');
+    await expect(preview(page)).not.toHaveAttribute('src', breastPhoto!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breastSubtle');
   });
 
   test('all ten gallery Try links load the photo and exact recipe and return to the editor without generating', async ({ page }) => {
@@ -358,6 +421,7 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expectRecipe(page, 'customCombination');
     for (const control of await page.getByRole('switch').all()) await expect(control).toBeDisabled();
     await expect(page.locator('input[type=file]')).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Clear photo', exact: true })).toBeDisabled();
     await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
     await expect(page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Edit Photo', exact: true })).toBeDisabled();

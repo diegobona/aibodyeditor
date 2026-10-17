@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
-import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw, Sparkles } from "lucide-react";
+import { ChevronDown, Download, ImageUp, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { authClientReact } from "@libs/auth/authClient";
 import { Button } from "@libs/react-shared/ui/button";
 import { Textarea } from "@libs/react-shared/ui/textarea";
@@ -117,6 +117,7 @@ export function UploadDropzone({
   const [loadingSample, setLoadingSample] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [reference, setReference] = useState<EditorSample>();
+  const [sampleNeedsGeneration, setSampleNeedsGeneration] = useState(false);
   const [generatedSettings, setGeneratedSettings] = useState<EditorSettings>();
   const [mobileView, setMobileView] = useState<"original" | "result">("original");
   const workbench = layout === "workbench";
@@ -180,6 +181,7 @@ export function UploadDropzone({
     }
     editing.reset();
     setReference(undefined);
+    setSampleNeedsGeneration(false);
     setMobileView("original");
     setFile(null);
     setPreviewUrl(null);
@@ -223,6 +225,7 @@ export function UploadDropzone({
       setInstructionsOpen(false);
     }
     setReference(undefined);
+    setSampleNeedsGeneration(false);
     setGeneratedSettings(undefined);
     setMobileView("original");
     setFile(candidate);
@@ -254,6 +257,7 @@ export function UploadDropzone({
     try {
       setGeneratedSettings({ mode, intensity, instructions });
       setReference(undefined);
+      setSampleNeedsGeneration(false);
       setMobileView("result");
       await editing.submit(file, mode, intensity, instructions);
     } catch {
@@ -280,7 +284,10 @@ export function UploadDropzone({
     finally { setDownloading(false); }
   };
   const clearPhoto = () => {
+    if (locked) return;
     editing.reset(); setReference(undefined); setGeneratedSettings(undefined);
+    setSampleNeedsGeneration(false);
+    setError("");
     inheritedInstructions.current = undefined;
     setInstructions(""); setInstructionsOpen(false); setFile(null); setPhotoSource(null);
     setMobileView("original"); onSampleClear?.();
@@ -289,9 +296,17 @@ export function UploadDropzone({
   const savedSettings = editing.result ? generatedSettings : reference;
   const settingsChanged = !!savedSettings && (savedSettings.mode !== mode || savedSettings.intensity !== intensity ||
     (savedSettings.instructions ?? "").trim() !== instructions.trim());
+  const changedSample = !!reference && settingsChanged;
+  const needsSampleResult = !editing.result && (sampleNeedsGeneration || changedSample);
+  useEffect(() => {
+    if (changedSample) {
+      setReference(undefined);
+      setSampleNeedsGeneration(true);
+    }
+  }, [changedSample]);
   const resetOnChange = () => { if (!workbench) editing.reset(); };
   const resultExists = !!editing.result || !!reference;
-  const resultSettings = editing.result?.result ?? (generatedSettings && (pending || editing.error || error) ? generatedSettings : reference);
+  const resultSettings = editing.result?.result ?? (needsSampleResult ? { mode, intensity } : generatedSettings && (pending || editing.error || error) ? generatedSettings : reference);
   const generationIncomplete = !!generatedSettings && !editing.result && !!(editing.error || error);
   const input = <input ref={inputRef} id={inputId} type="file" accept={bodyEditConfig.allowedMimeTypes.join(",")}
     disabled={locked} className="sr-only" aria-label={copy.inputLabel}
@@ -305,10 +320,16 @@ export function UploadDropzone({
           disabled={locked} alt={copy.previewAlt} copy={editCopy.contourPreview}
           className={workbench ? "flex h-full flex-col rounded-none border-0 [&>div:last-child]:min-h-24" : undefined}
           frameClassName={workbench ? "h-[420px] sm:h-[480px] lg:h-auto lg:min-h-0 lg:flex-1" : undefined} />
-        <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
-          className="absolute right-2 top-2 flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
-          <RefreshCw className="size-3.5" aria-hidden="true" />{copy.replace}
-        </button>
+        <div className="absolute right-2 top-2 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-2">
+          <button type="button" disabled={locked} aria-label={copy.replace} onClick={() => inputRef.current?.click()}
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
+            <RefreshCw className="size-3.5" aria-hidden="true" />{copy.replace}
+          </button>
+          <button type="button" disabled={locked} aria-label={copy.clear} onClick={clearPhoto}
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-card/95 px-3 text-xs font-medium text-muted-foreground shadow-sm hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50">
+            <X className="size-3.5" aria-hidden="true" />{copy.clear}
+          </button>
+        </div>
       </> : <label htmlFor={inputId} className={cn(
         "flex min-h-80 flex-col items-center justify-center gap-4 border-2 border-dashed p-8 text-center transition-colors",
         workbench ? "h-full rounded-2xl" : "rounded-[20px]",
@@ -401,9 +422,9 @@ export function UploadDropzone({
               <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
                 <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
-                  <span>{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference ? workspace.sampleResult : workspace.result}</span>{download}
+                  <span>{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span>{download}
                 </div>
-                <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result ? reference?.id : undefined}
+                <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result && !needsSampleResult ? reference?.id : undefined}
                   className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
                   {pending ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center"><LoaderCircle className="size-7 animate-spin text-primary" /><p className="text-sm">{editCopy.pending}</p></div>
                     : editing.result ? <BodyEditComparison key={editing.result.jobId} beforeSrc={null} afterSrc={editing.result.result.imageUrl}
@@ -415,6 +436,8 @@ export function UploadDropzone({
                       <RefreshCw className="size-7 text-muted-foreground" aria-hidden="true" />
                       <p className="text-sm font-semibold">{workspace.generationIncomplete}</p>
                       <p className="text-sm leading-relaxed text-muted-foreground">{error || editError}</p>
+                    </div> : needsSampleResult ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground">
+                      <Sparkles className="size-7 text-primary/60" aria-hidden="true" /><p className="text-sm font-medium">{workspace.sampleSettingsChanged}</p>
                     </div> : reference ? <svg role="img" aria-label={reference.afterAlt ?? editCopy.afterAlt} viewBox="0 0 768 1024" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-hidden">
                       <image href={reference.src} x={-768} width={1536} height={1024} />
                     </svg>

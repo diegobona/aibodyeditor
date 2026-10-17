@@ -1,22 +1,18 @@
-import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { PhotoComparison } from "@libs/react-shared/components/photo-comparison";
 import { useTranslation } from "@/hooks/use-translation";
 import { Section } from "@/components/page-section";
 import { REAL_RESULT_CASES, REAL_RESULT_IMAGES } from "./showcase-data";
-import { SettingsOnlyToggle } from "./settings-only-toggle";
 
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
 
 /** Browsable proof of each recipe; Try uses the same selection flow as the top strip. */
-export function RealResultsGallery({ onTry, pending, settingsOnlyDisabled }: {
-  onTry: (key: ExampleKey, settingsOnly: boolean) => void;
+export function RealResultsGallery({ onTry, pending }: {
+  onTry: (key: ExampleKey) => void;
   pending: boolean;
-  settingsOnlyDisabled: boolean;
 }) {
   const { t } = useTranslation();
   const copy = t.home.realResults;
-  const [settingsOnlyByCase, setSettingsOnlyByCase] = useState<Partial<Record<ExampleKey, boolean>>>({});
 
   return (
     <Section id="real-results" className="bg-card py-12 md:py-16">
@@ -47,13 +43,11 @@ export function RealResultsGallery({ onTry, pending, settingsOnlyDisabled }: {
                 <a href="#try" data-try-example={key} aria-label={copy.tryLabel.replace("{name}", t.home.examples.labels[key])}
                   aria-disabled={pending} onClick={(event) => {
                     if (pending) { event.preventDefault(); return; }
-                    onTry(key, settingsOnlyByCase[key] ?? false);
+                    onTry(key);
                   }}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-primary/25 px-3 text-sm font-semibold text-primary transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-disabled:opacity-50">
                   {copy.try}<ArrowUpRight className="size-4" aria-hidden="true" />
                 </a>
-                <SettingsOnlyToggle checked={settingsOnlyByCase[key] ?? false} disabled={settingsOnlyDisabled}
-                  onChange={(checked) => setSettingsOnlyByCase((values) => ({ ...values, [key]: checked }))} />
               </div>
             </article>
           );

@@ -1529,6 +1529,7 @@ export const en: Locale = {
       selectorLabel: "Choose an editing example",
       chooseLabel: "Try {name}",
       settingsOnly: "Only apply settings",
+      settingsOnlyPhotoRequired: "Upload a photo to use “Only apply settings”.",
       previousExamples: "Previous examples",
       nextExamples: "More examples",
       sampleResult: "Saved example result",
@@ -1542,6 +1543,7 @@ export const en: Locale = {
       generationIncomplete: "No new result yet",
       resultPlaceholderHint: "Choose your settings, then select Edit Photo to generate a result.",
       currentSettingsDiffer: "Settings changed. Generate again to update this result.",
+      sampleSettingsChanged: "Settings changed. Select Edit Photo to generate a new result.",
       sampleNote: "Actual editor output from an AI-created adult sample. Select Edit Photo to generate with your current settings.",
       reviewResult: "Review the face, clothing and background before downloading.",
       labels: {
@@ -1728,6 +1730,7 @@ export const en: Locale = {
       },
       submit: "Edit Photo",
       replace: "Choose another photo",
+      clear: "Clear photo",
       previewAlt: "Preview of the photo you selected",
       errors: {
         type: "Please upload a JPG, PNG or WebP image.",
