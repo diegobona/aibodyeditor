@@ -634,10 +634,15 @@ test.describe('Editor workbench and explicit example selection', () => {
     await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
     const generated = page.locator('#hero-showcase img'); await expectDecoded(generated);
     await expect(generated).toHaveAttribute('data-result-source', '/mock-workbench-result.png');
+    const specifications = page.locator('[data-photo-panel="result"] [data-image-details]');
+    await expect(specifications).toContainText('32 × 32 px · PNG');
+    await expect(specifications).toHaveAttribute('data-byte-length', String(PREVIEW_PNG.length));
     const download = page.getByRole('link', { name: 'Download photo', exact: true });
     await expect(download).toBeVisible();
     const downloaded = page.waitForEvent('download'); await download.click();
-    expect((await downloaded).suggestedFilename()).toBe('ai-body-edit-11111111-1111-4111-8111-111111111111.png');
+    const output = await downloaded;
+    expect(output.suggestedFilename()).toBe('ai-body-edit-11111111-1111-4111-8111-111111111111.png');
+    expect(readFileSync((await output.path())!)).toEqual(PREVIEW_PNG);
     const current = await preview(page).getAttribute('src');
     await toggle(page).check(); await choose(page, 'waistOnly'); await expectRecipe(page, 'waistOnly');
     await expect(generated).toHaveAttribute('data-result-source', '/mock-workbench-result.png');
@@ -645,6 +650,7 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect(page.locator('[data-photo-panel="result"]').getByRole('status')).toContainText('Settings changed.');
     await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'new.png', mimeType: 'image/png', buffer: PREVIEW_PNG });
     await expect(generated).toHaveCount(0); await expect(download).toHaveCount(0);
+    await expect(specifications).toHaveCount(0);
     await expect(page.locator('#hero-showcase')).toContainText('Your edited photo will appear here');
   });
 });

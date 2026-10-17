@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from "@libs/react-shared/ui/dialog";
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
+import { ImageFileDetails } from '@libs/react-shared/components/image-file-details';
+import type { ImageFileMetadata } from '@libs/react-shared/utils/image-file-metadata';
 import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
 import { BodyContourPreview } from "@libs/react-shared/components/body-contour-preview";
 import { useBodyEdit } from "@libs/react-shared/hooks/use-body-edit";
@@ -95,7 +97,7 @@ export function UploadDropzone({
   onSettingsChange?: (settings: EditorSettings) => void;
   preserveSettingsOnPhotoChange?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const copy = t.home.upload,
     editCopy = t.home.editing;
   const session = authClientReact.useSession();
@@ -119,6 +121,7 @@ export function UploadDropzone({
   const [reference, setReference] = useState<EditorSample>();
   const [sampleNeedsGeneration, setSampleNeedsGeneration] = useState(false);
   const [generatedSettings, setGeneratedSettings] = useState<EditorSettings>();
+  const [resultMetadata, setResultMetadata] = useState<{ jobId: string; metadata: ImageFileMetadata } | null>(null);
   const [mobileView, setMobileView] = useState<"original" | "result">("original");
   const workbench = layout === "workbench";
   const workspace = t.home.examples;
@@ -398,7 +401,7 @@ export function UploadDropzone({
     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.availability}</p>
   </>;
   const download = editing.result && <Button asChild variant="outline" size="sm" className="rounded-full">
-    <a href={editing.result.result.downloadUrl} download aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
+    <a href={editing.result.result.downloadUrl} download title={t.imageDetails.downloadOriginal} aria-disabled={downloading} onClick={event => { event.preventDefault(); void downloadResult(); }}>
       <Download className="size-4" aria-hidden="true" />{editCopy.download}
     </a>
   </Button>;
@@ -432,6 +435,7 @@ export function UploadDropzone({
                       beforeAlt={editCopy.beforeAlt} afterAlt={editCopy.afterAlt} beforeLabel={editCopy.before} afterLabel={editCopy.after}
                       controlLabel={editCopy.compareLabel} hint={editCopy.compareHint} loadingLabel={editCopy.loadingResult}
                       loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult}
+                      onMetadataChange={metadata => setResultMetadata(metadata && { jobId: editing.result!.jobId, metadata })}
                       className="absolute inset-0" frameClassName="h-full rounded-none bg-background sm:h-full" />
                     : generationIncomplete ? <div role="status" className="flex max-w-sm flex-col items-center gap-3 p-6 text-center">
                       <RefreshCw className="size-7 text-muted-foreground" aria-hidden="true" />
@@ -447,6 +451,7 @@ export function UploadDropzone({
                 </div></div>
                 <div className="flex min-h-20 shrink-0 flex-col justify-center gap-1 border-t px-4 py-2 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
                   {resultSettings && <p data-result-settings className="font-semibold text-foreground">{copy.modes[resultSettings.mode]} · {t.home.realResults.intensity.replace("{value}", String(resultSettings.intensity ?? BODY_EDIT_INTENSITY.default))}</p>}
+                  {editing.result && resultMetadata?.jobId === editing.result.jobId && <ImageFileDetails metadata={resultMetadata.metadata} copy={t.imageDetails} locale={locale} />}
                   {settingsChanged && resultExists ? <p role="status" className="text-primary">{workspace.currentSettingsDiffer}</p> : <p>{editing.result ? workspace.reviewResult : pending ? editCopy.pending : unresolved ? editCopy.checkEdit : reference ? workspace.sampleNote : workspace.resultPlaceholderHint}</p>}
                 </div>
               </section>
@@ -464,7 +469,9 @@ export function UploadDropzone({
           <BodyEditComparison key={editing.result.jobId} beforeSrc={previewUrl} afterSrc={editing.result.result.imageUrl}
             beforeAlt={editCopy.beforeAlt} afterAlt={editCopy.afterAlt} beforeLabel={editCopy.before} afterLabel={editCopy.after}
             controlLabel={editCopy.compareLabel} hint={editCopy.compareHint} loadingLabel={editCopy.loadingResult}
-            loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult} />
+            loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult}
+            onMetadataChange={metadata => setResultMetadata(metadata && { jobId: editing.result!.jobId, metadata })} />
+          {resultMetadata?.jobId === editing.result.jobId && <ImageFileDetails metadata={resultMetadata.metadata} copy={t.imageDetails} locale={locale} className="mt-3" />}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button>{download}</div>
         </div> : <>{photo}{controls}<div className="mt-4 flex justify-end">{action}</div></>}
         <div className="px-2 pb-1">{notices}</div>

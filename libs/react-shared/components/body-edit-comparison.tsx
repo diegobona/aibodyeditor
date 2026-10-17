@@ -3,6 +3,7 @@ import { ChevronsLeftRight, LoaderCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { bodyEditConfig } from "../../../config/body-editor";
 import { cn } from "@libs/ui/utils/cn";
+import type { ImageFileMetadata } from '../utils/image-file-metadata';
 
 /** Actual source and saved output are separate images, unlike the promotional diptychs. */
 export function BodyEditComparison({
@@ -19,6 +20,7 @@ export function BodyEditComparison({
   reloadLabel,
   className,
   frameClassName,
+  onMetadataChange,
 }: {
   beforeSrc: string | null;
   afterSrc: string;
@@ -33,6 +35,7 @@ export function BodyEditComparison({
   reloadLabel: string;
   className?: string;
   frameClassName?: string;
+  onMetadataChange?: (metadata: ImageFileMetadata | null) => void;
 }) {
   const [position, setPosition] = useState(50);
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'retrying' | 'failed'>('loading');
@@ -40,6 +43,7 @@ export function BodyEditComparison({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const automaticRetries = useRef(0);
   const hintId = useId();
+  const fileInfo = useRef<{ mimeType: string; byteLength: number } | null>(null);
   function failImage() {
     if (automaticRetries.current < 2) {
       automaticRetries.current += 1;
@@ -52,6 +56,8 @@ export function BodyEditComparison({
     let objectUrl: string | undefined;
     const timer = setTimeout(() => controller.abort(), 15_000);
     setImageUrl(null);
+    fileInfo.current = null;
+    onMetadataChange?.(null);
     setImageState('loading');
     // Private dynamic API paths must be fetched with the session. In Node dev,
     // Nitro routes direct <img> requests to the static asset middleware instead.
@@ -67,6 +73,7 @@ export function BodyEditComparison({
         const blob = await response.blob();
         if (!blob.size || blob.size > bodyEditConfig.maxOutputBytes) throw new Error('RESULT_UNAVAILABLE');
         if (disposed) return;
+        fileInfo.current = { mimeType: mime, byteLength: blob.size };
         objectUrl = URL.createObjectURL(blob);
         setImageUrl(objectUrl);
       } catch {
@@ -99,8 +106,11 @@ export function BodyEditComparison({
           data-result-source={afterSrc}
           alt={afterAlt}
           className={`h-full w-full object-contain ${loaded ? '' : 'opacity-0'}`}
-          onLoad={() => setImageState('loaded')}
-          onError={failImage}
+          onLoad={event => {
+            setImageState('loaded');
+            if (fileInfo.current) onMetadataChange?.({ ...fileInfo.current, width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight });
+          }}
+          onError={() => { onMetadataChange?.(null); failImage(); }}
         />}
         {!loaded && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">

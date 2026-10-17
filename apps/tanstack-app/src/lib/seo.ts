@@ -208,6 +208,9 @@ const PAGES = {
   paymentCancel: { path: '/payment-cancel', indexable: false, meta: (t) => t.payment.metadata.cancel },
   dashboard: { path: '/dashboard', indexable: false, meta: (t) => t.dashboard.metadata },
   myWorks: { path: '/my-works', indexable: false, meta: (t) => t.myWorks.metadata },
+  privacy: { path: '/privacy', indexable: true, meta: (t) => t.legal.privacy.metadata },
+  terms: { path: '/terms', indexable: true, meta: (t) => t.legal.terms.metadata },
+  deletion: { path: '/deletion', indexable: true, meta: (t) => t.legal.deletion.metadata },
   admin: { path: '/admin', indexable: false, meta: (t) => t.admin.metadata },
   notFound: { path: '/404', indexable: false, meta: (t) => t.notFound.metadata },
 } satisfies Record<string, PageDefinition>

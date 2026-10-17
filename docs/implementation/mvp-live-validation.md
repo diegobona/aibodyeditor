@@ -1,5 +1,21 @@
 # MVP live validation — 2026-10-16
 
+## Output specifications — 2026-10-17
+
+- Added shared image-file metadata formatting and display. Pixel width/height come from the loaded original image's natural dimensions; bytes and format come from the existing authenticated preview response. Supports PNG/JPEG/WebP and localized decimal byte/kB/MB formatting. Invalid/unavailable metadata stays hidden.
+- Specifications appear in the editor footer (both workbench and compact tool-page layouts), saved-work cards and the large-image dialog. Result metadata is associated with the task ID and disappears when the result is cleared or unavailable. No new endpoint, schema, AI request or additional metadata fetch was introduced.
+- Validation: 11 format/size/invalid-data tests and two targeted browser scenarios passed; fixture downloads were byte-identical to the preview source, and clearing an uploaded/generated result removed the previous specifications. Typecheck passed.
+- Cloudflare production build passed; the Worker preview returned the SSR homepage/editor with status 200. No deployment or Git push was performed.
+
+## Public policies and deletion instructions — 2026-10-17
+
+- Added SSR `/privacy`, `/terms` and `/deletion`, routeHead SEO, canonical URLs, sitemap entries, footer navigation and live auth-notice links. EN and ZH dictionaries share the same structure. The owner confirmed the public contact `zw83716@gmail.com` and operator name `AI Body Editor`; both live in `config/legal.ts`.
+- Copy matches the implementation: local selection versus submission, Rabbit gateway and upstream processing, private results, 30-day expiry, session/guest cookies and necessary browser storage, task/billing records kept separately from image deletion. No unsupported provider zero-retention, no-training or deletion guarantees were added; no account deletion UI was introduced.
+- Fixed the existing hourly cleanup to include `body_guest_edit`, not just registered-user results. It deletes the stored object and clears the image reference, while retaining guest-trial/task records. The same batch bound and deployed schedule are used.
+- Targeted checks: seven history/retention tests; two browser tests covering SSR, policy navigation, auth links, canonical/sitemap and mobile overflow. Only fixture data is deleted; no AI calls.
+- Typecheck and production build passed. Local Cloudflare preview returned 200 and SSR H1/contact content for `/privacy` and `/deletion`; the Node dev server on 7001 was left running. No deployment or Git push was performed for this change.
+- Drafting references: [FTC privacy promises](https://www.ftc.gov/business-guidance/privacy-security), [ICO privacy-notice information](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/the-right-to-be-informed/what-privacy-information-should-we-provide/). These pages describe implemented behavior and are not a certification of legal compliance.
+
 ## My works — 2026-10-17
 
 - Added protected, noindex `/my-works` with desktop/mobile header links, 24-result pagination, authenticated blob previews, large-image dialog, download, deletion confirmation, empty and retry states. No additional AI calls or charges.

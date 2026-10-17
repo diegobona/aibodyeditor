@@ -27,10 +27,16 @@ test('saved results can be viewed, downloaded and deleted with confirmation, wit
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await expect(page.locator('[data-work-id]')).toHaveCount(1);
   await expect(page.getByText('Intensity 70/100', { exact: true })).toBeVisible();
+  const specifications = page.locator('[data-work-id] [data-image-details]');
+  await expect(specifications).toContainText('32 × 32 px · PNG');
+  await expect(specifications).toHaveAttribute('data-byte-length', String(image.length));
   await page.getByRole('button', { name: 'View image', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible(); await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog').locator('[data-image-details]')).toHaveText(await specifications.innerText());
+  await page.keyboard.press('Escape');
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: 'Download', exact: true }).click();
-  expect((await download).suggestedFilename()).toContain(id);
+  const downloaded = await download; expect(downloaded.suggestedFilename()).toContain(id);
+  expect(readFileSync((await downloaded.path())!)).toEqual(image);
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click(); expect(deleted).toBe(0);
   await page.getByRole('button', { name: 'Delete', exact: true }).click();

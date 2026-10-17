@@ -21,6 +21,7 @@ import { authClientReact } from '@libs/auth/authClient'
 import type { z } from 'zod'
 import { useTranslation } from '@/hooks/use-translation'
 import { config } from '@config'
+import { PolicyNotice } from '@/components/legal-page'
 
 export const Route = createFileRoute('/{-$lang}/(auth)/forgot-password')({
   head: routeHead('forgotPassword'),
@@ -158,10 +159,7 @@ function ForgotPasswordPage() {
               <FormError message={error.message} code={error.code} />
             )}
             <div className="text-muted-foreground *:[a]:hover:text-primary text-balance text-center text-xs *:[a]:underline *:[a]:underline-offset-4">
-              {t.auth.forgetPassword.termsNotice}{' '}
-              <a href="#">{t.auth.forgetPassword.termsOfService}</a>{' '}
-              {t.common.and}{' '}
-              <a href="#">{t.auth.forgetPassword.privacyPolicy}</a>.
+              <PolicyNotice />
             </div>
           </CardContent>
         </>

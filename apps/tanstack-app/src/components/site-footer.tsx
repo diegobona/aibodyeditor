@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from '@/hooks/use-translation'
 import { TOOL_PAGES } from '@/lib/tools'
+import { LEGAL_PAGES } from '@/components/legal-page'
+import { localizedPath } from '@/lib/i18n-path'
 
 /**
  * Site-wide footer for every content page in the (root) layout.
@@ -9,7 +11,7 @@ import { TOOL_PAGES } from '@/lib/tools'
  * When a page ships, it appears here automatically via TOOL_PAGES.
  */
 export function SiteFooter() {
-  const { t, langParam } = useTranslation()
+  const { t, langParam, locale } = useTranslation()
   const footer = t.home.footer
   const linkClass = 'text-muted-foreground hover:text-foreground'
 
@@ -38,6 +40,10 @@ export function SiteFooter() {
               </li>
             ))}
           </ul>
+        </nav>
+        <nav aria-label={t.legal.navigation}>
+          <p className="text-sm font-semibold text-foreground">{t.legal.navigation}</p>
+          <ul className="mt-3 space-y-2 text-sm">{LEGAL_PAGES.map(page => <li key={page.key}><a href={localizedPath(page.path, locale)} className={linkClass}>{t.legal[page.key].title}</a></li>)}</ul>
         </nav>
       </div>
     </footer>

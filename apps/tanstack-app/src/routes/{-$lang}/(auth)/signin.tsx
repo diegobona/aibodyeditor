@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@libs/react-shared/ui/card'
 import { useTranslation } from '@/hooks/use-translation'
+import { PolicyNotice } from '@/components/legal-page'
 
 export const Route = createFileRoute('/{-$lang}/(auth)/signin')({
   head: routeHead('signin'),
@@ -36,9 +37,7 @@ function SigninPage() {
           <LoginForm />
         </div>
         <div className="text-muted-foreground *:[a]:hover:text-primary text-balance text-center text-xs *:[a]:underline *:[a]:underline-offset-4">
-          {t.auth.signin.termsNotice}{' '}
-          <a href="#">{t.auth.signin.termsOfService}</a>{' '}
-          {t.common.and} <a href="#">{t.auth.signin.privacyPolicy}</a>.
+          <PolicyNotice />
         </div>
       </CardContent>
     </Card>

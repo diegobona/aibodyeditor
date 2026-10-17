@@ -22,10 +22,13 @@ import { Route as Char123LangChar125authRouteRouteImport } from './routes/{-$lan
 import { Route as Char123LangChar125AdminIndexRouteImport } from './routes/{-$lang}/admin/index'
 import { Route as Char123LangChar125rootIndexRouteImport } from './routes/{-$lang}/(root)/index'
 import { Route as ApiBlogIndexRouteImport } from './routes/api/blog/index'
+import { Route as Char123LangChar125rootTermsRouteImport } from './routes/{-$lang}/(root)/terms'
 import { Route as Char123LangChar125rootSkinnyFilterRouteImport } from './routes/{-$lang}/(root)/skinny-filter'
+import { Route as Char123LangChar125rootPrivacyRouteImport } from './routes/{-$lang}/(root)/privacy'
 import { Route as Char123LangChar125rootPaymentSuccessRouteImport } from './routes/{-$lang}/(root)/payment-success'
 import { Route as Char123LangChar125rootPaymentCancelRouteImport } from './routes/{-$lang}/(root)/payment-cancel'
 import { Route as Char123LangChar125rootMyWorksRouteImport } from './routes/{-$lang}/(root)/my-works'
+import { Route as Char123LangChar125rootDeletionRouteImport } from './routes/{-$lang}/(root)/deletion'
 import { Route as Char123LangChar125rootDashboardRouteImport } from './routes/{-$lang}/(root)/dashboard'
 import { Route as Char123LangChar125rootBreastExpansionRouteImport } from './routes/{-$lang}/(root)/breast-expansion'
 import { Route as Char123LangChar125rootBodyEditorRouteImport } from './routes/{-$lang}/(root)/body-editor'
@@ -160,10 +163,22 @@ const ApiBlogIndexRoute = ApiBlogIndexRouteImport.update({
   path: '/api/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char123LangChar125rootTermsRoute =
+  Char123LangChar125rootTermsRouteImport.update({
+    id: '/terms',
+    path: '/terms',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
 const Char123LangChar125rootSkinnyFilterRoute =
   Char123LangChar125rootSkinnyFilterRouteImport.update({
     id: '/skinny-filter',
     path: '/skinny-filter',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
+const Char123LangChar125rootPrivacyRoute =
+  Char123LangChar125rootPrivacyRouteImport.update({
+    id: '/privacy',
+    path: '/privacy',
     getParentRoute: () => Char123LangChar125rootRouteRoute,
   } as any)
 const Char123LangChar125rootPaymentSuccessRoute =
@@ -182,6 +197,12 @@ const Char123LangChar125rootMyWorksRoute =
   Char123LangChar125rootMyWorksRouteImport.update({
     id: '/my-works',
     path: '/my-works',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
+const Char123LangChar125rootDeletionRoute =
+  Char123LangChar125rootDeletionRouteImport.update({
+    id: '/deletion',
+    path: '/deletion',
     getParentRoute: () => Char123LangChar125rootRouteRoute,
   } as any)
 const Char123LangChar125rootDashboardRoute =
@@ -579,10 +600,13 @@ export interface FileRoutesByFullPath {
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/deletion': typeof Char123LangChar125rootDeletionRoute
   '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
+  '/{-$lang}/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
+  '/{-$lang}/terms': typeof Char123LangChar125rootTermsRoute
   '/api/blog/': typeof ApiBlogIndexRoute
   '/{-$lang}/': typeof Char123LangChar125rootIndexRoute
   '/{-$lang}/admin/': typeof Char123LangChar125AdminIndexRoute
@@ -661,10 +685,13 @@ export interface FileRoutesByTo {
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/deletion': typeof Char123LangChar125rootDeletionRoute
   '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
+  '/{-$lang}/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
+  '/{-$lang}/terms': typeof Char123LangChar125rootTermsRoute
   '/api/blog': typeof ApiBlogIndexRoute
   '/{-$lang}/admin': typeof Char123LangChar125AdminIndexRoute
   '/api/admin/blog/$id': typeof ApiAdminBlogIdRoute
@@ -746,10 +773,13 @@ export interface FileRoutesById {
   '/{-$lang}/(root)/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/(root)/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/(root)/dashboard': typeof Char123LangChar125rootDashboardRoute
+  '/{-$lang}/(root)/deletion': typeof Char123LangChar125rootDeletionRoute
   '/{-$lang}/(root)/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/(root)/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/(root)/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
+  '/{-$lang}/(root)/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/(root)/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
+  '/{-$lang}/(root)/terms': typeof Char123LangChar125rootTermsRoute
   '/api/blog/': typeof ApiBlogIndexRoute
   '/{-$lang}/(root)/': typeof Char123LangChar125rootIndexRoute
   '/{-$lang}/admin/': typeof Char123LangChar125AdminIndexRoute
@@ -831,10 +861,13 @@ export interface FileRouteTypes {
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
+    | '/{-$lang}/deletion'
     | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
+    | '/{-$lang}/privacy'
     | '/{-$lang}/skinny-filter'
+    | '/{-$lang}/terms'
     | '/api/blog/'
     | '/{-$lang}/'
     | '/{-$lang}/admin/'
@@ -913,10 +946,13 @@ export interface FileRouteTypes {
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
+    | '/{-$lang}/deletion'
     | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
+    | '/{-$lang}/privacy'
     | '/{-$lang}/skinny-filter'
+    | '/{-$lang}/terms'
     | '/api/blog'
     | '/{-$lang}/admin'
     | '/api/admin/blog/$id'
@@ -997,10 +1033,13 @@ export interface FileRouteTypes {
     | '/{-$lang}/(root)/body-editor'
     | '/{-$lang}/(root)/breast-expansion'
     | '/{-$lang}/(root)/dashboard'
+    | '/{-$lang}/(root)/deletion'
     | '/{-$lang}/(root)/my-works'
     | '/{-$lang}/(root)/payment-cancel'
     | '/{-$lang}/(root)/payment-success'
+    | '/{-$lang}/(root)/privacy'
     | '/{-$lang}/(root)/skinny-filter'
+    | '/{-$lang}/(root)/terms'
     | '/api/blog/'
     | '/{-$lang}/(root)/'
     | '/{-$lang}/admin/'
@@ -1191,11 +1230,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/{-$lang}/(root)/terms': {
+      id: '/{-$lang}/(root)/terms'
+      path: '/terms'
+      fullPath: '/{-$lang}/terms'
+      preLoaderRoute: typeof Char123LangChar125rootTermsRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
     '/{-$lang}/(root)/skinny-filter': {
       id: '/{-$lang}/(root)/skinny-filter'
       path: '/skinny-filter'
       fullPath: '/{-$lang}/skinny-filter'
       preLoaderRoute: typeof Char123LangChar125rootSkinnyFilterRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
+    '/{-$lang}/(root)/privacy': {
+      id: '/{-$lang}/(root)/privacy'
+      path: '/privacy'
+      fullPath: '/{-$lang}/privacy'
+      preLoaderRoute: typeof Char123LangChar125rootPrivacyRouteImport
       parentRoute: typeof Char123LangChar125rootRouteRoute
     }
     '/{-$lang}/(root)/payment-success': {
@@ -1217,6 +1270,13 @@ declare module '@tanstack/react-router' {
       path: '/my-works'
       fullPath: '/{-$lang}/my-works'
       preLoaderRoute: typeof Char123LangChar125rootMyWorksRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
+    '/{-$lang}/(root)/deletion': {
+      id: '/{-$lang}/(root)/deletion'
+      path: '/deletion'
+      fullPath: '/{-$lang}/deletion'
+      preLoaderRoute: typeof Char123LangChar125rootDeletionRouteImport
       parentRoute: typeof Char123LangChar125rootRouteRoute
     }
     '/{-$lang}/(root)/dashboard': {
@@ -1710,10 +1770,13 @@ interface Char123LangChar125rootRouteRouteChildren {
   Char123LangChar125rootBodyEditorRoute: typeof Char123LangChar125rootBodyEditorRoute
   Char123LangChar125rootBreastExpansionRoute: typeof Char123LangChar125rootBreastExpansionRoute
   Char123LangChar125rootDashboardRoute: typeof Char123LangChar125rootDashboardRoute
+  Char123LangChar125rootDeletionRoute: typeof Char123LangChar125rootDeletionRoute
   Char123LangChar125rootMyWorksRoute: typeof Char123LangChar125rootMyWorksRoute
   Char123LangChar125rootPaymentCancelRoute: typeof Char123LangChar125rootPaymentCancelRoute
   Char123LangChar125rootPaymentSuccessRoute: typeof Char123LangChar125rootPaymentSuccessRoute
+  Char123LangChar125rootPrivacyRoute: typeof Char123LangChar125rootPrivacyRoute
   Char123LangChar125rootSkinnyFilterRoute: typeof Char123LangChar125rootSkinnyFilterRoute
+  Char123LangChar125rootTermsRoute: typeof Char123LangChar125rootTermsRoute
   Char123LangChar125rootIndexRoute: typeof Char123LangChar125rootIndexRoute
 }
 
@@ -1724,13 +1787,16 @@ const Char123LangChar125rootRouteRouteChildren: Char123LangChar125rootRouteRoute
     Char123LangChar125rootBreastExpansionRoute:
       Char123LangChar125rootBreastExpansionRoute,
     Char123LangChar125rootDashboardRoute: Char123LangChar125rootDashboardRoute,
+    Char123LangChar125rootDeletionRoute: Char123LangChar125rootDeletionRoute,
     Char123LangChar125rootMyWorksRoute: Char123LangChar125rootMyWorksRoute,
     Char123LangChar125rootPaymentCancelRoute:
       Char123LangChar125rootPaymentCancelRoute,
     Char123LangChar125rootPaymentSuccessRoute:
       Char123LangChar125rootPaymentSuccessRoute,
+    Char123LangChar125rootPrivacyRoute: Char123LangChar125rootPrivacyRoute,
     Char123LangChar125rootSkinnyFilterRoute:
       Char123LangChar125rootSkinnyFilterRoute,
+    Char123LangChar125rootTermsRoute: Char123LangChar125rootTermsRoute,
     Char123LangChar125rootIndexRoute: Char123LangChar125rootIndexRoute,
   }
 

@@ -33,11 +33,13 @@ export function createBodyEditHistory(options: BodyEditRepositoryOptions, storag
   };
   const dateValue = (date: Date) => options.dialect === 'sqlite' ? date.getTime() : date;
   const created = (row: Row) => new Date(options.dialect === 'sqlite' ? Number(row.created_at) : row.created_at);
-  const erase = async (row: Row) => {
+  const erase = async (row: Row, guest = false) => {
     if (!row.result_key) return;
     // A storage failure leaves the database reference available for retry.
     await storage.delete(row.result_key);
-    await query('UPDATE body_image_edit SET result_key = NULL, result_mime_type = NULL WHERE user_id = $1 AND id = $2 AND result_key = $3', [row.user_id, row.id, row.result_key]);
+    const table = guest ? 'body_guest_edit' : 'body_image_edit';
+    const owner = guest ? 'guest_id' : 'user_id';
+    await query(`UPDATE ${table} SET result_key = NULL, result_mime_type = NULL WHERE ${owner} = $1 AND id = $2 AND result_key = $3`, [row.user_id, row.id, row.result_key]);
   };
   return {
     async list(userId, page) {
@@ -57,9 +59,12 @@ export function createBodyEditHistory(options: BodyEditRepositoryOptions, storag
       await erase(row);
     },
     async cleanup() {
-      const rows = await query("SELECT id, user_id, result_key FROM body_image_edit WHERE status = 'succeeded' AND result_key IS NOT NULL AND created_at <= $1 ORDER BY created_at ASC LIMIT 100", [dateValue(new Date(now().getTime() - lifetime()))]);
+      const cutoff = dateValue(new Date(now().getTime() - lifetime()));
+      const rows = await query("SELECT id, user_id, result_key FROM body_image_edit WHERE status = 'succeeded' AND result_key IS NOT NULL AND created_at <= $1 ORDER BY created_at ASC LIMIT 100", [cutoff]);
       for (const row of rows) await erase(row);
-      return rows.length;
+      const guests = rows.length < 100 ? await query("SELECT id, guest_id AS user_id, result_key FROM body_guest_edit WHERE status = 'succeeded' AND result_key IS NOT NULL AND created_at <= $1 ORDER BY created_at ASC LIMIT $2", [cutoff, 100 - rows.length]) : [];
+      for (const row of guests) await erase(row, true);
+      return rows.length + guests.length;
     },
   };
 }

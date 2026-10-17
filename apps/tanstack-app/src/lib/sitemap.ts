@@ -15,6 +15,9 @@ export const SITEMAP_PATHS: readonly string[] = [
   '/body-editor',
   '/skinny-filter',
   '/breast-expansion',
+  '/privacy',
+  '/terms',
+  '/deletion',
 ]
 
 /** Whitelisted paths with any forbidden/noindex path removed (defence in depth). */

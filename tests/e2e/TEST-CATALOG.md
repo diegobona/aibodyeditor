@@ -1,5 +1,22 @@
 # E2E 测试流程目录
 
+## Actual output specifications — verified (2026-10-17)
+
+- After a generated image loads, show its actual decoded width/height, format and downloaded file byte size in the editor result footer. Do not infer these from CSS display dimensions or case previews.
+- Saved-work cards and the large-image dialog show the same actual file specifications. Read the existing authenticated preview blob; do not issue another metadata request, generate a new image or consume credits.
+- Hide specifications while a result is loading/unavailable or cleared, and replace them when another result loads. Downloads preserve the original bytes.
+- Verify the generated-result flow and My works against a known image fixture, plus formatting coverage for PNG/JPEG/WebP and file-size boundaries.
+- Results: 11 file-format/unit-boundary tests passed; two targeted browser scenarios passed (15.8s), including exact downloaded-byte equality, card/dialog specifications and clearing stale result information. Typecheck passed. No real generation requests.
+
+## Privacy, terms and deletion information — verified (2026-10-17)
+
+- `/privacy`, `/terms` and `/deletion` are public SSR pages with one visible H1, descriptive SEO, canonical URLs and sitemap/footer links.
+- Sign-in, sign-up and password-reset notices link to real localized policy pages. My works links to deletion instructions.
+- Explain original upload processing, third-party AI processing, 30-day generated-image retention, necessary browser storage, and image deletion versus clearing the editor. Do not invent processor retention or model-training guarantees.
+- Hourly expiry cleanup includes both registered and guest result files, preserving task/billing metadata. Confirm related storage tests and public-page E2E only.
+- Operator contact email must be supplied by the owner, not invented from the site domain.
+- Owner confirmed `AI Body Editor` and `zw83716@gmail.com`; all three pages show the configured email. Seven retention/deletion tests and two policy-page browser tests passed.
+
 ## My works — verified (2026-10-17)
 
 - Signed-in users can open My works from desktop/mobile navigation and see only their successful saved outputs, newest first, with mode, strength and expiry.

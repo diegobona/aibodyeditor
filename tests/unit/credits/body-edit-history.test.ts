@@ -14,6 +14,7 @@ let history: ReturnType<typeof createBodyEditHistory>;
 beforeEach(() => {
   vi.clearAllMocks(); db = new Database(':memory:');
   db.exec('CREATE TABLE body_image_edit (id TEXT PRIMARY KEY, user_id TEXT, result_key TEXT, result_mime_type TEXT, mode TEXT, intensity TEXT, status TEXT, created_at INTEGER); CREATE TABLE credit_transaction (id TEXT PRIMARY KEY, amount INTEGER); INSERT INTO credit_transaction VALUES (\'debit\', -15)');
+  db.exec('CREATE TABLE body_guest_edit (id TEXT PRIMARY KEY, guest_id TEXT, result_key TEXT, result_mime_type TEXT, status TEXT, created_at INTEGER)');
   const add = db.prepare('INSERT INTO body_image_edit VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   add.run(id, 'owner', `body-edits/${id}.png`, 'image/png', 'slim', '70', 'succeeded', now.getTime());
   add.run(other, 'other', `body-edits/${other}.png`, 'image/png', 'muscle', '80', 'succeeded', now.getTime());
@@ -47,6 +48,14 @@ test('scheduled cleanup needs no user visit and keeps recent results', async () 
   expect(await history.cleanup()).toBe(1);
   expect(await history.cleanup()).toBe(0);
   expect((await history.list('other', 0)).items).toHaveLength(1);
+});
+test('guest images share the expiry cleanup without erasing trial metadata', async () => {
+  const insert = db.prepare('INSERT INTO body_guest_edit VALUES (?, ?, ?, ?, ?, ?)');
+  insert.run('old-guest', 'guest:old', 'old-guest.png', 'image/png', 'succeeded', now.getTime() - 31 * 86_400_000);
+  insert.run('recent-guest', 'guest:new', 'recent-guest.png', 'image/png', 'succeeded', now.getTime());
+  expect(await history.cleanup()).toBe(2);
+  expect(db.prepare('SELECT result_key, status FROM body_guest_edit WHERE id = ?').get('old-guest')).toEqual({ result_key: null, status: 'succeeded' });
+  expect(db.prepare('SELECT result_key FROM body_guest_edit WHERE id = ?').get('recent-guest')).toEqual({ result_key: 'recent-guest.png' });
 });
 test('page boundaries are stable and malformed pages are rejected', async () => {
   const add = db.prepare('INSERT INTO body_image_edit VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
