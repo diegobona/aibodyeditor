@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DiptychPhoto } from "@libs/react-shared/components/photo-comparison";
 import { cn } from "@libs/ui/utils/cn";
 import { useTranslation } from "@/hooks/use-translation";
-import type { BodyEditMode } from "../../../../../config/body-editor";
+import type { BodyEditMode, BodyEditIntensity } from "../../../../../config/body-editor";
 import { UploadDropzone } from "./upload-dropzone";
 import { RealResultsGallery } from "./real-results-gallery";
 import { SettingsOnlyToggle } from "./settings-only-toggle";
@@ -11,11 +11,17 @@ import { REAL_RESULT_CASES, REAL_RESULT_IMAGES, type EditorPhotoSource, type Edi
 
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
 
-export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendingChange }: {
+export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendingChange, title, breadcrumb, caseKeys, galleryTitle, galleryDescription, defaultIntensity }: {
   selectedMode: BodyEditMode;
   onModeChange: (mode: BodyEditMode) => void;
   pending: boolean;
   onPendingChange: (pending: boolean) => void;
+  title?: string;
+  breadcrumb?: ReactNode;
+  caseKeys?: readonly ExampleKey[];
+  galleryTitle?: string;
+  galleryDescription?: string;
+  defaultIntensity?: BodyEditIntensity;
 }) {
   const { t } = useTranslation();
   const copy = t.home.examples;
@@ -24,6 +30,7 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
   const [photoSource, setPhotoSource] = useState<EditorPhotoSource>(null);
   const [settingsOnly, setSettingsOnly] = useState(false);
   const rail = useRef<HTMLDivElement>(null);
+  const cases = caseKeys ? REAL_RESULT_CASES.filter(item => caseKeys.includes(item.key)) : REAL_RESULT_CASES;
 
   useEffect(() => {
     const element = rail.current;
@@ -63,7 +70,10 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
     <>
     <section id="home-hero" className="pb-8 pt-2 md:pb-10">
       <div id="try" className="mx-auto w-full max-w-[1600px] scroll-mt-16 px-3 sm:px-6">
-        <h1 className="mb-2 font-sans text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{t.home.hero.title}</h1>
+        <div className={breadcrumb ? 'flex flex-wrap items-center justify-between gap-x-4' : 'contents'}>
+          <h1 className="mb-2 font-sans text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title ?? t.home.hero.title}</h1>
+          {breadcrumb}
+        </div>
         <section id="samples" aria-labelledby="sample-heading" className="mb-2 min-w-0">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 id="sample-heading" className="text-xs font-semibold">{copy.title}</h2>
@@ -73,7 +83,7 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
             <button type="button" aria-label={copy.previousExamples} onClick={() => rail.current?.scrollBy({ left: -440, behavior: "smooth" })}
               className="hidden size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-primary sm:flex"><ChevronLeft className="size-4" /></button>
             <div ref={rail} data-example-rail role="group" aria-label={copy.selectorLabel} className="flex min-w-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {REAL_RESULT_CASES.map((value) => (
+              {cases.map((value) => (
                 <button key={value.key} type="button" data-example={value.key} data-subject={value.subject}
                   aria-label={copy.chooseLabel.replace("{name}", copy.labels[value.key])} aria-pressed={selected === value.key}
                   disabled={pending} onClick={() => choose(value.key)}
@@ -87,12 +97,12 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
               className="hidden size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-primary sm:flex"><ChevronRight className="size-4" /></button>
           </div>
         </section>
-        <UploadDropzone layout="workbench" selectedMode={selectedMode} onModeChange={onModeChange}
+        <UploadDropzone layout="workbench" selectedMode={selectedMode} onModeChange={onModeChange} defaultIntensity={defaultIntensity}
           onPendingChange={onPendingChange} onPhotoChange={setPhotoSource} preserveSettingsOnPhotoChange
           sample={sample} onSampleClear={() => { setSample(undefined); setSelected(undefined); }} />
       </div>
     </section>
-    <RealResultsGallery pending={pending} onTry={(key) => {
+    <RealResultsGallery pending={pending} caseKeys={caseKeys} title={galleryTitle} description={galleryDescription} onTry={(key) => {
       choose(key, false);
       rail.current?.querySelector(`[data-example="${key}"]`)?.scrollIntoView({ block: "nearest", inline: "center" });
     }} />

@@ -4,9 +4,9 @@ import { en } from '../../../libs/i18n/locales/en';
 import { enEditingTopics } from '../../../libs/i18n/locales/en-editing-topics';
 
 const TOPICS = [
-  { path: '/ai-muscle-generator', key: 'muscleGenerator', mode: 'muscle', intensity: 70, instructionCase: undefined, cases: ['muscle', 'shoulders', 'customCombination'] },
-  { path: '/leg-lengthener', key: 'legLengthener', mode: 'proportions', intensity: 80, instructionCase: 'legProportions', cases: ['legProportions', 'proportions'] },
-  { path: '/waist-slimmer', key: 'waistSlimmer', mode: 'slim', intensity: 70, instructionCase: 'waistOnly', cases: ['waistOnly', 'naturalSlim'] },
+  { path: '/ai-muscle-generator', key: 'muscleGenerator', mode: 'muscle', intensity: 60, cases: ['muscle', 'shoulders', 'customCombination'] },
+  { path: '/leg-lengthener', key: 'legLengthener', mode: 'proportions', intensity: 60, cases: ['legProportions'] },
+  { path: '/waist-slimmer', key: 'waistSlimmer', mode: 'slim', intensity: 60, cases: ['waistOnly'] },
 ] as const;
 const recipes = JSON.parse(readFileSync('apps/tanstack-app/public/examples/results-2026-10-16/provenance.json', 'utf8')) as { case: string; mode: string; intensity: number; instructions: string }[];
 const png = readFileSync('apps/tanstack-app/public/favicon-32x32.png');
@@ -17,7 +17,11 @@ async function fixture(page: Page) {
   const posts: FormData[] = [];
   await page.route('**/*', async route => {
     const request = route.request(), path = new URL(request.url()).pathname;
-    if (path.startsWith('/api/auth/')) return route.fulfill({ json: null });
+    if (path.startsWith('/api/auth/')) {
+      // Let all shared session subscribers hydrate before the fixture resolves.
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return route.fulfill({ json: null });
+    }
     if (path === '/api/body-edit/guest-session') return route.fulfill({ json: { ownerId: 'guest:topic-fixture', remaining: 1 } });
     if (path === '/api/body-edit' && request.method() === 'GET') return route.fulfill({ json: { available: true, costCredits: 10, freeTrialEdits: 1 } });
     if (path === '/api/body-edit' && request.method() === 'POST') {
@@ -73,15 +77,31 @@ for (const topic of TOPICS) {
     await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled({ timeout: 15_000 });
     await expect(editor(page)).toHaveAttribute('data-photo-source', 'empty');
     await expect(editor(page).getByRole('img')).toHaveCount(0);
+    await expect(editor(page)).toHaveAttribute('data-layout', 'workbench');
     await expect(editor(page).locator(`input[type=radio][value=${topic.mode}]`)).toBeChecked();
     await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue(String(topic.intensity));
-    const initialInstructions = topic.instructionCase ? en.home.realResults[topic.instructionCase].instructions : '';
-    if (initialInstructions) await expect(editor(page).locator('textarea')).toHaveValue(initialInstructions);
-    else await expect(editor(page).getByRole('button', { name: 'Extra instructions (optional)', exact: true })).toHaveAttribute('aria-expanded', 'false');
+    await expect(editor(page).getByRole('radio')).toHaveCount(4);
+    await expect(editor(page).getByRole('button', { name: 'Extra instructions (optional)', exact: true })).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#samples [data-example]')).toHaveCount(topic.cases.length);
+    expect(await page.locator('#samples [data-example]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-example')))).toEqual([...topic.cases]);
     await expect(page.locator('[data-real-result]')).toHaveCount(topic.cases.length);
+    const extraInstructions = editor(page).getByRole('button', { name: 'Extra instructions (optional)', exact: true });
+    await extraInstructions.click();
+    await expect(editor(page).locator('textarea')).toHaveValue('');
+    await extraInstructions.click();
+    // Entry defaults must not overwrite a user's choices when a photo is uploaded.
+    await editor(page).getByText('Breast', { exact: true }).click();
+    await editor(page).getByRole('slider', { name: 'Intensity', exact: true }).fill('43');
+    await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'initial.png', mimeType: 'image/png', buffer: png });
+    await expect(editor(page)).toHaveAttribute('data-photo-source', 'local');
+    await expect(editor(page).getByRole('radio', { name: 'Breast', exact: true })).toBeChecked();
+    await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('43');
     for (const key of topic.cases) {
       const recipe = recipes.find(item => item.case === key)!;
       const article = page.locator(`[data-real-result=${key}]`);
+      await page.locator(`#samples [data-example=${key}]`).click();
+      await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', key);
+      await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue(String(recipe.intensity));
       await article.getByRole('slider').fill('25');
       await expect(article.getByRole('slider')).toHaveValue('25');
       await article.getByRole('link', { name: new RegExp('^Try ') }).click();
@@ -123,11 +143,39 @@ test('topic navigation and cases fit a narrow mobile viewport', async ({ page })
   await page.locator('header').getByRole('link', { name: 'AI Muscle Generator', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('AI Muscle Generator');
   await expect(editor(page).locator('input[value=muscle]')).toBeChecked();
+  await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('60');
   await page.locator('[data-try-example=shoulders]').click();
   await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue('80');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: 'test-results/editing-topics/mobile.png' });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator('#real-results').screenshot({ path: 'test-results/editing-topics/muscle-cases.png' });
+  await page.locator('#home-hero').screenshot({ path: 'test-results/editing-topics/shared-workbench.png' });
+  expect(posts).toHaveLength(0);
+});
+
+test('existing tool pages use the same blank workbench and filtered upper/lower cases', async ({ page }) => {
+  const posts = await fixture(page);
+  for (const topic of [
+    { path: '/', mode: 'slim', intensity: 70, cases: recipes.map(item => item.case) },
+    { path: '/body-editor', mode: 'slim', intensity: 70, cases: recipes.map(item => item.case) },
+    { path: '/skinny-filter', mode: 'slim', intensity: 60, cases: ['naturalSlim', 'waistOnly'] },
+    { path: '/breast-expansion', mode: 'breast', intensity: 40, cases: ['breast', 'breastSubtle'] },
+  ]) {
+    await page.goto(topic.path);
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled({ timeout: 15_000 });
+    await expect(editor(page)).toHaveAttribute('data-layout', 'workbench');
+    await expect(editor(page)).toHaveAttribute('data-photo-source', 'empty');
+    await expect(editor(page).locator(`input[value=${topic.mode}]`)).toBeChecked();
+    await expect(editor(page).getByRole('slider', { name: 'Intensity', exact: true })).toHaveValue(String(topic.intensity));
+    await expect(editor(page).getByRole('button', { name: 'Extra instructions (optional)', exact: true })).toHaveAttribute('aria-expanded', 'false');
+    const upperCases = await page.locator('#samples [data-example]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-example')));
+    expect([...upperCases].sort()).toEqual([...topic.cases].sort());
+    expect(await page.locator('[data-real-result]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-real-result')))).toEqual(upperCases);
+    const key = topic.cases[0];
+    await page.locator(`#samples [data-example=${key}]`).click();
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', key);
+    await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
+    await expect(editor(page).getByRole('button', { name: 'Edit Photo', exact: true })).toBeEnabled({ timeout: 15_000 });
+  }
   expect(posts).toHaveLength(0);
 });

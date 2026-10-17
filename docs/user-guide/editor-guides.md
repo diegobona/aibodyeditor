@@ -2,11 +2,11 @@
 
 ## Focused editing pages
 
-- `/ai-muscle-generator` starts with Muscle at 70/100. Its real examples cover an athletic build, broader shoulders only, and a shoulder-and-waist combination.
-- `/leg-lengthener` starts with Proportions at 80/100 and the longer-legs case's actual extra instructions. Its examples compare a focused leg request and broader body balance.
-- `/waist-slimmer` starts with Slim at 70/100 and the waist-only case's actual instructions for preserving other body areas.
+- `/ai-muscle-generator` shows an athletic build, broader shoulders only, and a shoulder-and-waist combination.
+- `/leg-lengthener` shows the dedicated longer-legs case.
+- `/waist-slimmer` shows the waist-only case.
 
-These pages start without a selected photo or generated result. Uploading keeps the page's preset, including any filled instructions. Try on a case loads its original photo and exact mode, intensity and optional instructions. Selecting a case does not generate or spend credits. Review or change the settings before selecting Edit Photo. All pages use the existing editor, account and guest flow.
+Every tool page uses the homepage's same workbench, example strip, image actions and comparison gallery. Initially there is no photo/result and extra instructions are blank. Home and Body Editor start at Slim 70/100; Skinny Filter and Waist Slimmer at Slim 60/100; Muscle at Muscle 60/100; Leg Lengthener at Proportions 60/100; Breast Expansion at Breast 40/100. These are entry defaults: uploading a photo or changing fields does not reset your choices. Body Editor shows all ten cases; Skinny Filter shows its Slim cases; Breast Expansion shows its two Breast cases. The upper strip and lower gallery always show the same relevant cases. Choosing a case loads its original photo and exact mode, intensity and optional instructions, overriding the initial values. Uploading afterward preserves your current settings. Selecting a case does not generate or spend credits. Review or change the settings before selecting Edit Photo.
 
 ## Free guest edit and welcome credits
 

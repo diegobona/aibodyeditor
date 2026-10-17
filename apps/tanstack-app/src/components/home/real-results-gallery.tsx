@@ -2,7 +2,6 @@ import { ArrowUpRight } from "lucide-react";
 import { PhotoComparison } from "@libs/react-shared/components/photo-comparison";
 import { useTranslation } from "@/hooks/use-translation";
 import { Section } from "@/components/page-section";
-import { cn } from '@libs/ui/utils/cn';
 import { REAL_RESULT_CASES, REAL_RESULT_IMAGES } from "./showcase-data";
 
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
@@ -21,13 +20,11 @@ export function RealResultsGallery({ onTry, pending, caseKeys, title, descriptio
 
   return (
     <Section id="real-results" className="bg-card py-12 md:py-16">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4 md:mb-10">
-        <div className="max-w-2xl">
-          <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{title ?? copy.title}</h2>
-          <p className="mt-3 text-lg leading-relaxed text-muted-foreground">{description ?? copy.description}</p>
-        </div>
+      <div className="mb-8 md:mb-10">
+        <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{title ?? copy.title}</h2>
+        <p className="mt-3 text-lg leading-relaxed text-muted-foreground">{description ?? copy.description}</p>
       </div>
-      <div data-results-grid className={cn('grid gap-x-5 gap-y-10 md:grid-cols-2', caseKeys ? cases.length > 2 && 'lg:grid-cols-3' : 'lg:grid-cols-4')}>
+      <div data-results-grid className="grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
         {cases.map(({ key, mode, intensity, subject }) => {
           const item = copy[key];
           return (

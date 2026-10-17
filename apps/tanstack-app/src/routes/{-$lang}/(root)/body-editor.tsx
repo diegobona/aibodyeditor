@@ -12,5 +12,5 @@ export const Route = createFileRoute('/{-$lang}/(root)/body-editor')({
 })
 
 function BodyEditorPage() {
-  return <ToolPage toolKey="bodyEditor" imageSlug="body-editor" />
+  return <ToolPage toolKey="bodyEditor" />
 }

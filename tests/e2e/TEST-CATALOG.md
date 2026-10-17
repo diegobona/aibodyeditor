@@ -1,5 +1,39 @@
 # E2E 测试流程目录
 
+## Wider, aligned topic copy — acceptance scenarios (2026-10-18)
+
+- Case-gallery headings and short descriptions use the gallery's available width rather than a narrow inner column.
+- Topic explanation and FAQ content align with the gallery's left edge, with a wider reading column for longer paragraphs.
+- Desktop and narrow mobile layouts remain readable with no horizontal overflow; case comparisons and Try still work.
+- Verified: desktop browser measurements show the gallery introduction at 1104px and one line on the leg page; explanation and FAQ share its left edge, with long body copy capped at 1024px. Mobile page width equals its 390px viewport. Screenshots inspected. The two related SSR/mobile E2E scenarios passed (5.5s), typecheck passed (15.1s), build passed (36.9s; existing chunk-size warnings).
+
+## Topic-matched gallery introductions — acceptance scenarios (2026-10-17)
+
+- Body Editor, Skinny Filter and Breast Expansion each have their own EN/ZH case-gallery title and introduction, matching the available edits rather than the homepage's general four-mode description.
+- The homepage and other three topic introductions retain their current text. Case filtering and Try behavior stay unchanged.
+- Verified: all three legacy topic galleries render their personalized headings in SSR; the existing guide/case-selection E2E passed (11.4s). Typecheck passed (21.6s), production build passed (1m38s; existing chunk-size warnings). No generation or credit debit.
+
+## Example copy without AI-origin emphasis — acceptance scenarios (2026-10-17)
+
+- Homepage and topic galleries describe editing effects and original/result comparisons without emphasizing that sample portraits were AI-created. Sample hints, concept labels and image alt use the same neutral wording in EN/ZH.
+- Keep example previews distinguishable from generated editor results and retain the instruction to generate using current settings. Product branding and functionality descriptions remain accurate.
+- Verified: the related SSR/SEO E2E scenario passed (1.7s), including updated descriptive image alt. Typecheck passed (16.9s) and production build passed (41.8s). EN/ZH gallery copy, preview hints and concept labels no longer emphasize sample-image generation origins.
+
+## Topic-specific initial settings — acceptance scenarios (2026-10-17)
+
+- Home and Body Editor start at Slim 70; Skinny Filter at Slim 60; Muscle at Muscle 60; Leg Lengthener at Proportions 60; Breast Expansion at Breast 40; Waist Slimmer at Slim 60.
+- Every page starts without a photo/result and with blank, collapsed extra instructions. Uploading a photo and editing fields preserve the user's current settings; defaults apply only on entry to a topic.
+- Selecting a case still loads its exact recipe, overriding initial values. Navigating between topic pages initializes the destination topic's defaults.
+- Verified: all six related browser scenarios passed (34.0s), including the homepage and six topic defaults, blank initial images/instructions, cross-topic navigation, exact case recipes and preservation/submission of manual changes. Typecheck passed (21.4s), Cloudflare build passed (46.0s). Generation/auth responses used fixtures; no real AI generation or credit debit.
+
+## One homepage workbench across every tool page — acceptance scenarios (2026-10-17)
+
+- All six published tools use the homepage's same ExamplePlayground workbench: empty original/result, Slim 70, blank collapsed instructions, all four modes and independent photo actions.
+- Upper example strip and lower comparison gallery show the same topic-relevant case set. Only selecting a case loads its photo and exact mode, intensity and optional instructions; gallery Try follows homepage behavior and settings-only remains exclusive to the upper strip.
+- Generic Body Editor shows all ten cases; Skinny Filter shows Slim cases; Breast shows its two cases; Muscle shows its three cases; Leg Lengthener shows the dedicated longer-legs case; Waist Slimmer shows the waist-only case. Do not pad focused topics with unrelated recipes.
+- Retain one topic-specific SSR H1, breadcrumb, original explanatory text, metadata/FAQ/related links and sitemap. Keep homepage behavior and mobile/desktop workbench layout unchanged.
+- Verified: all six focused browser scenarios passed across the feature run (five successful scenarios) and the final existing-guide regression (8.9s). Checked shared workbench layout, blank defaults, exact filtered upper/lower case sets, both Try entry points, file/settings submission, legacy guides, mobile navigation and SSR/FAQ/SEO. The legacy-guide fixture now waits 500ms before resolving auth so shared session subscribers can hydrate; its case-set assertion ignores provenance-file ordering while requiring identical strip/gallery order. Typecheck passed (15.0s), Cloudflare build passed (39.9s), the full SEO audit passed, and the homepage plus all six guides returned Workers SSR 200 with the workbench. Actual-browser Body Editor case selection also succeeded. No real generation, debit or deployment.
+
 ## Muscle, leg-length and waist topic pages — acceptance scenarios (2026-10-17)
 
 - Publish `/ai-muscle-generator`, `/leg-lengthener` and `/waist-slimmer` with separate original EN/ZH copy, one SSR H1, at least 400 English words, descriptive real-case image alt, unique SEO, canonical/hreflang, matching FAQ/breadcrumb JSON-LD and sitemap entries.

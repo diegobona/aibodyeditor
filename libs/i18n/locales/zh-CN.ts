@@ -1881,7 +1881,7 @@ export const zhCN: Locale = {
       resultPlaceholderHint: "选择设置后，点击“编辑照片”生成结果。",
       currentSettingsDiffer: "设置已更改，再次生成以更新结果。",
       sampleSettingsChanged: "设置已更改，点击“编辑照片”生成新结果。",
-      sampleNote: "这是本编辑器根据 AI 成年人样照实际生成的结果。点击“编辑照片”按当前设置重新生成。",
+      sampleNote: "这是本编辑器的案例结果。点击“编辑照片”按当前设置生成新结果。",
       reviewResult: "下载前请检查面部、衣服和背景细节。",
       labels: {
         naturalSlim: "自然瘦身",
@@ -1898,7 +1898,7 @@ export const zhCN: Locale = {
     },
     realResults: {
       "title": "本编辑器的真实生成结果",
-      "description": "查看四种编辑模式与具体修改要求的实际效果。原图为 AI 生成的成年人样照，结果由本编辑器实际生成。效果因照片而异。",
+      "description": "查看四种编辑模式与具体修改要求的实际效果，对比原图与本编辑器的编辑结果。效果因照片而异。",
       "coverage": "{cases} 组案例 · {people} 位样照人物 · {modes} 种编辑模式",
       "before": "原图",
       "after": "实际结果",
@@ -1912,70 +1912,70 @@ export const zhCN: Locale = {
       "naturalSlim": {
         "title": "自然的整体瘦身",
         "description": "日常衣着下，对腰部、手臂与大腿进行整体瘦身。",
-        "beforeAlt": "AI 成年女性样照原图：穿梅紫色 T 恤与炭灰色运动裤，站在城市庭院中",
+        "beforeAlt": "成年女性样照原图：穿梅紫色 T 恤与炭灰色运动裤，站在城市庭院中",
         "afterAlt": "实际瘦身模式结果：同一位穿梅紫色 T 恤与炭灰色运动裤的庭院女性",
         "instructions": ""
       },
       "muscle": {
         "title": "更强健的运动体型",
         "description": "运动 T 恤与短裤搭配下，使用肌肉预设调整肩部、上臂与胸部。",
-        "beforeAlt": "AI 成年男性样照原图：穿橄榄色运动 T 恤与灰色运动短裤，站在跑道上",
+        "beforeAlt": "成年男性样照原图：穿橄榄色运动 T 恤与灰色运动短裤，站在跑道上",
         "afterAlt": "实际肌肉模式结果：同一位橄榄色 T 恤与短裤男性呈现更强健的运动体型",
         "instructions": ""
       },
       "proportions": {
         "title": "更修长的腿身比例",
         "description": "使用比例预设调整腿身平衡与腰线。",
-        "beforeAlt": "AI 成年黑人男性样照原图：穿象牙白 Polo 衫与海军蓝短裤，站在现代广场中",
+        "beforeAlt": "成年黑人男性样照原图：穿象牙白 Polo 衫与海军蓝短裤，站在现代广场中",
         "afterAlt": "实际比例模式结果：同一位象牙白 Polo 衫与蓝色短裤黑人男性的腿身比例得到调整",
         "instructions": ""
       },
       "breast": {
         "title": "衣着下更饱满的胸部",
         "description": "较高强度的胸部模式，展示原有圆领 T 恤下的实际变化。",
-        "beforeAlt": "AI 成年女性样照原图：穿奶油色 T 恤与咖色长裤，站在露台上",
+        "beforeAlt": "成年女性样照原图：穿奶油色 T 恤与咖色长裤，站在露台上",
         "afterAlt": "实际胸部模式结果：同一件奶油色 T 恤下呈现更饱满的胸部轮廓",
         "instructions": ""
       },
       "shoulders": {
         "title": "只让肩膀更宽",
         "description": "将修改范围限定在肩部宽度，而非整体增肌。",
-        "beforeAlt": "AI 成年男性样照原图：穿蓝绿色 T 恤与海军蓝长裤，站在浅灰色摄影棚中",
+        "beforeAlt": "成年男性样照原图：穿蓝绿色 T 恤与海军蓝长裤，站在浅灰色摄影棚中",
         "afterAlt": "实际肌肉模式结果：同一位蓝绿色 T 恤男性应用仅调整肩部的说明",
         "instructions": "只让肩膀明显更宽、更有运动感。腰部、胸部、手臂和腿保持原来的大小。衣服、脸部、姿势和背景保持不变。"
       },
       "legProportions": {
         "title": "按说明调整腿部比例",
         "description": "短裙让腿部线条更直观，额外说明指定需要保留原宽度的身体部位。",
-        "beforeAlt": "AI 成年女性样照原图：穿象牙白上衣与酒红色及膝短裙，站在浅灰摄影棚中",
+        "beforeAlt": "成年女性样照原图：穿象牙白上衣与酒红色及膝短裙，站在浅灰摄影棚中",
         "afterAlt": "实际比例模式结果：同一位象牙白上衣与酒红色短裙女性应用腿部比例修改要求",
         "instructions": "让腿相对于躯干略长一些，保持自然平衡的成年人比例。腰、臀、胸和手臂保留原有宽度。衣服、脸部、姿势和背景保持不变。"
       },
       "breastSubtle": {
         "title": "更温和的胸部调整",
         "description": "使用另一位穿圆领连衣裙的人物，展示强度 40 的胸部编辑。",
-        "beforeAlt": "AI 成年东亚女性样照原图：黑色头发，穿深绿色及膝连衣裙，站在日光门廊上",
+        "beforeAlt": "成年东亚女性样照原图：黑色头发，穿深绿色及膝连衣裙，站在日光门廊上",
         "afterAlt": "实际胸部模式结果：同一位深绿色及膝连衣裙东亚女性的强度 40 编辑",
         "instructions": ""
       },
       "waistOnly": {
         "title": "只瘦腰，保留其他部位",
         "description": "在瘦身模式中指定仅修改腰部。",
-        "beforeAlt": "AI 成年男性样照原图：穿绿色背心与深色长裤，站在健身房中",
+        "beforeAlt": "成年男性样照原图：穿绿色背心与深色长裤，站在健身房中",
         "afterAlt": "实际瘦身模式结果：对同一位绿色背心男性应用仅瘦腰的额外说明",
         "instructions": "只让腰部明显变细。手臂、腿、肩膀和胸部保持原来的大小，其余内容保持不变。"
       },
       "fullerFigure": {
         "title": "整体稍微增重",
         "description": "通过额外说明改变预设方向，请求更饱满的体型。",
-        "beforeAlt": "AI 成年金发女性样照原图：穿黑色无袖上衣与铁锈橙及膝裙，站在石质庭院中",
+        "beforeAlt": "成年金发女性样照原图：穿黑色无袖上衣与铁锈橙及膝裙，站在石质庭院中",
         "afterAlt": "实际比例模式结果：同一位黑色上衣与铁锈橙半裙金发女性应用整体稍微增重的要求",
         "instructions": "让整体体型稍微饱满一些，自然轻微增重：腰、上臂、臀部和大腿稍微丰满，不要瘦任何部位。保持健康自然的成年人比例，衣服、脸部、姿势和背景保持不变。"
       },
       "customCombination": {
         "title": "一次说明，组合两种修改",
         "description": "同时请求肩膀更宽与腰部略细。",
-        "beforeAlt": "AI 成年白人男性样照原图：赤褐色头发、姜色胡须，穿炭灰色 T 恤与浅色运动短裤，站在露台上",
+        "beforeAlt": "成年白人男性样照原图：赤褐色头发、姜色胡须，穿炭灰色 T 恤与浅色运动短裤，站在露台上",
         "afterAlt": "实际肌肉模式结果：同一位炭灰色 T 恤与浅色短裤白人男性应用肩部与腰部的组合修改",
         "instructions": "让肩膀更宽、腰部略细，形成更清晰的倒三角躯干。手臂、胸部和腿保持原来的大小。衣服、脸部、姿势和背景保持不变。"
       }
@@ -1984,7 +1984,7 @@ export const zhCN: Locale = {
       eyebrow: "瘦身、增肌与比例调整",
       heroCta: "编辑照片",
       examplesCta: "查看示例",
-      conceptLabel: "AI 生成的概念示意图",
+      conceptLabel: "概念预览",
       conceptNotice: "概念示意图用于说明编辑方向，并非本应用生成的编辑结果。",
       compareLabel: "比较原始与编辑后的概念示意图",
       compareHint: "拖动以比较",
@@ -1992,7 +1992,7 @@ export const zhCN: Locale = {
       after: "编辑概念图",
       modesLabel: "了解编辑方向",
       sampleLabel: "试试示例照片",
-      sampleNotice: "示例是 AI 生成的概念图。点击“编辑照片”才能生成新的编辑结果。",
+      sampleNotice: "示例用于展示编辑方向。点击“编辑照片”生成新的编辑结果。",
       clearSample: "清除示例",
       examplesTitle: "更多编辑概念",
       examplesSubtitle: "通过更多人像，了解各个编辑方向。",
@@ -2248,7 +2248,7 @@ export const zhCN: Locale = {
     },
     action: {
       title: "编辑效果构想",
-      subtitle: "用于展示编辑方向的 AI 概念插图。",
+      subtitle: "用于展示编辑方向的示意插图。",
       before: "调整前",
       after: "调整后",
       items: [
@@ -2391,6 +2391,10 @@ export const zhCN: Locale = {
         description: "使用 Body Editor 的四种模式与连续强度滑杆调整穿着衣物的人像。生成 AI 编辑结果，与原图比较并下载照片。"
       },
       breadcrumb: "Body Editor",
+      examples: {
+        title: "体型调整案例",
+        description: "对比瘦身、增肌、比例与胸部调整的效果。选择整体调整或局部修改案例，带入设置后，再按自己的照片调整。"
+      },
       hero: {
         title: "Body Editor",
         subtitle: "选择合适的人像，明确体型调整目标，了解评估变化时需要检查的细节。",
@@ -2499,6 +2503,10 @@ export const zhCN: Locale = {
         description: "在 AI 体型编辑器中使用瘦身模式与连续强度滑杆。参考 Skinny Filter 照片建议，比较生成结果并下载照片。"
       },
       breadcrumb: "Skinny Filter",
+      examples: {
+        title: "瘦身与瘦腰案例",
+        description: "对比整体瘦身与仅调整腰部的效果。选择案例带入原图和设置，再按自己的照片调整修改要求。"
+      },
       hero: {
         title: "Skinny Filter",
         subtitle: "通过照片选择和整体比例建议，规划更纤细、协调的人像轮廓。",
@@ -2607,6 +2615,10 @@ export const zhCN: Locale = {
         description: "在 AI 体型编辑器中使用胸部调整模式编辑衣物下的胸部轮廓。选择强度，生成结果，比较细节并下载照片。"
       },
       breadcrumb: "AI Breast Expansion",
+      examples: {
+        title: "胸部调整案例",
+        description: "对比原有衣物下自然与饱满的胸部调整效果。选择案例带入原图和强度，再按自己的照片调整设置。"
+      },
       hero: {
         title: "AI Breast Expansion",
         subtitle: "了解穿着衣物的人像中的胸部比例，选择合适的原图，并掌握需要检查的衣物细节。",

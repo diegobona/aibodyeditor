@@ -12,5 +12,5 @@ export const Route = createFileRoute('/{-$lang}/(root)/skinny-filter')({
 })
 
 function SkinnyFilterPage() {
-  return <ToolPage toolKey="skinnyFilter" imageSlug="skinny-filter" />
+  return <ToolPage toolKey="skinnyFilter" />
 }

@@ -1,12 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 import { siblingTools, toolRoute, type ToolKey } from '@/lib/tools'
 import { Section, SectionHeading } from '@/components/page-section'
-import { UploadDropzone } from '@/components/home/upload-dropzone'
-import { RealResultsGallery } from '@/components/home/real-results-gallery'
-import { REAL_RESULT_CASES, REAL_RESULT_IMAGES, type EditorSample } from '@/components/home/showcase-data'
+import { ExamplePlayground } from '@/components/home/example-playground'
+import type { BodyEditMode } from '../../../../config/body-editor'
 import { editingTopic } from '../../../../config/editing-topics'
 
 type Item = { title: string; description: string }
@@ -14,80 +13,49 @@ type Item = { title: string; description: string }
 const linkClass = 'font-semibold text-primary underline underline-offset-4 hover:text-foreground'
 
 /**
- * Shared LAYOUT for tool pages (h1 → What Is → How to → Tips → FAQ → Related Tools).
+ * Topic-filtered homepage workbench followed by original topic guidance.
  * The CONTENT is per page in libs/i18n en.ts `toolPages.<key>` and must be
  * written originally for each page — never reuse paragraphs across tools.
  *
  * Fully server-rendered. The upload widget is the only interactive island and
  * holds no indexable text. Visible breadcrumb mirrors the BreadcrumbList JSON-LD.
  *
- * Images: /examples/<imageSlug>-before.svg and -after.svg (≥300×300, realistic alt).
+ * Real case images and editor actions come from the same homepage components.
  */
-export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug?: string }) {
+export function ToolPage({ toolKey }: { toolKey: ToolKey }) {
   const { t, langParam } = useTranslation()
   const common = t.toolPages.common
   const page = t.toolPages[toolKey]
   const topic = editingTopic(toolKey)
-  const [sample, setSample] = useState<EditorSample>()
+  const defaultMode = topic?.mode ?? 'slim'
+  const [mode, setMode] = useState<BodyEditMode>(defaultMode)
   const [pending, setPending] = useState(false)
-  const chooseExample = (key: (typeof REAL_RESULT_CASES)[number]['key']) => {
-    if (pending) return
-    const recipe = REAL_RESULT_CASES.find(item => item.key === key)!
-    const item = t.home.realResults[key]
-    setSample({ id: key, src: REAL_RESULT_IMAGES[key], alt: item.beforeAlt, afterAlt: item.afterAlt,
-      mode: recipe.mode, intensity: recipe.intensity, instructions: item.instructions })
-  }
+  useEffect(() => { setMode(defaultMode); setPending(false) }, [toolKey, defaultMode])
   const siblings = siblingTools(toolKey)
   const inlineSibling = page.what.sibling as { key: string; before: string; after: string } | undefined
   const inlineSiblingRoute = inlineSibling ? toolRoute(inlineSibling.key) : undefined
 
   return (
     <div className="bg-background">
-      <section id="try" className="scroll-mt-20 pt-8 pb-20 md:pb-24">
-        <div className="container flex max-w-6xl flex-col items-center px-4 text-center md:px-6">
-          <nav aria-label={common.breadcrumbLabel} className="self-start">
-            <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <li>
-                <Link to="/{-$lang}" params={{ lang: langParam }} className="hover:text-foreground">
-                  {common.homeName}
-                </Link>
-              </li>
-              <li aria-hidden="true">
-                <ChevronRight className="size-4" />
-              </li>
-              <li aria-current="page" className="font-medium text-foreground">
-                {page.breadcrumb}
-              </li>
-            </ol>
-          </nav>
-          <h1 className="mt-10 font-display text-6xl font-semibold leading-none tracking-tight text-foreground md:text-8xl">
-            {page.hero.title}
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-            {page.hero.subtitle}
-          </p>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {common.editorIntro}
-          </p>
-          <UploadDropzone key={toolKey} defaultMode={topic?.mode ?? (toolKey === 'breastExpansion' ? 'breast' : 'slim')}
-            defaultIntensity={topic?.intensity}
-            defaultInstructions={topic?.instructionCase ? t.home.realResults[topic.instructionCase].instructions : ''}
-            sample={sample} onSampleClear={() => setSample(undefined)} onPendingChange={setPending}
-            preserveSettingsOnPhotoChange={Boolean(topic)} className="mt-10 w-full max-w-2xl text-left" />
-          <p className="mt-5 text-sm text-muted-foreground">{page.hero.note}</p>
-        </div>
-      </section>
-
-      {topic && <RealResultsGallery caseKeys={topic.cases} title={page.examples.title} description={page.examples.description}
-        pending={pending} onTry={chooseExample} />}
+      <ExamplePlayground key={toolKey} title={page.hero.title} caseKeys={topic?.cases}
+        defaultIntensity={topic?.intensity}
+        selectedMode={mode} onModeChange={setMode} pending={pending} onPendingChange={setPending}
+        galleryTitle={page.examples?.title} galleryDescription={page.examples?.description}
+        breadcrumb={<nav aria-label={common.breadcrumbLabel} className="mb-2 text-xs text-muted-foreground">
+          <ol className="flex items-center gap-1.5">
+            <li><Link to="/{-$lang}" params={{ lang: langParam }} className="hover:text-foreground">{common.homeName}</Link></li>
+            <li aria-hidden="true"><ChevronRight className="size-3" /></li>
+            <li aria-current="page">{page.breadcrumb}</li>
+          </ol>
+        </nav>} />
 
       {/* What Is [keyword] */}
       <Section id="what" className="rounded-t-[40px] bg-card">
-        <div className={topic ? 'mx-auto max-w-3xl' : 'grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start'}>
-          <div className="max-w-2xl">
+        <div className="max-w-5xl">
             <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
               {page.what.title}
             </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">{page.hero.subtitle}</p>
             <div className="mt-8 flex flex-col gap-5 text-[17px] leading-relaxed text-muted-foreground">
               {page.what.paragraphs.map((paragraph: string) => (
                 <p key={paragraph.slice(0, 32)}>{paragraph}</p>
@@ -109,30 +77,6 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug?:
                 </p>
               )}
             </div>
-          </div>
-          {!topic && <figure className="rounded-3xl bg-background p-3">
-            <div className="grid grid-cols-2 gap-2">
-              <img
-                src={`/examples/${imageSlug}-before.svg`}
-                alt={page.what.figure.beforeAlt}
-                width={600}
-                height={600}
-                loading="lazy"
-                decoding="async"
-                className="aspect-square w-full rounded-2xl object-cover"
-              />
-              <img
-                src={`/examples/${imageSlug}-after.svg`}
-                alt={page.what.figure.afterAlt}
-                width={600}
-                height={600}
-                loading="lazy"
-                decoding="async"
-                className="aspect-square w-full rounded-2xl object-cover"
-              />
-            </div>
-            <figcaption className="px-2 pb-1 pt-3 text-[15px] text-muted-foreground">{page.what.figure.caption}</figcaption>
-          </figure>}
         </div>
       </Section>
 
@@ -167,7 +111,7 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug?:
 
       {/* FAQ: same items as the FAQPage JSON-LD */}
       <Section id="faq" className="bg-card">
-        <div className="mx-auto max-w-3xl">
+        <div className="max-w-5xl">
           <SectionHeading title={page.faq.title} />
           <div className="flex flex-col gap-3">
             {page.faq.items.map((item: { question: string; answer: string }) => (

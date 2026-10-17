@@ -80,7 +80,6 @@ export function UploadDropzone({
   selectedMode,
   defaultMode = "slim",
   defaultIntensity = BODY_EDIT_INTENSITY.default,
-  defaultInstructions = "",
   onModeChange,
   sample,
   onSampleClear,
@@ -94,7 +93,6 @@ export function UploadDropzone({
   selectedMode?: BodyEditMode;
   defaultMode?: BodyEditMode;
   defaultIntensity?: BodyEditIntensity;
-  defaultInstructions?: string;
   onModeChange?: (mode: BodyEditMode) => void;
   sample?: EditorSample;
   onSampleClear?: () => void;
@@ -116,9 +114,9 @@ export function UploadDropzone({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
   const [intensity, setIntensity] = useState<BodyEditIntensity>(defaultIntensity);
-  const [instructions, setInstructions] = useState(defaultInstructions);
+  const [instructions, setInstructions] = useState("");
   const inheritedInstructions = useRef<{ mode: BodyEditMode } | undefined>(undefined);
-  const [instructionsOpen, setInstructionsOpen] = useState(Boolean(defaultInstructions));
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [error, setError] = useState(""),
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),

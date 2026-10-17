@@ -1,5 +1,33 @@
 # MVP live validation — 2026-10-16
 
+## Wider, aligned topic copy — 2026-10-18
+
+- Removed the gallery introduction's narrow inner wrapper so headings and short descriptions use the available section width. Topic explanation and FAQ now align to the same left edge with a wider 1024px reading column, rather than centered nested narrow columns.
+- Verification: desktop screenshots inspected; Leg Lengthener's 1104px introduction fits on one line and body text aligns at the same left edge. A 390px mobile viewport has no horizontal overflow. Related SSR/mobile E2E passed (5.5s), typecheck passed (15.1s), production build passed (36.9s; existing chunk-size warnings). No generation, debit, deployment or push.
+
+## Personalized legacy topic galleries — 2026-10-17
+
+- Added EN/ZH gallery titles and descriptions for Body Editor (body reshaping), Skinny Filter (overall slimming and waist-only edits), and Breast Expansion (subtle and fuller clothed bust adjustments). The existing shared workbench already reads each topic's `examples` copy; no layout, filtering or Try changes were needed.
+- Verification: personalized introductions present in all three SSR galleries; existing legacy guide/case E2E passed (11.4s), typecheck passed (21.6s), production build passed (1m38s; existing chunk-size warnings). No generation, debit, deployment or push.
+
+## Neutral example descriptions — 2026-10-17
+
+- EN/ZH homepage and topic-gallery descriptions, example-result hints, image alt and concept-preview labels now focus on editing effects and actions without emphasizing that sample portraits were AI-created. Concept previews retain their distinction from actual editor outputs.
+- Validation: related SSR/SEO E2E passed (1.7s), typecheck passed (16.9s), production build passed (41.8s; existing chunk-size warnings). No generation, credit debit, deployment or push.
+
+## Topic-specific entry defaults — 2026-10-17
+
+- Centralized mode/intensity defaults in `config/editing-topics.ts`: Home/Body Editor Slim 70, Skinny Filter/Waist Slimmer Slim 60, Muscle 60, Leg Lengthener Proportions 60, Breast 40. The shared workbench passes initial intensity to the existing uploader; topic navigation initializes the destination mode.
+- Photos/results remain empty and instructions blank on arrival. Entry defaults do not reset manual edits on upload; selecting a case still overrides fields with its actual saved recipe. Updated EN/ZH guidance and the user guide to match.
+- Verification: all six related E2E scenarios passed (34.0s), covering homepage/all six topic defaults, navigation, blank instructions, sample overrides and manual settings preserved on upload/submission. Typecheck passed (21.4s); Cloudflare build passed (46.0s, existing chunk-size warnings). Local Workers SSR returned 200 with Proportions selected at 60 on Leg Lengthener. No real generation, debit, deployment or push.
+
+## Unified topic workbench — 2026-10-17
+
+- All six tool routes now render the homepage's ExamplePlayground, including the top strip, same full workbench and lower comparison gallery. Topics filter cases only; initial state is empty with Slim 70 and no extra instructions. Selecting a case loads its original and exact submitted recipe. Topic defaults no longer prefill instructions or change mode on arrival.
+- Body Editor retains all ten cases, Skinny Filter shows its two Slim cases, Breast its two Breast cases, Muscle its three muscle cases, and the focused leg/waist pages show only their directly relevant case. Both case regions share the same filter. All four editing modes and existing photo/credit/auth behavior remain available.
+- Removed the separate compact topic uploader and legacy illustration block. Topic H1, breadcrumb, unique guidance, FAQ/schema, sitemap and internal links remain server-rendered. Copy and user-guide descriptions now match selection-driven settings.
+- Verification: six focused browser scenarios passed across targeted runs; actual-browser legacy case selection worked. Typecheck passed (15.0s), build passed (39.9s; existing chunk-size warnings), SEO audit passed and all seven public editor routes returned local Workers SSR 200. Auth fixtures resolve after hydration to avoid the existing immediate-response timing issue. No real AI call, debit, database change, deployment or push.
+
 ## Focused editing topic pages — 2026-10-17
 
 - Added public SSR pages `/ai-muscle-generator`, `/leg-lengthener` and `/waist-slimmer` through the existing ToolPage. Static mode/strength/case mappings live in `config/editing-topics.ts`; original English copy and mirrored Chinese dictionaries live under `libs/i18n/locales/*-editing-topics.ts`.

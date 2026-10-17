@@ -14,5 +14,5 @@ export const Route = createFileRoute('/{-$lang}/(root)/breast-expansion')({
 })
 
 function BreastExpansionPage() {
-  return <ToolPage toolKey="breastExpansion" imageSlug="breast-expansion" />
+  return <ToolPage toolKey="breastExpansion" />
 }
