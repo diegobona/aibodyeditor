@@ -14,6 +14,9 @@ export const TOOL_PAGES = [
   { key: 'bodyEditor', to: '/{-$lang}/body-editor' },
   { key: 'skinnyFilter', to: '/{-$lang}/skinny-filter' },
   { key: 'breastExpansion', to: '/{-$lang}/breast-expansion' },
+  { key: 'muscleGenerator', to: '/{-$lang}/ai-muscle-generator' },
+  { key: 'legLengthener', to: '/{-$lang}/leg-lengthener' },
+  { key: 'waistSlimmer', to: '/{-$lang}/waist-slimmer' },
 ] as const
 
 export type ToolKey = (typeof TOOL_PAGES)[number]['key']
@@ -25,8 +28,8 @@ export type ToolRoute = (typeof TOOL_PAGES)[number]['to']
  */
 const FEATURE_TOOL: Record<string, string> = {
   slim: 'skinnyFilter',
-  muscle: 'bodyEditor',
-  proportions: 'breastExpansion',
+  muscle: 'muscleGenerator',
+  proportions: 'legLengthener',
   batch: 'bodyEditor',
 }
 

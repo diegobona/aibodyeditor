@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { Eye, EyeOff, LoaderCircle, Move, RotateCcw } from 'lucide-react';
+import { Eye, EyeOff, Move, RotateCcw } from 'lucide-react';
 import type { BodyEditMode } from '../../../config/body-editor';
 import { buildBodyContourPreview } from '../../body-preview/geometry';
 import type { BodyPhotoAnalysis, PreviewRegion } from '../../body-preview/types';
 import { cn } from '../../ui/utils/cn';
 
 export interface BodyContourPreviewCopy {
-  analyzing: string;
-  unavailable: string;
-  noPerson: string;
   chestUnclear: string;
   area: string;
   original: string;
@@ -25,7 +22,7 @@ export interface BodyContourPreviewCopy {
   alignmentHandle: string;
 }
 
-type AnalysisState = { file: Blob; analysis?: BodyPhotoAnalysis; error?: 'NO_PERSON' | 'UNAVAILABLE' };
+type AnalysisState = { file: Blob; analysis?: BodyPhotoAnalysis };
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
 /** Local, non-destructive outline guide. Only changing the source runs inference. */
@@ -56,17 +53,14 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
     void import('../../body-preview/analyze')
       .then(({ analyzeBodyPhoto }) => analyzeBodyPhoto(file, controller.signal))
       .then(analysis => { if (!controller.signal.aborted) setState({ file, analysis }); })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        const code = error && typeof error === 'object' && 'code' in error ? error.code : error instanceof Error ? error.message : '';
-        setState({ file, error: code === 'NO_PERSON' ? 'NO_PERSON' : 'UNAVAILABLE' });
+      .catch(() => {
+        // This optional guide fails silently; photo editing never waits for it.
       });
     return () => controller.abort();
   }, [file]);
 
   useEffect(() => { setAdjusting(false); dragRef.current = undefined; }, [mode]);
   const analysis = state?.file === file ? state.analysis : undefined;
-  const error = state?.file === file ? state.error : undefined;
   const region = adjustment?.file === file && adjustment.mode === mode ? adjustment.region : undefined;
   const contour = useMemo(() => analysis ? buildBodyContourPreview(analysis, mode, intensity, region) : undefined,
     [analysis, mode, intensity, region]);
@@ -138,15 +132,9 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
             )}
           </svg>
         )}
-        {!analysis && !error && (
-          <div className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-xl bg-card/95 px-3 py-2 text-xs font-medium shadow-sm" role="status">
-            <LoaderCircle className="size-4 animate-spin text-primary" aria-hidden="true" />{copy.analyzing}
-          </div>
-        )}
       </div>
-      <div className="border-t border-border bg-card px-3 py-1.5">
-        {analysis && contour ? (
-          <>
+      {analysis && contour && (
+        <div className="border-t border-border bg-card px-3 py-1.5">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" aria-hidden="true">
                 <span className="inline-flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed border-slate-500" />{copy.original}</span>
@@ -174,9 +162,8 @@ export function BodyContourPreview({ file, previewUrl, mode, intensity, disabled
                 {adjusting && visible ? copy.alignmentHint : !targetAvailable ? copy.chestUnclear : copy.note}
               </p>
             </div>
-          </>
-        ) : <p className="text-xs leading-relaxed text-muted-foreground" role="status">{error ? error === 'NO_PERSON' ? copy.noPerson : copy.unavailable : copy.note}</p>}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

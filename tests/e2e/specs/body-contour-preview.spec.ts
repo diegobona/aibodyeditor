@@ -13,16 +13,16 @@ const fixture = {
   contours: [[{ x: .45, y: .04 }, { x: .55, y: .04 }, { x: .6, y: .19 }, { x: .7, y: .23 }, { x: .75, y: .4 }, { x: .7, y: .55 }, { x: .65, y: .5 }, { x: .65, y: .7 }, { x: .6, y: .98 }, { x: .53, y: .98 }, { x: .5, y: .65 }, { x: .47, y: .98 }, { x: .4, y: .98 }, { x: .35, y: .7 }, { x: .35, y: .5 }, { x: .3, y: .55 }, { x: .25, y: .4 }, { x: .3, y: .23 }, { x: .4, y: .19 }]],
 };
 
-async function openEditor(page: Page) {
+async function openEditor(page: Page, remaining = 0) {
   let posts = 0;
   await page.route('**/api/auth/**', route => route.fulfill({ json: null }));
   await page.route('**/api/body-edit**', route => {
-    if (route.request().url().endsWith('/guest-session')) return route.fulfill({ json: { ownerId: 'guest:contour', remaining: 0 } });
+    if (route.request().url().endsWith('/guest-session')) return route.fulfill({ json: { ownerId: 'guest:contour', remaining } });
     if (route.request().method() === 'POST') posts++;
-    return route.fulfill({ json: { available: true, costCredits: 15, freeTrialEdits: 1 } });
+    return route.fulfill({ json: { available: true, costCredits: 10, freeTrialEdits: 1 } });
   });
   await page.goto('/');
-  await expect(editor(page).getByRole('button', { name: 'Sign in to continue', exact: true })).toBeEnabled();
+  await expect(editor(page).getByRole('button', { name: remaining === 0 ? 'Sign in for a free edit' : 'Edit Photo', exact: true })).toBeEnabled({ timeout: 15_000 });
   return () => posts;
 }
 
@@ -134,7 +134,7 @@ test.describe('Live local body contour preview', () => {
     await expect(page.locator('[data-contour-original]')).toHaveAttribute('d', original!);
     await editor(page).getByRole('button', { name: 'Done adjusting', exact: true }).click();
     await expect(area).toBeVisible();
-    await expect(editor(page).getByRole('button', { name: 'Sign in to continue', exact: true })).toBeEnabled();
+    await expect(editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true })).toBeEnabled();
     await editor(page).getByRole('button', { name: 'Hide outline', exact: true }).click();
     await expect(area).toHaveCount(0);
     await editor(page).getByRole('button', { name: 'Show outline', exact: true }).click();
@@ -178,7 +178,9 @@ test.describe('Live local body contour preview', () => {
     await mockAnalysis(page, `self.onmessage=({data})=>setTimeout(()=>self.postMessage({type:'result',analysis:{...${JSON.stringify(fixture)},width:data.file.name==='old.png'?100:200}}),data.file.name==='old.png'?1200:20);`);
     const posts = await openEditor(page);
     await selectPhoto(page, 'old.png');
-    await expect(editor(page).getByText('Finding your body outline…')).toBeVisible();
+    await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
+    await expect(page.locator('[data-body-contour-preview] [role="status"]')).toHaveCount(0);
+    await expect(page.locator('[data-body-contour-preview] .animate-spin')).toHaveCount(0);
     await selectPhoto(page, 'new.png');
     await expect(page.locator('[data-contour-overlay]')).toHaveAttribute('viewBox', '0 0 200 160');
     await page.waitForTimeout(1400);
@@ -190,18 +192,37 @@ test.describe('Live local body contour preview', () => {
     ['NO_PERSON', 'No clear body outline found. Try a clearer photo, or continue to generate.'],
     ['UNAVAILABLE', 'Outline preview is unavailable. You can still generate your edit.'],
   ]) {
-    test(`${code} keeps photo and exhausted-guest sign-in available`, async ({ page }) => {
+    test(`${code} silently keeps photo and exhausted-guest sign-in available`, async ({ page }) => {
       await mockAnalysis(page, `self.onmessage=()=>self.postMessage({type:'error',code:'${code}'});`);
       const posts = await openEditor(page);
       await selectPhoto(page);
-      await expect(editor(page).getByText(copy, { exact: true })).toBeVisible();
+      await expect(editor(page).getByText(copy, { exact: true })).toHaveCount(0);
+      await expect(page.locator('[data-body-contour-preview] [role="status"]')).toHaveCount(0);
       await expect(target(page)).toHaveCount(0);
       await expect(editor(page).getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
-      await editor(page).getByRole('button', { name: 'Sign in to continue', exact: true }).click();
+      await editor(page).getByRole('button', { name: 'Sign in for a free edit', exact: true }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       expect(posts()).toBe(0);
     });
   }
+
+  test('explicit generation starts while outline analysis is still pending', async ({ page }) => {
+    await mockAnalysis(page, 'self.onmessage=()=>{};');
+    const posts = await openEditor(page, 1);
+    await selectPhoto(page);
+    const preview = page.locator('[data-body-contour-preview]');
+    await expect(preview.getByRole('img', { name: 'Preview of the photo you selected', exact: true })).toBeVisible();
+    await expect(preview.locator('[role="status"], .animate-spin')).toHaveCount(0);
+    await expect(preview.getByRole('button')).toHaveCount(0);
+    await expect(target(page)).toHaveCount(0);
+    await editor(page).getByText('Muscle', { exact: true }).click();
+    await editor(page).getByRole('slider', { name: 'Intensity', exact: true }).fill('90');
+    await preview.screenshot({ path: 'test-results/quiet-outline-pending.png' });
+    const action = editor(page).getByRole('button', { name: 'Edit Photo', exact: true });
+    await expect(action).toBeEnabled();
+    await action.click();
+    await expect.poll(posts).toBe(1);
+  });
 
   test('mobile slider and outline fit, and a new photo resets alignment', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });

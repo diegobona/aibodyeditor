@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { normalizeBodyEditInstructions } from "../../ai/body-edit-instructions";
+import { BODY_EDIT_RECOVERY_KEY } from '../../../config/body-editor';
 import type {
   BodyEditMode,
   BodyEditIntensity,
@@ -31,7 +32,7 @@ type Recovery = {
   startedAt: number;
 };
 type EditFailure = { code: string; refunded?: boolean; uncertain?: boolean; guest?: boolean };
-const savedJobKey = "body-editor-job";
+const savedJobKey = BODY_EDIT_RECOVERY_KEY;
 const reservationGraceMs = 15_000;
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

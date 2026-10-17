@@ -362,6 +362,13 @@ test.describe('Editor workbench and explicit example selection', () => {
     await page.locator('[data-try-example=breastSubtle]').click(); await expectRecipe(page, 'breastSubtle');
     await expect(preview(page)).not.toHaveAttribute('src', breastPhoto!);
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breastSubtle');
+    const original = await preview(page).getAttribute('src');
+    await page.locator('[data-body-editor]').getByRole('button', { name: 'Clear result', exact: true }).click();
+    await expect(page.locator('#hero-showcase [role="img"]')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).not.toHaveAttribute('data-result-example');
+    await expect(preview(page)).toHaveAttribute('src', original!);
+    await expectRecipe(page, 'breastSubtle');
+    await expect(page.locator('[data-body-editor]').getByRole('button', { name: 'Clear result', exact: true })).toHaveCount(0);
   });
 
   test('all ten gallery Try links load the photo and exact recipe and return to the editor without generating', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { bodyEditConfig } from '../../../config/body-editor';
+import { bodyEditConfig, BODY_EDIT_MODES, normalizeBodyEditIntensity, type BodyEditMode } from '../../../config/body-editor';
 
 /** Reuse the protected original output bytes as an input; never resample the image. */
 export async function loadBodyEditResultFile(input: { imageUrl: string; jobId: string; origin: string; signal: AbortSignal }): Promise<File> {
@@ -17,4 +17,16 @@ export async function loadBodyEditResultFile(input: { imageUrl: string; jobId: s
   try { if (!bitmap.width || !bitmap.height) throw new Error('RESULT_UNAVAILABLE'); }
   finally { bitmap.close(); }
   return new File([blob], `ai-body-edit-${input.jobId}.${mimeType.slice('image/'.length)}`, { type: mimeType });
+}
+
+/** History provides the authorized job ID; settings come from its private server DTO. */
+export async function loadSavedBodyEdit(input: { jobId: string; origin: string; signal: AbortSignal }) {
+  const response = await fetch(`/api/body-edit/${input.jobId}`, { credentials: 'same-origin', cache: 'no-store', signal: input.signal });
+  if (response.status === 401) throw new Error('UNAUTHORIZED');
+  const body = await response.json();
+  if (!response.ok || body.jobId !== input.jobId || body.status !== 'succeeded'
+    || !BODY_EDIT_MODES.includes(body.result?.mode) || typeof body.result?.imageUrl !== 'string') throw new Error('RESULT_UNAVAILABLE');
+  const intensity = normalizeBodyEditIntensity(body.result.intensity);
+  const file = await loadBodyEditResultFile({ ...input, imageUrl: body.result.imageUrl });
+  return { file, mode: body.result.mode as BodyEditMode, intensity };
 }

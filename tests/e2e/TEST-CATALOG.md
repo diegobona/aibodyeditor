@@ -1,5 +1,43 @@
 # E2E 测试流程目录
 
+## Muscle, leg-length and waist topic pages — acceptance scenarios (2026-10-17)
+
+- Publish `/ai-muscle-generator`, `/leg-lengthener` and `/waist-slimmer` with separate original EN/ZH copy, one SSR H1, at least 400 English words, descriptive real-case image alt, unique SEO, canonical/hreflang, matching FAQ/breadcrumb JSON-LD and sitemap entries.
+- An initial visit has no selected photo or result. Default mode/strength and optional instructions match the topic. Relevant real-case cards show draggable comparisons; Try loads that case's original, mode, exact intensity and submitted instructions without generating.
+- Uploading a device photo preserves topic settings. Changing settings and explicitly generating submits those current values and the selected source bytes, using existing auth/credits handling; no new API or payment behavior.
+- Header/footer/homepage and Related Tools link to published pages using keyword anchors. Check a narrow mobile viewport, no horizontal overflow and guest access. No provider calls or writes during browsing.
+- Verified: 5 focused E2E scenarios passed (26.8s), covering all seven topic-case Try recipes, empty topic defaults, upload preservation, exact current-setting/file submission, SSR/FAQ/canonical/sitemap, related links and mobile navigation/width. Typecheck passed (34.9s), Cloudflare build passed (1m9s; existing chunk-size warnings), the SEO audit passed for all 10 indexable pages, and all three new pages returned Workers SSR 200. Browser walkthrough confirmed the shoulder-only recipe. The initial browser run used a forced click on a visually hidden radio; the test now clicks its visible label. Updated the audit's legacy assumption that policies belong in the Tools menu; policies remain checked in the footer. No real generation, debit, database mutation, deployment or push. Screenshots: `test-results/editing-topics/`.
+
+## Clear generated result — verified (2026-10-17)
+
+- Example parity verified: a displayed saved-example result also offers Clear result. Clearing it removes only the right preview, retaining the example original and exact selected recipe; browsing/clearing never generates or changes credits. Extended gallery selection/clear E2E passed (8.7s), typecheck passed (25.1s), and Cloudflare production build passed (1m18s, existing chunk-size warnings).
+- Independent-clear regression verified: left Clear photo removes only the original, retaining the displayed result, download/continue actions, metadata and current settings. Right Clear result removes only the result. Clearing either side never deletes history or resets quota. Both targeted browser scenarios passed (4.6s); typecheck passed (11.6s), and Cloudflare production build passed (30s). No real generation, debit or server deletion.
+- A successful generated result offers Clear result alongside Continue editing and Download photo in both editor layouts. Hide the action when no generated result exists and disable it during a pending edit or result preparation/download.
+- Clearing removes only the right-side result, metadata and tab recovery reference. Keep the current left photo, mode, intensity and extra instructions. No generation, deletion request, credit debit/refund or guest-trial reset occurs; My works retains its saved result.
+- Verification: extended the existing history-continuation browser scenario; it passed (2.9s), confirming the result/actions and recovery reference clear while the original URL, mode, strength, instructions, request count and balance remain unchanged. Typecheck passed (16.2s) and Cloudflare production build passed (32.7s, existing chunk-size warnings). No real generation, debit or server deletion.
+
+## Quiet optional outline preview — verified (2026-10-17)
+
+- Photo selection immediately shows the original. While local outline analysis is pending, show no spinner, finding-outline message or empty outline toolbar; allow changing settings and explicit generation.
+- When analysis succeeds, display the outline and its existing hide/show/alignment controls. Replacing the photo cancels stale analysis.
+- NO_PERSON, unsupported devices and other analysis failures retain the photo silently, without an outline error or a disabled edit action. Do not change actual generation errors, credit rules or result loading indicators.
+- Verification: all 7 focused browser scenarios passed (14.4s), including silent pending/failure, submitting before analysis completes, successful controls, replacing a photo and mobile layout. Updated existing auth/cost fixtures and waited for hydration before selecting a photo. Typecheck passed (12.4s), Cloudflare production build passed (35.3s, existing chunk-size warnings), and local Workers SSR returned 200. Provider/auth responses were mocked; no real generation or debit.
+
+## Continued-photo outline dimensions — verified (2026-10-17)
+
+- Loading a saved result through Continue editing runs the real local contour worker. A 1184×1328 image must still show an outline after downscaling, even though the proportional analysis width would be 1141 pixels.
+- An image already below the analysis size limit with a width not divisible by four also produces a contour. Keep the original file bytes/dimensions for display, downloading and generation; normalize only the local analysis bitmap.
+- Do not generate an image or debit credits while loading or detecting the outline. Keep the right result empty and restore saved mode/intensity.
+- Verification: reproduced `ChannelSize 1 vs 4` during real local inference on the reported saved image; aligning only the analysis bitmap restored its contours. All 5 history-continuation E2E scenarios passed (56.1s), including real inference at 1184×1328 and 1141×1280, preserved original dimensions, empty right result and no generation/debit. Typecheck passed (25.0s), and Cloudflare production build passed (1m18s, existing chunk-size warnings). No private image was added to fixtures; regression photos derive from the existing fictional public sample.
+
+## Continue editing from My works — verified (2026-10-17)
+
+- Each saved-work card offers Continue editing. Clicking opens the localized homepage editor and loads that saved result into the left input; the right result is empty. Restore the saved mode/intensity and clear extra instructions, which are not stored in history.
+- The handoff stores only an account-bound, short-lived job reference in this tab, never image bytes or prompts. Resolve the current account and saved job through authenticated APIs; deleted, expired, unauthorized or failed image loads show a recoverable error without generating or charging.
+- Continue requires a current balance of at least 10, including welcome credits. Loading does not debit or remove the old work; only the next explicit generation uses the continued image and fresh settings and consumes credits.
+- Reject account-switch/stale references, prevent duplicate loads, retain localized navigation and keep history preview/download/delete behavior.
+- Verification: 6 focused unit tests and 4 browser scenarios passed. Browser checks cover the actual history-card → homepage navigation plus preview/download/delete, exact continued bytes/current settings on explicit generation, insufficient balance and unavailable-image retry. Typecheck passed (37.4s); Cloudflare build passed (2m19s, existing chunk-size warnings); local Workers SSR returned 200. Generation/storage responses were mocked. The real-auth history scenario used a disposable test account, which was removed; no real AI generation, credit debit or deployment.
+
 ## Guest → welcome credits → credit packs — verified (2026-10-17)
 
 - A browser guest can generate one successful free result and download it. A further edit opens an in-place sign-in/sign-up dialog, retaining photo, result and all settings.

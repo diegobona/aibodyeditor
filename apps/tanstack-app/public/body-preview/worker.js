@@ -85,10 +85,14 @@ self.onmessage = async ({ data }) => {
     bitmap = await createImageBitmap(data.file);
     const width = bitmap.width;
     const height = bitmap.height;
-    if (Math.max(width, height) > 1280) {
-      const ratio = 1280 / Math.max(width, height);
+    const ratio = Math.min(1, 1280 / Math.max(width, height));
+    // MediaPipe's CPU float-mask copy requires 16-byte-aligned rows (4 pixels).
+    // Arbitrary proportional widths can abort inference with ChannelSize 1 vs 4.
+    const analysisWidth = Math.max(4, Math.round(width * ratio / 4) * 4);
+    const analysisHeight = Math.max(1, Math.round(height * ratio));
+    if (analysisWidth !== width || analysisHeight !== height) {
       const resized = await createImageBitmap(bitmap, {
-        resizeWidth: Math.round(width * ratio), resizeHeight: Math.round(height * ratio), resizeQuality: 'high',
+        resizeWidth: analysisWidth, resizeHeight: analysisHeight, resizeQuality: 'high',
       });
       bitmap.close();
       bitmap = resized;

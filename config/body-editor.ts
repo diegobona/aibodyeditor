@@ -9,6 +9,7 @@ export type BodyEditMode = (typeof BODY_EDIT_MODES)[number];
 /** Continuous visual intent, not a body measurement or provider API parameter. */
 export const BODY_EDIT_INTENSITY = { min: 1, max: 100, step: 1, default: 70 } as const;
 export type BodyEditIntensity = number;
+export const BODY_EDIT_RECOVERY_KEY = 'body-editor-job';
 /** Compatibility for already submitted requests and historical jobs. */
 export const LEGACY_BODY_EDIT_INTENSITIES = { subtle: 25, balanced: 50, noticeable: 80 } as const;
 export type LegacyBodyEditIntensity = keyof typeof LEGACY_BODY_EDIT_INTENSITIES;

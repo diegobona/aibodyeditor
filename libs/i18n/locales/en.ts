@@ -1,4 +1,5 @@
 import type { Locale } from './types'
+import { enEditingTopics } from './en-editing-topics'
 
 export const en: Locale = {
   imageDetails: { label: "Image specifications", format: "{width} × {height} px · {format} · {size}", downloadOriginal: "Download the original generated file" },
@@ -44,6 +45,7 @@ export const en: Locale = {
     },
   },
   myWorks: {
+    continueError: "This work couldn’t be opened for editing. Please try again.",
     metadata: { title: "My Works | AI Body Editor", description: "View, download and delete your saved body edits." },
     title: "My works", description: "Your saved edits, all in one place.",
     retention: "Results are saved for {days} days, then automatically deleted. Download the images you want to keep.",
@@ -1806,9 +1808,6 @@ export const en: Locale = {
       instructionsHint: "Instructions apply when you generate. The outline only reflects the mode and intensity.",
       instructionsCounter: "{count}/{max} characters",
       contourPreview: {
-        analyzing: "Finding your body outline…",
-        unavailable: "Outline preview is unavailable. You can still generate your edit.",
-        noPerson: "No clear body outline found. Try a clearer photo, or continue to generate.",
         chestUnclear: "Approximate chest area; covered edges cannot be predicted. Use Align to reposition the guide.",
         area: "Chest area",
         original: "Original",
@@ -1842,6 +1841,7 @@ export const en: Locale = {
       compareLabel: "Compare your original and edited photo",
       compareHint: "Drag to compare",
       download: "Download photo",
+      clearResult: "Clear result",
       editAnother: "Edit another photo",
       continueEditing: "Continue editing",
       preparingNextEdit: "Loading photo…",
@@ -1849,6 +1849,8 @@ export const en: Locale = {
       continueEditingRequirement: "Sign in with at least {credits} credits to continue editing.",
       continueEditingCredits: "You need at least {credits} credits to continue editing.",
       continueEditingReady: "Ready for your next edit",
+      historyLoading: "Loading your saved photo…",
+      historyLoadError: "This saved photo couldn’t be loaded. It may have expired or been deleted. Try again, choose another photo, or return to My works.",
       loadingBalance: "Checking your credits…",
       balanceNote: "Balance: {balance} credits · {credits} credits per edit.",
       balanceError: "Your balance couldn’t be loaded. Please try again.",
@@ -1863,7 +1865,7 @@ export const en: Locale = {
       signinTitle: "Sign in to continue",
       signinDescription: "Sign in or create an account to receive 10 welcome credits once — enough for one more edit, including Continue editing. Your selected photo will stay here.",
       signinRequired: "Sign in for a free edit",
-      trialNote: "One free guest edit per browser.",
+      trialNote: "One free guest edit.",
       costNote: "{credits} credits per edit.",
       guestUsedNote: "Your free guest edit has been used. Sign in for 10 welcome credits, once per account.",
       guestRetryNote: "Your free edit is still available. You can try again within the retry limits.",
@@ -2066,6 +2068,7 @@ export const en: Locale = {
     tools: {
       title: "Photo editing guides",
       items: [
+        ...Object.entries(enEditingTopics).map(([key, page]) => ({ key, title: page.hero.title, description: page.related.description })),
         {
           key: "bodyEditor",
           title: "Body Editor",
@@ -2091,6 +2094,7 @@ export const en: Locale = {
     }
   },
   toolPages: {
+    ...enEditingTopics,
     common: {
       breadcrumbLabel: "Breadcrumb",
       homeName: "AI Body Editor",

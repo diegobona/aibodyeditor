@@ -2,28 +2,33 @@ import { ArrowUpRight } from "lucide-react";
 import { PhotoComparison } from "@libs/react-shared/components/photo-comparison";
 import { useTranslation } from "@/hooks/use-translation";
 import { Section } from "@/components/page-section";
+import { cn } from '@libs/ui/utils/cn';
 import { REAL_RESULT_CASES, REAL_RESULT_IMAGES } from "./showcase-data";
 
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
 
 /** Browsable proof of each recipe; Try uses the same selection flow as the top strip. */
-export function RealResultsGallery({ onTry, pending }: {
+export function RealResultsGallery({ onTry, pending, caseKeys, title, description }: {
   onTry: (key: ExampleKey) => void;
   pending: boolean;
+  caseKeys?: readonly ExampleKey[];
+  title?: string;
+  description?: string;
 }) {
   const { t } = useTranslation();
   const copy = t.home.realResults;
+  const cases = caseKeys ? REAL_RESULT_CASES.filter(item => caseKeys.includes(item.key)) : REAL_RESULT_CASES;
 
   return (
     <Section id="real-results" className="bg-card py-12 md:py-16">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4 md:mb-10">
         <div className="max-w-2xl">
-          <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{copy.title}</h2>
-          <p className="mt-3 text-lg leading-relaxed text-muted-foreground">{copy.description}</p>
+          <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{title ?? copy.title}</h2>
+          <p className="mt-3 text-lg leading-relaxed text-muted-foreground">{description ?? copy.description}</p>
         </div>
       </div>
-      <div data-results-grid className="grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
-        {REAL_RESULT_CASES.map(({ key, mode, intensity, subject }) => {
+      <div data-results-grid className={cn('grid gap-x-5 gap-y-10 md:grid-cols-2', caseKeys ? cases.length > 2 && 'lg:grid-cols-3' : 'lg:grid-cols-4')}>
+        {cases.map(({ key, mode, intensity, subject }) => {
           const item = copy[key];
           return (
             <article key={key} data-real-result={key} data-result-subject={subject} className="flex min-w-0 flex-col">

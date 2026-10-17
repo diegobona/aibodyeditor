@@ -24,14 +24,20 @@ const KEYWORDS = {
   '/body-editor': 'body editor',
   '/skinny-filter': 'skinny filter',
   '/breast-expansion': 'ai breast expansion',
+  '/ai-muscle-generator': 'ai muscle generator',
+  '/leg-lengthener': 'leg lengthener',
+  '/waist-slimmer': 'waist slimmer',
 }
 
 /** Required in-body links: page -> paths it must link to from <main>. */
 const REQUIRED_LINKS = {
-  '/': ['/body-editor', '/skinny-filter', '/breast-expansion'],
+  '/': ['/body-editor', '/skinny-filter', '/breast-expansion', '/ai-muscle-generator', '/leg-lengthener', '/waist-slimmer'],
   '/body-editor': ['/', '/skinny-filter', '/breast-expansion'],
   '/skinny-filter': ['/', '/body-editor'],
   '/breast-expansion': ['/', '/body-editor'],
+  '/ai-muscle-generator': ['/', '/waist-slimmer'],
+  '/leg-lengthener': ['/', '/body-editor'],
+  '/waist-slimmer': ['/', '/skinny-filter'],
 }
 
 const NOINDEX_PAGES = ['/dashboard', '/admin', '/signin', '/signup', '/forgot-password', '/reset-password', '/payment-success', '/payment-cancel']
@@ -138,13 +144,17 @@ for (const path of sitemapPaths) {
   }
 
   // Header: links every tool page with its keyword; no non-keyword links to content pages.
-  for (const target of sitemapPaths.filter((p) => p !== '/')) {
+  // Legal pages are linked in the footer, not in the Tools menu.
+  for (const target of sitemapPaths.filter((p) => p !== '/' && KEYWORDS[p] !== undefined)) {
     if (!a.headerLinks.some((l) => l.href === target)) issue(path, `header nav missing ${target}`)
   }
   for (const link of a.headerLinks) {
     const target = link.href.split(/[?#]/)[0]
     if (KEYWORDS[target] === undefined) continue
-    if (link.href.includes('#')) issue(path, `header has cross-page hash link ${link.href} "${link.anchor}"`)
+    if (link.href.includes('#')) {
+      // Non-editor pages legitimately send their edit CTA back to the homepage.
+      if (!(KEYWORDS[path] === undefined && link.href === '/#try')) issue(path, `header has cross-page hash link ${link.href} "${link.anchor}"`)
+    }
     else if (link.anchor.toLowerCase() !== KEYWORDS[target]) issue(path, `header link to ${target} uses anchor "${link.anchor}"`)
   }
 }

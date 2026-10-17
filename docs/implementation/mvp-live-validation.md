@@ -1,5 +1,19 @@
 # MVP live validation — 2026-10-16
 
+## Focused editing topic pages — 2026-10-17
+
+- Added public SSR pages `/ai-muscle-generator`, `/leg-lengthener` and `/waist-slimmer` through the existing ToolPage. Static mode/strength/case mappings live in `config/editing-topics.ts`; original English copy and mirrored Chinese dictionaries live under `libs/i18n/locales/*-editing-topics.ts`.
+- Each page starts empty with its own mode/strength and optional filled instructions. A filtered real-results gallery supports draggable comparisons and Try, loading existing case recipes into the same uploader. Replacing a case with a device photo keeps the selected settings; generation uses the current fields and existing auth/credit APIs. Existing guides and homepage remain on their current layouts.
+- Registered the routes in the central tool registry, SEO registry and sitemap; header/footer/related links follow the registry, and the homepage guide list includes all three. SEO checks now distinguish tool navigation from policy/footer links and allow the existing homepage edit CTA on policy pages.
+- Validation: 5 targeted browser scenarios passed (26.8s), typecheck passed (34.9s), Cloudflare build passed (1m9s), all 10 indexable pages passed SEO checks and three local Workers SSR responses were 200. Existing chunk-size warnings remain. No real AI call, credit debit, database mutation, deployment or Git push.
+
+## Continue editing from My works — 2026-10-17
+
+- Saved-work cards now hand off a five-minute, account-bound job reference through this tab's sessionStorage and open the localized homepage editor. No image bytes or prompt text are persisted. Explicit selection clears earlier local result recovery so it cannot replace the chosen work.
+- The editor initializes the account balance, retrieves the job's server-owned mode/intensity and loads the protected output through the existing `continue=1` entitlement/ownership check. The file becomes the left input, right result/metadata are cleared, instructions start empty, and mobile shows Original. No API/schema/billing changes or generation on load.
+- Failed loads retain a retryable reference; new photo/sample selection cancels it. Account changes and expired references are rejected. Insufficient balance uses the existing credit-pack dialog. Saved-work preview/download/delete behavior remains available.
+- Verification: 6 handoff unit tests and 4 related browser scenarios passed, including actual saved-card navigation, retained preview/download/delete, subsequent exact-byte generation, balance gating and retry. Typecheck passed (37.4s), Cloudflare build passed (2m19s; existing chunk-size warnings), and Workers SSR returned 200. A disposable real-auth account was cleaned up; generation/storage responses were fixtures. No real AI generation, credit debit, deployment or Git push.
+
 ## Guest → welcome credits → credit packs — 2026-10-17
 
 - Each account receives 10 ordinary welcome credits, usable for new photos or continued edits. Initialization uses a same-origin, authenticated POST and the shared transactional repository. Both initialization and direct first-generation fallback use the same existing `body_edit_trial:<userId>` ledger ID. PostgreSQL locks the user row before checking/granting; legacy trial entries prevent another grant. No schema migration is required.

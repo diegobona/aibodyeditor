@@ -1,5 +1,13 @@
 # Editing photos with AI Body Editor
 
+## Focused editing pages
+
+- `/ai-muscle-generator` starts with Muscle at 70/100. Its real examples cover an athletic build, broader shoulders only, and a shoulder-and-waist combination.
+- `/leg-lengthener` starts with Proportions at 80/100 and the longer-legs case's actual extra instructions. Its examples compare a focused leg request and broader body balance.
+- `/waist-slimmer` starts with Slim at 70/100 and the waist-only case's actual instructions for preserving other body areas.
+
+These pages start without a selected photo or generated result. Uploading keeps the page's preset, including any filled instructions. Try on a case loads its original photo and exact mode, intensity and optional instructions. Selecting a case does not generate or spend credits. Review or change the settings before selecting Edit Photo. All pages use the existing editor, account and guest flow.
+
 ## Free guest edit and welcome credits
 
 You can generate one successful guest edit per browser without signing in. Afterward, sign in or create an account in the editor dialog. Your current photo, result and settings stay in place. Your account receives 10 welcome credits once, enough for one generation. These are ordinary credits: use them for a fresh edit or for Continue editing. Signing in, registering or loading a continued result does not automatically generate a photo or spend credits.
@@ -24,6 +32,10 @@ Choosing a photo creates a local preview; submitting an edit sends the original 
 
 ## My works
 
+Choose **Continue editing** on a saved-work card to open the homepage editor with that result as the left input and an empty right result panel. The saved mode and intensity are restored. Extra instructions start empty because prompts are not archived in history. The previous work remains saved. A balance of at least 10 credits is required, including welcome credits; loading itself does not charge, and only the next explicit generation spends credits.
+
+The current tab temporarily carries only an account-bound job reference for up to five minutes. The editor rechecks access and retrieves the original generated file without resizing. If the image is unavailable, choose Try again or upload another photo. Insufficient credits open the existing pack dialog. No generation starts automatically.
+
 While signed in, choose **My works** in the header (or the mobile menu) to view your successful saved results. Each card shows the editing mode, intensity, creation date and expiry date. Open the image for a larger view, download it, or choose Delete and confirm to permanently remove the result. Viewing and downloading do not generate a new edit or use credits; deleting a finished result does not refund its generation cost.
 
 Results are available for 30 days from creation. Download anything you want to keep. Expired results stop being accessible immediately; deployed Cloudflare Workers clean stored files hourly, and visiting My works also cleans the signed-in user's expired results. Guest results are not imported into an account's history. Original uploads remain local and are not archived in My works.
@@ -43,7 +55,7 @@ Set the **Intensity** slider anywhere from 1 to 100. It starts at 70 for a clear
 
 For a more specific request, open **Extra instructions (optional)** and describe what to change, for example: “Only slim my waist; keep my arms and legs unchanged.” Leave it blank to use the selected mode normally. You can enter up to 500 characters. Instructions can limit or replace the preset's body-change target; face, clothing coverage, scene and framing should stay the same. Results still require review. Typing does not generate an edit, and the local outline continues to show the selected mode and intensity. The text stays while changing modes or signing in. On the homepage it also stays when choosing a device photo. Choosing an example replaces it with that case's submitted instructions, or clears it when the case has none; instructions open automatically when present.
 
-After selecting a device photo, wait for the local outline analysis. A gray outline marks the original silhouette and a purple outline shows the selected target. Move Intensity or switch modes to update that target immediately, before generating. You can hide the overlay to see the original clearly or adjust its alignment when needed. These controls are free and do not send your photo for generation.
+After selecting a photo, you can change settings and generate immediately. Optional local outline analysis runs quietly in the background, without a loading indicator or failure message. If analysis succeeds, a gray outline marks the original silhouette and a purple outline shows the selected target. Move Intensity or switch modes to update that target immediately, before generating. You can hide the overlay to see the original clearly or adjust its alignment when needed. These controls are free and do not send your photo for generation.
 
 The outline is a target guide, not a guaranteed prediction of the generated result. Clothing and occlusion affect recognition, and a visible silhouette does not reveal hidden anatomy. If the outline cannot be detected, you can replace the photo or continue with normal generation. Example photos show their saved reference result.
 
@@ -56,6 +68,12 @@ While processing, wait for the result instead of submitting again. If the connec
 When the result appears, compare it with the original by dragging the comparison handle or using arrow keys. Inspect the face, hands, clothing seams and nearby background lines. The instructions ask to retain these details, but preservation is not guaranteed. Use **Download photo** to save the result or **Edit another photo** to choose a new original.
 
 If the saved result's preview cannot load, select **Reload image**. This retrieves the existing result without generating another image or using credits. The preview keeps its space while loading; comparison becomes available once the image has loaded.
+
+Select **Clear result** beside the result actions to remove it from the editor. Your current original photo, mode, intensity and extra instructions remain in place. This clears the tab's result recovery reference without deleting the saved result from My works, changing credits or restoring a used free edit.
+
+The two clear actions are independent: **Clear photo** in the original panel removes only that original, leaving the result and its download/continue actions available. Your current editing settings remain unchanged.
+
+**Clear result** is also available for the saved reference result when trying an example; it keeps that example's original photo and selected settings.
 
 Submitting sends the original to Rabbit API for processing. The app does not persistently store the uploaded original on its server. Generated results are stored privately and accessed through owner-checked links using your browser guest cookie or account session. Provider processing and retention are separate from this app's result storage.
 

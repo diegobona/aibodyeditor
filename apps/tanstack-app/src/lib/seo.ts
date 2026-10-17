@@ -23,6 +23,7 @@ import {
 } from '@libs/i18n'
 import { localizedPath } from '@/lib/i18n-path'
 import { AGGREGATE_RATING, getCreditPacks } from '@/lib/public-offer'
+import type { ToolKey } from '@/lib/tools'
 
 export const SITE_URL = 'https://aibodyeditor.net'
 export const SITE_NAME = config.app.name
@@ -114,7 +115,7 @@ function breadcrumbJsonLd(items: Array<{ name: string; url: string }>): JsonLd {
   }
 }
 
-type ToolPageKey = 'bodyEditor' | 'skinnyFilter' | 'breastExpansion'
+type ToolPageKey = ToolKey
 
 /** Each topic page describes the same app and retains its own FAQ and breadcrumb. */
 function toolPageJsonLd(key: ToolPageKey) {
@@ -200,6 +201,9 @@ const PAGES = {
     meta: (t) => t.toolPages.breastExpansion.metadata,
     jsonLd: toolPageJsonLd('breastExpansion'),
   },
+  muscleGenerator: { path: '/ai-muscle-generator', indexable: true, meta: (t) => t.toolPages.muscleGenerator.metadata, jsonLd: toolPageJsonLd('muscleGenerator') },
+  legLengthener: { path: '/leg-lengthener', indexable: true, meta: (t) => t.toolPages.legLengthener.metadata, jsonLd: toolPageJsonLd('legLengthener') },
+  waistSlimmer: { path: '/waist-slimmer', indexable: true, meta: (t) => t.toolPages.waistSlimmer.metadata, jsonLd: toolPageJsonLd('waistSlimmer') },
   signin: { path: '/signin', indexable: false, meta: (t) => t.auth.metadata.signin },
   signup: { path: '/signup', indexable: false, meta: (t) => t.auth.metadata.signup },
   forgotPassword: { path: '/forgot-password', indexable: false, meta: (t) => t.auth.metadata.forgotPassword },

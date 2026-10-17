@@ -13,7 +13,8 @@ import {
 import { BodyEditComparison } from "@libs/react-shared/components/body-edit-comparison";
 import { ImageFileDetails } from '@libs/react-shared/components/image-file-details';
 import type { ImageFileMetadata } from '@libs/react-shared/utils/image-file-metadata';
-import { loadBodyEditResultFile } from '@libs/react-shared/utils/body-edit-result-file';
+import { loadBodyEditResultFile, loadSavedBodyEdit } from '@libs/react-shared/utils/body-edit-result-file';
+import { readSavedBodyEdit, clearSavedBodyEdit } from '@libs/react-shared/utils/body-edit-history-handoff';
 import { BodyEditIntensitySlider } from "@libs/react-shared/components/body-edit-intensity";
 import { BodyContourPreview } from "@libs/react-shared/components/body-contour-preview";
 import { useBodyEdit } from "@libs/react-shared/hooks/use-body-edit";
@@ -79,6 +80,7 @@ export function UploadDropzone({
   selectedMode,
   defaultMode = "slim",
   defaultIntensity = BODY_EDIT_INTENSITY.default,
+  defaultInstructions = "",
   onModeChange,
   sample,
   onSampleClear,
@@ -92,6 +94,7 @@ export function UploadDropzone({
   selectedMode?: BodyEditMode;
   defaultMode?: BodyEditMode;
   defaultIntensity?: BodyEditIntensity;
+  defaultInstructions?: string;
   onModeChange?: (mode: BodyEditMode) => void;
   sample?: EditorSample;
   onSampleClear?: () => void;
@@ -113,9 +116,9 @@ export function UploadDropzone({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
   const [intensity, setIntensity] = useState<BodyEditIntensity>(defaultIntensity);
-  const [instructions, setInstructions] = useState("");
+  const [instructions, setInstructions] = useState(defaultInstructions);
   const inheritedInstructions = useRef<{ mode: BodyEditMode } | undefined>(undefined);
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
+  const [instructionsOpen, setInstructionsOpen] = useState(Boolean(defaultInstructions));
   const [error, setError] = useState(""),
     [dragging, setDragging] = useState(false);
   const [signinOpen, setSigninOpen] = useState(false),
@@ -125,6 +128,7 @@ export function UploadDropzone({
   const [loadingSample, setLoadingSample] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [continuing, setContinuing] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false), [historyError, setHistoryError] = useState(false), [historyAttempt, setHistoryAttempt] = useState(0);
   const continuationRequest = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const currentOwner = useRef(session.data?.user?.id ?? 'guest');
@@ -187,6 +191,7 @@ export function UploadDropzone({
     }
     if (locked) return;
     let active = true;
+    clearSavedBodyEdit(); setHistoryError(false);
     setError("");
     setLocalMode(sample.mode);
     onModeChange?.(sample.mode);
@@ -259,6 +264,7 @@ export function UploadDropzone({
     setMobileView("original");
     setFile(candidate);
     setPhotoSource("local");
+    clearSavedBodyEdit(); setHistoryError(false);
     onSampleClear?.();
   };
   const onDrop = (event: DragEvent<HTMLElement>) => {
@@ -270,6 +276,7 @@ export function UploadDropzone({
     if (locked || loadingSample || startLock.current) return;
     if (session.data?.user && wallet.error) { await wallet.refresh(); return; }
     if (needsCredits) { setCreditsOpen(true); return; }
+    if (historyError) { setHistoryAttempt(value => value + 1); return; }
     if (!file) {
       inputRef.current?.click();
       return;
@@ -347,9 +354,65 @@ export function UploadDropzone({
       if (mounted.current) setContinuing(false);
     }
   };
+  useEffect(() => {
+    if (!workbench || session.isPending || !session.data?.user?.id) return;
+    const owner = session.data.user.id;
+    const jobId = readSavedBodyEdit(owner);
+    if (!jobId) return;
+    let active = true;
+    const controller = new AbortController();
+    continuationRequest.current = controller;
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    startLock.current = true; setContinuing(true); setHistoryLoading(true); setHistoryError(false); setError('');
+    void (async () => {
+      try {
+        const account = await wallet.refresh();
+        if (!active || currentOwner.current !== owner) return;
+        if (!account) throw new Error('ACCOUNT_UNAVAILABLE');
+        if (account.balance < BODY_EDIT_CREDIT_COST) throw new Error('INSUFFICIENT_CREDITS');
+        const saved = await loadSavedBodyEdit({ jobId, origin: window.location.origin, signal: controller.signal });
+        if (!active || currentOwner.current !== owner) return;
+        editing.reset();
+        setReference(undefined); setGeneratedSettings(undefined); setResultMetadata(null); setSampleNeedsGeneration(false);
+        inheritedInstructions.current = undefined; setInstructions(''); setInstructionsOpen(false);
+        setLocalMode(saved.mode); onModeChange?.(saved.mode); setIntensity(saved.intensity);
+        setFile(saved.file); setPhotoSource('generated'); setMobileView('original');
+        if (inputRef.current) inputRef.current.value = '';
+        onSampleClear?.(); clearSavedBodyEdit();
+      } catch (error) {
+        if (!active || currentOwner.current !== owner) return;
+        setHistoryError(true);
+        if (error instanceof Error && error.message === 'INSUFFICIENT_CREDITS') { setCreditsOpen(true); void wallet.refresh(); }
+        else if (error instanceof Error && error.message === 'UNAUTHORIZED') setSigninOpen(true);
+        else setError(editCopy.historyLoadError);
+      } finally {
+        clearTimeout(timer);
+        if (active) { startLock.current = false; setContinuing(false); setHistoryLoading(false); }
+        if (continuationRequest.current === controller) continuationRequest.current = null;
+      }
+    })();
+    return () => {
+      active = false; controller.abort(); clearTimeout(timer); startLock.current = false;
+      if (mounted.current) { setContinuing(false); setHistoryLoading(false); }
+    };
+  }, [workbench, session.isPending, session.data?.user?.id, historyAttempt]);
+
+  const clearResult = () => {
+    if (locked || downloading) return;
+    editing.reset();
+    setReference(undefined); setGeneratedSettings(undefined); setResultMetadata(null);
+    setSampleNeedsGeneration(false); setError("");
+  };
+  const clearOriginal = () => {
+    if (locked) return;
+    clearSavedBodyEdit(); setHistoryError(false);
+    setFile(null); setPhotoSource(null); setMobileView("original"); onSampleClear?.();
+    if (inputRef.current) inputRef.current.value = "";
+  };
   const clearPhoto = () => {
     // Clear only local editor state; previous saved results remain in My works.
     if (locked) return;
+    clearSavedBodyEdit(); setHistoryError(false);
     editing.reset(); setReference(undefined); setGeneratedSettings(undefined);
     setSampleNeedsGeneration(false);
     setError("");
@@ -381,7 +444,7 @@ export function UploadDropzone({
       className={cn("flex items-center justify-center gap-1.5 rounded-full border border-primary bg-primary text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50", workbench ? "min-h-9 px-2.5" : "min-h-10 px-3")}>
       <RefreshCw className="size-4 shrink-0" aria-hidden="true" /><span className={workbench ? "hidden sm:inline" : undefined}>{copy.replace}</span>
     </button>
-    <button type="button" disabled={locked} aria-label={copy.clear} title={copy.clear} onClick={clearPhoto}
+    <button type="button" disabled={locked} aria-label={copy.clear} title={copy.clear} onClick={clearOriginal}
       className={cn("flex items-center justify-center gap-1.5 rounded-full bg-card/95 text-xs font-medium text-muted-foreground shadow-sm hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50", workbench ? "min-h-8 border px-2 text-[11px]" : "min-h-10 px-3")}>
       <X className="size-3.5" aria-hidden="true" /><span className={workbench ? "hidden sm:inline lg:hidden xl:inline" : undefined}>{copy.clear}</span>
     </button>
@@ -401,9 +464,9 @@ export function UploadDropzone({
         workbench ? "h-full min-h-0 rounded-2xl" : "rounded-[20px]",
         locked ? "cursor-wait" : "cursor-pointer", dragging ? "border-primary bg-accent" : "border-input bg-background hover:border-primary/60") }>
         <span className="flex size-16 items-center justify-center rounded-2xl bg-accent text-primary">
-          {loadingSample ? <LoaderCircle className="size-8 animate-spin" aria-hidden="true" /> : <ImageUp className="size-8" aria-hidden="true" />}
+          {loadingSample || historyLoading ? <LoaderCircle className="size-8 animate-spin" aria-hidden="true" /> : <ImageUp className="size-8" aria-hidden="true" />}
         </span>
-        <span className="max-w-md text-xl font-semibold">{loadingSample ? workspace.loadingSample : copy.dropTitle}</span>
+        <span className="max-w-md text-xl font-semibold">{historyLoading ? editCopy.historyLoading : loadingSample ? workspace.loadingSample : copy.dropTitle}</span>
         <span className="text-sm text-muted-foreground">{copy.dropHint}</span>
         {workbench && <span className="max-w-sm text-xs leading-relaxed text-muted-foreground">{workspace.emptyHint}</span>}
       </label>}
@@ -452,8 +515,8 @@ export function UploadDropzone({
   const action = <Button type="button" size="lg" className={cn("h-12 rounded-full px-6 text-base", workbench && "w-full")}
     disabled={pending || loadingSample || continuing || session.isPending || wallet.loading}
     onClick={unresolved ? () => { void editing.recover(); } : () => { void handleSubmit(); }}>
-    {pending && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
-    {unresolved ? editCopy.checkEdit : wallet.error ? editCopy.retryBalance : needsCredits ? editCopy.getCredits : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
+    {(pending || historyLoading) && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+    {unresolved ? editCopy.checkEdit : wallet.error ? editCopy.retryBalance : needsCredits ? editCopy.getCredits : historyLoading ? editCopy.preparingNextEdit : historyError ? editCopy.retry : editing.isGuest && editing.guestRemaining === 0 ? editCopy.signinRequired : copy.submit}
   </Button>;
   const notices = <>
     {(error || (editError && !['INSUFFICIENT_CREDITS', 'TRIAL_EXHAUSTED'].includes(code))) && <p role="alert" id={inputId + "-error"} className="mt-3 text-sm font-medium text-destructive">
@@ -474,13 +537,18 @@ export function UploadDropzone({
     {continuing ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> : <PencilLine className="size-3.5" aria-hidden="true" />}
     {continuing ? editCopy.preparingNextEdit : editCopy.continueEditing}
   </Button>;
+  const clearResultAction = (editing.result || (reference && !needsSampleResult)) && <Button type="button" variant="outline" size="sm" disabled={locked || downloading}
+    aria-label={editCopy.clearResult} title={editCopy.clearResult} onClick={clearResult}
+    className="h-8 rounded-full px-2.5 text-xs text-muted-foreground hover:text-destructive">
+    <X className="size-3.5" aria-hidden="true" /><span className={workbench ? 'hidden xl:inline' : undefined}>{editCopy.clearResult}</span>
+  </Button>;
   return (
     <div className={cn(workbench ? "overflow-hidden rounded-3xl border bg-card shadow-sm" : "rounded-[28px] bg-card p-3 shadow-sm", className)}
-      data-body-editor data-layout={layout} data-photo-source={photoSource ?? "empty"} aria-busy={loadingSample}>
+      data-body-editor data-layout={layout} data-photo-source={photoSource ?? "empty"} aria-busy={loadingSample || historyLoading}>
       {input}
       {workbench ? <div className="grid min-w-0 lg:h-[calc(100dvh-236px)] lg:min-h-[320px] lg:max-h-[720px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_288px]">
         <div className="min-w-0 lg:col-span-2 lg:min-h-0">
-          {(file && previewUrl) || editing.result ? <>
+          {(file && previewUrl) || editing.result || reference ? <>
             <div role="tablist" aria-label={workspace.photoViews} className="flex border-b p-2 lg:hidden">
               {(["original", "result"] as const).map(view => <button key={view} type="button" role="tab" id={inputId + "-" + view + "-tab"}
                 aria-selected={mobileView === view} aria-controls={inputId + "-" + view} onClick={() => setMobileView(view)}
@@ -495,7 +563,7 @@ export function UploadDropzone({
               <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
                 <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
-                  <span className="min-w-0 truncate">{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span><div className="flex shrink-0 items-center gap-1.5">{continueAction}{download}</div>
+                  <span className="min-w-0 truncate">{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference && !needsSampleResult ? workspace.sampleResult : workspace.result}</span><div className="flex shrink-0 items-center gap-1.5">{continueAction}{download}{clearResultAction}</div>
                 </div>
                 <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result && !needsSampleResult ? reference?.id : undefined}
                   className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
@@ -541,7 +609,7 @@ export function UploadDropzone({
             loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult}
             onMetadataChange={metadata => setResultMetadata(metadata && { jobId: editing.result!.jobId, metadata })} />
           {resultMetadata?.jobId === editing.result.jobId && <ImageFileDetails metadata={resultMetadata.metadata} copy={t.imageDetails} locale={locale} className="mt-3" />}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" disabled={locked} className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button><div className="flex flex-wrap items-center gap-2">{continueAction}{download}</div></div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><Button type="button" variant="outline" disabled={locked} className="rounded-full" onClick={clearPhoto}>{editCopy.editAnother}</Button><div className="flex flex-wrap items-center gap-2">{continueAction}{download}{clearResultAction}</div></div>
         </div> : <>{photo}{controls}<div className="mt-4 flex justify-end">{action}</div></>}
         <div className="px-2 pb-1">{notices}</div>
       </>}

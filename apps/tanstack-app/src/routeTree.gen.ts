@@ -22,16 +22,19 @@ import { Route as Char123LangChar125authRouteRouteImport } from './routes/{-$lan
 import { Route as Char123LangChar125AdminIndexRouteImport } from './routes/{-$lang}/admin/index'
 import { Route as Char123LangChar125rootIndexRouteImport } from './routes/{-$lang}/(root)/index'
 import { Route as ApiBlogIndexRouteImport } from './routes/api/blog/index'
+import { Route as Char123LangChar125rootWaistSlimmerRouteImport } from './routes/{-$lang}/(root)/waist-slimmer'
 import { Route as Char123LangChar125rootTermsRouteImport } from './routes/{-$lang}/(root)/terms'
 import { Route as Char123LangChar125rootSkinnyFilterRouteImport } from './routes/{-$lang}/(root)/skinny-filter'
 import { Route as Char123LangChar125rootPrivacyRouteImport } from './routes/{-$lang}/(root)/privacy'
 import { Route as Char123LangChar125rootPaymentSuccessRouteImport } from './routes/{-$lang}/(root)/payment-success'
 import { Route as Char123LangChar125rootPaymentCancelRouteImport } from './routes/{-$lang}/(root)/payment-cancel'
 import { Route as Char123LangChar125rootMyWorksRouteImport } from './routes/{-$lang}/(root)/my-works'
+import { Route as Char123LangChar125rootLegLengthenerRouteImport } from './routes/{-$lang}/(root)/leg-lengthener'
 import { Route as Char123LangChar125rootDeletionRouteImport } from './routes/{-$lang}/(root)/deletion'
 import { Route as Char123LangChar125rootDashboardRouteImport } from './routes/{-$lang}/(root)/dashboard'
 import { Route as Char123LangChar125rootBreastExpansionRouteImport } from './routes/{-$lang}/(root)/breast-expansion'
 import { Route as Char123LangChar125rootBodyEditorRouteImport } from './routes/{-$lang}/(root)/body-editor'
+import { Route as Char123LangChar125rootAiMuscleGeneratorRouteImport } from './routes/{-$lang}/(root)/ai-muscle-generator'
 import { Route as Char123LangChar125authSignupRouteImport } from './routes/{-$lang}/(auth)/signup'
 import { Route as Char123LangChar125authSigninRouteImport } from './routes/{-$lang}/(auth)/signin'
 import { Route as Char123LangChar125authResetPasswordRouteImport } from './routes/{-$lang}/(auth)/reset-password'
@@ -164,6 +167,12 @@ const ApiBlogIndexRoute = ApiBlogIndexRouteImport.update({
   path: '/api/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char123LangChar125rootWaistSlimmerRoute =
+  Char123LangChar125rootWaistSlimmerRouteImport.update({
+    id: '/waist-slimmer',
+    path: '/waist-slimmer',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
 const Char123LangChar125rootTermsRoute =
   Char123LangChar125rootTermsRouteImport.update({
     id: '/terms',
@@ -200,6 +209,12 @@ const Char123LangChar125rootMyWorksRoute =
     path: '/my-works',
     getParentRoute: () => Char123LangChar125rootRouteRoute,
   } as any)
+const Char123LangChar125rootLegLengthenerRoute =
+  Char123LangChar125rootLegLengthenerRouteImport.update({
+    id: '/leg-lengthener',
+    path: '/leg-lengthener',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
 const Char123LangChar125rootDeletionRoute =
   Char123LangChar125rootDeletionRouteImport.update({
     id: '/deletion',
@@ -222,6 +237,12 @@ const Char123LangChar125rootBodyEditorRoute =
   Char123LangChar125rootBodyEditorRouteImport.update({
     id: '/body-editor',
     path: '/body-editor',
+    getParentRoute: () => Char123LangChar125rootRouteRoute,
+  } as any)
+const Char123LangChar125rootAiMuscleGeneratorRoute =
+  Char123LangChar125rootAiMuscleGeneratorRouteImport.update({
+    id: '/ai-muscle-generator',
+    path: '/ai-muscle-generator',
     getParentRoute: () => Char123LangChar125rootRouteRoute,
   } as any)
 const Char123LangChar125authSignupRoute =
@@ -604,16 +625,19 @@ export interface FileRoutesByFullPath {
   '/{-$lang}/reset-password': typeof Char123LangChar125authResetPasswordRoute
   '/{-$lang}/signin': typeof Char123LangChar125authSigninRoute
   '/{-$lang}/signup': typeof Char123LangChar125authSignupRoute
+  '/{-$lang}/ai-muscle-generator': typeof Char123LangChar125rootAiMuscleGeneratorRoute
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
   '/{-$lang}/deletion': typeof Char123LangChar125rootDeletionRoute
+  '/{-$lang}/leg-lengthener': typeof Char123LangChar125rootLegLengthenerRoute
   '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
   '/{-$lang}/terms': typeof Char123LangChar125rootTermsRoute
+  '/{-$lang}/waist-slimmer': typeof Char123LangChar125rootWaistSlimmerRoute
   '/api/blog/': typeof ApiBlogIndexRoute
   '/{-$lang}/': typeof Char123LangChar125rootIndexRoute
   '/{-$lang}/admin/': typeof Char123LangChar125AdminIndexRoute
@@ -690,16 +714,19 @@ export interface FileRoutesByTo {
   '/{-$lang}/reset-password': typeof Char123LangChar125authResetPasswordRoute
   '/{-$lang}/signin': typeof Char123LangChar125authSigninRoute
   '/{-$lang}/signup': typeof Char123LangChar125authSignupRoute
+  '/{-$lang}/ai-muscle-generator': typeof Char123LangChar125rootAiMuscleGeneratorRoute
   '/{-$lang}/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/dashboard': typeof Char123LangChar125rootDashboardRoute
   '/{-$lang}/deletion': typeof Char123LangChar125rootDeletionRoute
+  '/{-$lang}/leg-lengthener': typeof Char123LangChar125rootLegLengthenerRoute
   '/{-$lang}/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
   '/{-$lang}/terms': typeof Char123LangChar125rootTermsRoute
+  '/{-$lang}/waist-slimmer': typeof Char123LangChar125rootWaistSlimmerRoute
   '/api/blog': typeof ApiBlogIndexRoute
   '/{-$lang}/admin': typeof Char123LangChar125AdminIndexRoute
   '/api/admin/blog/$id': typeof ApiAdminBlogIdRoute
@@ -779,16 +806,19 @@ export interface FileRoutesById {
   '/{-$lang}/(auth)/reset-password': typeof Char123LangChar125authResetPasswordRoute
   '/{-$lang}/(auth)/signin': typeof Char123LangChar125authSigninRoute
   '/{-$lang}/(auth)/signup': typeof Char123LangChar125authSignupRoute
+  '/{-$lang}/(root)/ai-muscle-generator': typeof Char123LangChar125rootAiMuscleGeneratorRoute
   '/{-$lang}/(root)/body-editor': typeof Char123LangChar125rootBodyEditorRoute
   '/{-$lang}/(root)/breast-expansion': typeof Char123LangChar125rootBreastExpansionRoute
   '/{-$lang}/(root)/dashboard': typeof Char123LangChar125rootDashboardRoute
   '/{-$lang}/(root)/deletion': typeof Char123LangChar125rootDeletionRoute
+  '/{-$lang}/(root)/leg-lengthener': typeof Char123LangChar125rootLegLengthenerRoute
   '/{-$lang}/(root)/my-works': typeof Char123LangChar125rootMyWorksRoute
   '/{-$lang}/(root)/payment-cancel': typeof Char123LangChar125rootPaymentCancelRoute
   '/{-$lang}/(root)/payment-success': typeof Char123LangChar125rootPaymentSuccessRoute
   '/{-$lang}/(root)/privacy': typeof Char123LangChar125rootPrivacyRoute
   '/{-$lang}/(root)/skinny-filter': typeof Char123LangChar125rootSkinnyFilterRoute
   '/{-$lang}/(root)/terms': typeof Char123LangChar125rootTermsRoute
+  '/{-$lang}/(root)/waist-slimmer': typeof Char123LangChar125rootWaistSlimmerRoute
   '/api/blog/': typeof ApiBlogIndexRoute
   '/{-$lang}/(root)/': typeof Char123LangChar125rootIndexRoute
   '/{-$lang}/admin/': typeof Char123LangChar125AdminIndexRoute
@@ -868,16 +898,19 @@ export interface FileRouteTypes {
     | '/{-$lang}/reset-password'
     | '/{-$lang}/signin'
     | '/{-$lang}/signup'
+    | '/{-$lang}/ai-muscle-generator'
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
     | '/{-$lang}/deletion'
+    | '/{-$lang}/leg-lengthener'
     | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
     | '/{-$lang}/privacy'
     | '/{-$lang}/skinny-filter'
     | '/{-$lang}/terms'
+    | '/{-$lang}/waist-slimmer'
     | '/api/blog/'
     | '/{-$lang}/'
     | '/{-$lang}/admin/'
@@ -954,16 +987,19 @@ export interface FileRouteTypes {
     | '/{-$lang}/reset-password'
     | '/{-$lang}/signin'
     | '/{-$lang}/signup'
+    | '/{-$lang}/ai-muscle-generator'
     | '/{-$lang}/body-editor'
     | '/{-$lang}/breast-expansion'
     | '/{-$lang}/dashboard'
     | '/{-$lang}/deletion'
+    | '/{-$lang}/leg-lengthener'
     | '/{-$lang}/my-works'
     | '/{-$lang}/payment-cancel'
     | '/{-$lang}/payment-success'
     | '/{-$lang}/privacy'
     | '/{-$lang}/skinny-filter'
     | '/{-$lang}/terms'
+    | '/{-$lang}/waist-slimmer'
     | '/api/blog'
     | '/{-$lang}/admin'
     | '/api/admin/blog/$id'
@@ -1042,16 +1078,19 @@ export interface FileRouteTypes {
     | '/{-$lang}/(auth)/reset-password'
     | '/{-$lang}/(auth)/signin'
     | '/{-$lang}/(auth)/signup'
+    | '/{-$lang}/(root)/ai-muscle-generator'
     | '/{-$lang}/(root)/body-editor'
     | '/{-$lang}/(root)/breast-expansion'
     | '/{-$lang}/(root)/dashboard'
     | '/{-$lang}/(root)/deletion'
+    | '/{-$lang}/(root)/leg-lengthener'
     | '/{-$lang}/(root)/my-works'
     | '/{-$lang}/(root)/payment-cancel'
     | '/{-$lang}/(root)/payment-success'
     | '/{-$lang}/(root)/privacy'
     | '/{-$lang}/(root)/skinny-filter'
     | '/{-$lang}/(root)/terms'
+    | '/{-$lang}/(root)/waist-slimmer'
     | '/api/blog/'
     | '/{-$lang}/(root)/'
     | '/{-$lang}/admin/'
@@ -1242,6 +1281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/{-$lang}/(root)/waist-slimmer': {
+      id: '/{-$lang}/(root)/waist-slimmer'
+      path: '/waist-slimmer'
+      fullPath: '/{-$lang}/waist-slimmer'
+      preLoaderRoute: typeof Char123LangChar125rootWaistSlimmerRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
     '/{-$lang}/(root)/terms': {
       id: '/{-$lang}/(root)/terms'
       path: '/terms'
@@ -1284,6 +1330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LangChar125rootMyWorksRouteImport
       parentRoute: typeof Char123LangChar125rootRouteRoute
     }
+    '/{-$lang}/(root)/leg-lengthener': {
+      id: '/{-$lang}/(root)/leg-lengthener'
+      path: '/leg-lengthener'
+      fullPath: '/{-$lang}/leg-lengthener'
+      preLoaderRoute: typeof Char123LangChar125rootLegLengthenerRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
     '/{-$lang}/(root)/deletion': {
       id: '/{-$lang}/(root)/deletion'
       path: '/deletion'
@@ -1310,6 +1363,13 @@ declare module '@tanstack/react-router' {
       path: '/body-editor'
       fullPath: '/{-$lang}/body-editor'
       preLoaderRoute: typeof Char123LangChar125rootBodyEditorRouteImport
+      parentRoute: typeof Char123LangChar125rootRouteRoute
+    }
+    '/{-$lang}/(root)/ai-muscle-generator': {
+      id: '/{-$lang}/(root)/ai-muscle-generator'
+      path: '/ai-muscle-generator'
+      fullPath: '/{-$lang}/ai-muscle-generator'
+      preLoaderRoute: typeof Char123LangChar125rootAiMuscleGeneratorRouteImport
       parentRoute: typeof Char123LangChar125rootRouteRoute
     }
     '/{-$lang}/(auth)/signup': {
@@ -1786,27 +1846,34 @@ const Char123LangChar125authRouteRouteWithChildren =
   )
 
 interface Char123LangChar125rootRouteRouteChildren {
+  Char123LangChar125rootAiMuscleGeneratorRoute: typeof Char123LangChar125rootAiMuscleGeneratorRoute
   Char123LangChar125rootBodyEditorRoute: typeof Char123LangChar125rootBodyEditorRoute
   Char123LangChar125rootBreastExpansionRoute: typeof Char123LangChar125rootBreastExpansionRoute
   Char123LangChar125rootDashboardRoute: typeof Char123LangChar125rootDashboardRoute
   Char123LangChar125rootDeletionRoute: typeof Char123LangChar125rootDeletionRoute
+  Char123LangChar125rootLegLengthenerRoute: typeof Char123LangChar125rootLegLengthenerRoute
   Char123LangChar125rootMyWorksRoute: typeof Char123LangChar125rootMyWorksRoute
   Char123LangChar125rootPaymentCancelRoute: typeof Char123LangChar125rootPaymentCancelRoute
   Char123LangChar125rootPaymentSuccessRoute: typeof Char123LangChar125rootPaymentSuccessRoute
   Char123LangChar125rootPrivacyRoute: typeof Char123LangChar125rootPrivacyRoute
   Char123LangChar125rootSkinnyFilterRoute: typeof Char123LangChar125rootSkinnyFilterRoute
   Char123LangChar125rootTermsRoute: typeof Char123LangChar125rootTermsRoute
+  Char123LangChar125rootWaistSlimmerRoute: typeof Char123LangChar125rootWaistSlimmerRoute
   Char123LangChar125rootIndexRoute: typeof Char123LangChar125rootIndexRoute
 }
 
 const Char123LangChar125rootRouteRouteChildren: Char123LangChar125rootRouteRouteChildren =
   {
+    Char123LangChar125rootAiMuscleGeneratorRoute:
+      Char123LangChar125rootAiMuscleGeneratorRoute,
     Char123LangChar125rootBodyEditorRoute:
       Char123LangChar125rootBodyEditorRoute,
     Char123LangChar125rootBreastExpansionRoute:
       Char123LangChar125rootBreastExpansionRoute,
     Char123LangChar125rootDashboardRoute: Char123LangChar125rootDashboardRoute,
     Char123LangChar125rootDeletionRoute: Char123LangChar125rootDeletionRoute,
+    Char123LangChar125rootLegLengthenerRoute:
+      Char123LangChar125rootLegLengthenerRoute,
     Char123LangChar125rootMyWorksRoute: Char123LangChar125rootMyWorksRoute,
     Char123LangChar125rootPaymentCancelRoute:
       Char123LangChar125rootPaymentCancelRoute,
@@ -1816,6 +1883,8 @@ const Char123LangChar125rootRouteRouteChildren: Char123LangChar125rootRouteRoute
     Char123LangChar125rootSkinnyFilterRoute:
       Char123LangChar125rootSkinnyFilterRoute,
     Char123LangChar125rootTermsRoute: Char123LangChar125rootTermsRoute,
+    Char123LangChar125rootWaistSlimmerRoute:
+      Char123LangChar125rootWaistSlimmerRoute,
     Char123LangChar125rootIndexRoute: Char123LangChar125rootIndexRoute,
   }
 

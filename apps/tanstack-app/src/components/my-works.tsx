@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, Images, LoaderCircle, Trash2, ZoomIn } from 'lucide-react';
+import { Download, Images, LoaderCircle, PencilLine, Trash2, ZoomIn } from 'lucide-react';
 import { Button } from '@libs/react-shared/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@libs/react-shared/ui/dialog';
 import { authClientReact } from '@libs/auth/authClient';
@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { localizedPath } from '@/lib/i18n-path';
 import { ImageFileDetails } from '@libs/react-shared/components/image-file-details';
 import type { ImageFileMetadata } from '@libs/react-shared/utils/image-file-metadata';
+import { queueSavedBodyEdit } from '@libs/react-shared/utils/body-edit-history-handoff';
 
 async function imageBlob(url: string, signal?: AbortSignal) {
   const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal });
@@ -77,6 +78,13 @@ export function MyWorks() {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [load, session?.user.id]);
   const date = (value: string) => new Date(value).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+  const continueWork = (item: BodyEditHistoryItem) => {
+    if (!session?.user?.id) return;
+    try {
+      queueSavedBodyEdit(item.id, session.user.id);
+      window.location.assign(localizedPath('/', locale) + '#try');
+    } catch { setActionError(copy.continueError); }
+  };
   const download = async (item: BodyEditHistoryItem) => {
     setDownloading(item.id); setActionError('');
     try {
@@ -115,6 +123,7 @@ export function MyWorks() {
         <div className="space-y-2 p-4"><div className="flex flex-wrap items-center justify-between gap-1"><h2 className="text-sm font-semibold">{t.home.upload.modes[item.mode]}</h2><span className="text-xs text-muted-foreground">{copy.intensity.replace('{value}', String(item.intensity))}</span></div>
           <time dateTime={item.createdAt} className="block text-xs text-muted-foreground">{date(item.createdAt)}</time>
           <p className="text-xs text-muted-foreground">{copy.expires.replace('{date}', date(item.expiresAt))}</p>
+          <Button variant="outline" size="sm" className="w-full" disabled={busy} onClick={() => continueWork(item)}><PencilLine className="size-3.5" aria-hidden="true" />{t.home.editing.continueEditing}</Button>
           <div className="flex gap-2 pt-2"><Button variant="outline" size="sm" className="flex-1" title={t.imageDetails.downloadOriginal} disabled={downloading === item.id} onClick={() => void download(item)}><Download className="size-3.5" aria-hidden="true" />{copy.download}</Button>
             <Button variant="ghost" size="sm" aria-label={copy.delete} className="text-muted-foreground hover:text-destructive" onClick={() => { setActionError(''); setDeleting(item); }}><Trash2 className="size-4" aria-hidden="true" /></Button></div>
         </div>

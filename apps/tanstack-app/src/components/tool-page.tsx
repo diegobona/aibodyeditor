@@ -1,9 +1,13 @@
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 import { siblingTools, toolRoute, type ToolKey } from '@/lib/tools'
 import { Section, SectionHeading } from '@/components/page-section'
 import { UploadDropzone } from '@/components/home/upload-dropzone'
+import { RealResultsGallery } from '@/components/home/real-results-gallery'
+import { REAL_RESULT_CASES, REAL_RESULT_IMAGES, type EditorSample } from '@/components/home/showcase-data'
+import { editingTopic } from '../../../../config/editing-topics'
 
 type Item = { title: string; description: string }
 
@@ -19,10 +23,20 @@ const linkClass = 'font-semibold text-primary underline underline-offset-4 hover
  *
  * Images: /examples/<imageSlug>-before.svg and -after.svg (≥300×300, realistic alt).
  */
-export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug: string }) {
+export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug?: string }) {
   const { t, langParam } = useTranslation()
   const common = t.toolPages.common
   const page = t.toolPages[toolKey]
+  const topic = editingTopic(toolKey)
+  const [sample, setSample] = useState<EditorSample>()
+  const [pending, setPending] = useState(false)
+  const chooseExample = (key: (typeof REAL_RESULT_CASES)[number]['key']) => {
+    if (pending) return
+    const recipe = REAL_RESULT_CASES.find(item => item.key === key)!
+    const item = t.home.realResults[key]
+    setSample({ id: key, src: REAL_RESULT_IMAGES[key], alt: item.beforeAlt, afterAlt: item.afterAlt,
+      mode: recipe.mode, intensity: recipe.intensity, instructions: item.instructions })
+  }
   const siblings = siblingTools(toolKey)
   const inlineSibling = page.what.sibling as { key: string; before: string; after: string } | undefined
   const inlineSiblingRoute = inlineSibling ? toolRoute(inlineSibling.key) : undefined
@@ -55,14 +69,21 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug: 
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {common.editorIntro}
           </p>
-          <UploadDropzone defaultMode={toolKey === 'breastExpansion' ? 'breast' : 'slim'} className="mt-10 w-full max-w-2xl text-left" />
+          <UploadDropzone key={toolKey} defaultMode={topic?.mode ?? (toolKey === 'breastExpansion' ? 'breast' : 'slim')}
+            defaultIntensity={topic?.intensity}
+            defaultInstructions={topic?.instructionCase ? t.home.realResults[topic.instructionCase].instructions : ''}
+            sample={sample} onSampleClear={() => setSample(undefined)} onPendingChange={setPending}
+            preserveSettingsOnPhotoChange={Boolean(topic)} className="mt-10 w-full max-w-2xl text-left" />
           <p className="mt-5 text-sm text-muted-foreground">{page.hero.note}</p>
         </div>
       </section>
 
+      {topic && <RealResultsGallery caseKeys={topic.cases} title={page.examples.title} description={page.examples.description}
+        pending={pending} onTry={chooseExample} />}
+
       {/* What Is [keyword] */}
       <Section id="what" className="rounded-t-[40px] bg-card">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start">
+        <div className={topic ? 'mx-auto max-w-3xl' : 'grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start'}>
           <div className="max-w-2xl">
             <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
               {page.what.title}
@@ -89,7 +110,7 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug: 
               )}
             </div>
           </div>
-          <figure className="rounded-3xl bg-background p-3">
+          {!topic && <figure className="rounded-3xl bg-background p-3">
             <div className="grid grid-cols-2 gap-2">
               <img
                 src={`/examples/${imageSlug}-before.svg`}
@@ -111,7 +132,7 @@ export function ToolPage({ toolKey, imageSlug }: { toolKey: ToolKey; imageSlug: 
               />
             </div>
             <figcaption className="px-2 pb-1 pt-3 text-[15px] text-muted-foreground">{page.what.figure.caption}</figcaption>
-          </figure>
+          </figure>}
         </div>
       </Section>
 

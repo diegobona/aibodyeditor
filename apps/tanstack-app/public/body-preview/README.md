@@ -33,6 +33,13 @@ worker traces its actual foreground edges; it does not fabricate a silhouette
 from pose points. Unsupported devices, unreadable images, and missing usable
 torso detections return an error so ordinary photo editing can remain available.
 
+Only the analysis bitmap is resized to a maximum dimension of 1280, with width
+rounded to a multiple of four. This keeps CPU float segmentation-mask rows
+16-byte aligned; unaligned widths can abort MediaPipe 0.10.21 inference with
+`Check failed: 1 == ChannelSize() (1 vs. 4)`. This applies to smaller images too.
+The original image bytes and reported dimensions are preserved. Reproduced on a
+1184×1328 continued result (previous analysis width: 1141; aligned width: 1140).
+
 Breast target geometry additionally requires reliable shoulder/hip anchors,
 uses torso-relative side bounds and excludes detected upper-arm/forearm paths.
 Breast mode always displays a purple approximate chest-area ellipse alongside

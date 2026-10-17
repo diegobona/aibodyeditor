@@ -1,4 +1,5 @@
 import type { Locale } from './types'
+import { zhEditingTopics } from './zh-editing-topics'
 
 export const zhCN: Locale = {
   imageDetails: { label: "图片规格", format: "{width} × {height} 像素 · {format} · {size}", downloadOriginal: "下载生成的原始文件" },
@@ -44,6 +45,7 @@ export const zhCN: Locale = {
     },
   },
   myWorks: {
+    continueError: "暂时无法打开这张作品进行编辑，请重试。",
     metadata: { title: "我的作品 | AI Body Editor", description: "查看、下载和删除已保存的身体编辑结果。" },
     title: "我的作品", description: "在这里查看你保存的编辑结果。",
     retention: "生成结果保存 {days} 天，到期自动删除。请下载你希望保留的图片。",
@@ -2087,9 +2089,6 @@ export const zhCN: Locale = {
       instructionsHint: "修改说明在生成时生效，轮廓预览仅反映模式和强度。",
       instructionsCounter: "{count}/{max} 字符",
       contourPreview: {
-        analyzing: "正在识别身体轮廓…",
-        unavailable: "轮廓预览暂不可用，你仍可以生成编辑效果。",
-        noPerson: "未识别到清晰的身体轮廓。可换一张更清晰的照片，或继续生成。",
         chestUnclear: "胸部大致作用区域；遮挡处无法预测轮廓。可通过“校准”调整位置。",
         area: "胸部区域",
         original: "原始轮廓",
@@ -2123,6 +2122,7 @@ export const zhCN: Locale = {
       compareLabel: "比较原图与编辑后的照片",
       compareHint: "拖动以比较",
       download: "下载照片",
+      clearResult: "清除结果图片",
       editAnother: "编辑另一张照片",
       continueEditing: "继续编辑",
       preparingNextEdit: "正在加载照片…",
@@ -2130,6 +2130,8 @@ export const zhCN: Locale = {
       continueEditingRequirement: "登录且账户余额至少有 {credits} 积分后可继续编辑。",
       continueEditingCredits: "账户余额至少需要 {credits} 积分才能继续编辑。",
       continueEditingReady: "已准备好继续编辑",
+      historyLoading: "正在载入已保存的照片…",
+      historyLoadError: "暂时无法载入这张已保存的照片，它可能已过期或被删除。请重试、选择其他照片，或返回「我的作品」。",
       loadingBalance: "正在查询积分…",
       balanceNote: "账户余额：{balance} 积分 · 每次编辑 {credits} 积分。",
       balanceError: "暂时无法查询积分余额，请重试。",
@@ -2144,7 +2146,7 @@ export const zhCN: Locale = {
       signinTitle: "登录以继续编辑",
       signinDescription: "登录或创建账户后可获赠 10 积分，每个账户仅一次。可用于新照片或继续编辑，足够免费编辑一次。登录时会保留你选择的照片。",
       signinRequired: "登录后再免费编辑一次",
-      trialNote: "每个浏览器可免费完成一次游客编辑。",
+      trialNote: "可免费完成一次游客编辑。",
       costNote: "每次编辑消耗 {credits} 积分。",
       guestUsedNote: "游客免费编辑已使用。登录后可获赠 10 积分，每个账户仅一次。",
       guestRetryNote: "免费编辑机会仍然可用，可在重试限额内再次尝试。",
@@ -2347,6 +2349,7 @@ export const zhCN: Locale = {
     tools: {
       title: "照片编辑指南",
       items: [
+        ...Object.entries(zhEditingTopics).map(([key, page]) => ({ key, title: page.hero.title, description: page.related.description })),
         {
           key: "bodyEditor",
           title: "Body Editor",
@@ -2372,6 +2375,7 @@ export const zhCN: Locale = {
     }
   },
   toolPages: {
+    ...zhEditingTopics,
     common: {
       breadcrumbLabel: "面包屑导航",
       homeName: "AI Body Editor",
