@@ -130,7 +130,9 @@ test.describe('Editor workbench and explicit example selection', () => {
     const provenance = await (await request.get('/examples/results-2026-10-16/provenance.json')).json();
     expect(new Set(provenance.map((x: {sourceSha256: string}) => x.sourceSha256)).size).toBe(10);
     await visit(page);
-    await expect(page.getByRole('switch', { name: 'Only apply settings', exact: true })).toHaveCount(2);
+    await expect(page.getByRole('switch', { name: 'Only apply settings', exact: true })).toHaveCount(11);
+    await expect(page.locator('#real-results').getByRole('switch')).toHaveCount(10);
+    await expect(page.locator('[data-real-result]').getByRole('switch')).toHaveCount(10);
     for (const control of await page.getByRole('switch').all()) {
       await expect(control).not.toBeChecked(); await expect(control).toBeDisabled();
     }
@@ -176,6 +178,7 @@ test.describe('Editor workbench and explicit example selection', () => {
     const original = await preview(page).getAttribute('src');
     await toggle(page).check();
     await expect(preview(page)).toHaveAttribute('src', original!);
+    await page.locator('[data-real-result=breast]').getByRole('switch').check();
     await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
     await expect(preview(page)).toHaveAttribute('src', original!);
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
@@ -233,25 +236,38 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect.poll(() => group.evaluate(n => n.scrollLeft)).toBeGreaterThan(100);
   });
 
-  test('both settings-only switches synchronize without replacing a photo or result and control gallery Try', async ({ page }) => {
+  test('each case has an independent default-off option and Try ignores the top-strip preference', async ({ page }) => {
     await visit(page);
-    const lower = page.locator('#real-results').getByRole('switch', { name: 'Only apply settings', exact: true });
     await choose(page, 'shoulders');
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
-    const current = await preview(page).getAttribute('src');
-    await lower.check(); await expect(toggle(page)).toBeChecked();
-    await expect(preview(page)).toHaveAttribute('src', current!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
-    await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
-    await expect(preview(page)).toHaveAttribute('src', current!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
-    await toggle(page).uncheck(); await expect(lower).not.toBeChecked();
-    await expect(preview(page)).toHaveAttribute('src', current!);
-    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'shoulders');
+    const first = await preview(page).getAttribute('src');
+    const breast = page.locator('[data-real-result=breast]').getByRole('switch');
+    const subtle = page.locator('[data-real-result=breastSubtle]').getByRole('switch');
+    await toggle(page).check();
+    for (const option of await page.locator('#real-results').getByRole('switch').all()) await expect(option).not.toBeChecked();
+    await expect(preview(page)).toHaveAttribute('src', first!);
     await page.locator('[data-try-example=waistOnly]').click(); await expectRecipe(page, 'waistOnly');
     await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
-    await expect(preview(page)).not.toHaveAttribute('src', current!);
-    await expect(lower).not.toBeChecked(); await expect(lower).toBeEnabled();
+    await expect(preview(page)).not.toHaveAttribute('src', first!);
+    const waistPhoto = await preview(page).getAttribute('src');
+    await breast.check(); await toggle(page).uncheck();
+    await expect(breast).toBeChecked(); await expect(subtle).not.toBeChecked();
+    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
+    await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
+    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'waistOnly');
+    await subtle.check(); await breast.uncheck();
+    await expect(subtle).toBeChecked(); await expect(toggle(page)).not.toBeChecked();
+    await expect(preview(page)).toHaveAttribute('src', waistPhoto!);
+    await page.locator('[data-try-example=breast]').click(); await expectRecipe(page, 'breast');
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breast');
+    await expect(preview(page)).not.toHaveAttribute('src', waistPhoto!);
+    await expect(breast).not.toBeChecked(); await expect(subtle).toBeChecked();
+    const breastPhoto = await preview(page).getAttribute('src');
+    await page.locator('[data-try-example=breastSubtle]').click(); await expectRecipe(page, 'breastSubtle');
+    await expect(preview(page)).toHaveAttribute('src', breastPhoto!);
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'breast');
   });
 
   test('all ten gallery Try links load the photo and exact recipe and return to the editor without generating', async ({ page }) => {
@@ -351,6 +367,166 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expectRecipe(page, 'customCombination'); expect(count).toBe(1);
   });
 
+  test('changing a Proportions sample to Breast 100 submits live settings and never shows the sample after an interrupted request', async ({ page }) => {
+    const submissions: FormData[] = [];
+    await page.route('**/mock-live-result.png', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const request = route.request();
+      submissions.push(await new Response(new Uint8Array(request.postDataBuffer()!), {
+        headers: { 'content-type': request.headers()['content-type'] },
+      }).formData());
+      if (submissions.length === 1) return route.abort('connectionfailed');
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl: '/mock-live-result.png', downloadUrl: '/mock-live-result.png', mode: 'breast', intensity: 100 },
+        credits: { charged: 0, balance: 0 }, reused: true } });
+    });
+    await visit(page); await choose(page, 'fullerFigure'); await expectRecipe(page, 'fullerFigure');
+    await expect(page.locator('#hero-showcase')).toHaveAttribute('data-result-example', 'fullerFigure');
+    const sourcePhoto = await preview(page).getAttribute('src');
+    await page.locator('[data-body-editor] fieldset').getByText('Breast', { exact: true }).click();
+    await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('100');
+    await expect(page.locator('[data-body-editor] textarea')).toHaveValue('');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    const recover = page.getByRole('button', { name: 'Check edit status', exact: true });
+    await expect(recover).toBeVisible();
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0].get('mode')).toBe('breast');
+    expect(submissions[0].get('intensity')).toBe('100');
+    expect(submissions[0].get('instructions')).toBeNull();
+    expect((submissions[0].get('image') as File).name).toBe('fullerFigure-original.png');
+    await expect(preview(page)).toHaveAttribute('src', sourcePhoto!);
+    await expect(page.locator('#hero-showcase image, #hero-showcase img')).toHaveCount(0);
+    await expect(page.locator('#hero-showcase')).toContainText('No new result yet');
+    await expect(page.locator('#hero-showcase')).toContainText('Connection lost. Check the edit status before trying again.');
+    await expect(page.locator('[data-result-settings]')).toHaveText('Breast · Intensity 100/100');
+    await expect(page.locator('[data-result-settings]').locator('..').getByText('Check edit status', { exact: true })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
+    await page.screenshot({ path: 'test-results/live-editor-settings/interrupted.png' });
+    await recover.click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    expect(submissions).toHaveLength(2);
+    for (const field of ['requestId', 'mode', 'intensity', 'instructions']) {
+      expect(submissions[1].get(field)).toBe(submissions[0].get(field));
+    }
+    await expect(page.locator('#hero-showcase img')).toHaveAttribute('data-result-source', '/mock-live-result.png');
+    await expect(page.locator('[data-result-settings]')).toHaveText('Breast · Intensity 100/100');
+    await expect(page.locator('[data-photo-panel="result"]')).toContainText('Your edited photo');
+    await expect(page.locator('[data-photo-panel="result"]')).not.toContainText('Saved example result');
+  });
+
+  test('user-written instructions survive a mode change and submit with the current Breast strength', async ({ page }) => {
+    let form: FormData | undefined;
+    await page.route('**/mock-manual-result.png', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const request = route.request();
+      form = await new Response(new Uint8Array(request.postDataBuffer()!), {
+        headers: { 'content-type': request.headers()['content-type'] },
+      }).formData();
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl: '/mock-manual-result.png', downloadUrl: '/mock-manual-result.png', mode: 'breast', intensity: 100 },
+        credits: { charged: 0, balance: 0 }, reused: false } });
+    });
+    await visit(page); await choose(page, 'fullerFigure'); await expectRecipe(page, 'fullerFigure');
+    const instructions = 'Make my clothed bust fuller. Keep my waist and legs unchanged.';
+    await page.getByRole('textbox', { name: 'Extra body-edit instructions', exact: true }).fill(instructions);
+    await page.locator('[data-body-editor] fieldset').getByText('Breast', { exact: true }).click();
+    await page.getByRole('slider', { name: 'Intensity', exact: true }).fill('100');
+    await expect(page.locator('[data-body-editor] textarea')).toHaveValue(instructions);
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    expect(form?.get('mode')).toBe('breast'); expect(form?.get('intensity')).toBe('100');
+    expect(form?.get('instructions')).toBe(instructions);
+    await expect(page.locator('[data-result-settings]')).toHaveText('Breast · Intensity 100/100');
+  });
+
+  test('session database unavailability preserves the same request for explicit recovery without automatic generation retries', async ({ page }) => {
+    const submissions: FormData[] = [];
+    await page.route('**/mock-session-result.png', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const request = route.request();
+      submissions.push(await new Response(new Uint8Array(request.postDataBuffer()!), {
+        headers: { 'content-type': request.headers()['content-type'] },
+      }).formData());
+      if (submissions.length === 1) return route.fulfill({ status: 503, json: { error: { code: 'SESSION_UNAVAILABLE' } } });
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl: '/mock-session-result.png', downloadUrl: '/mock-session-result.png', mode: 'breast', intensity: 70 },
+        credits: { charged: 0, balance: 0 }, reused: true } });
+    });
+    await visit(page); await choose(page, 'breast'); await expectRecipe(page, 'breast');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText("We couldn't connect to the account database.");
+    const recover = page.getByRole('button', { name: 'Check edit status', exact: true });
+    await expect(recover).toBeVisible();
+    await expect(page.locator('#hero-showcase img')).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Intensity', exact: true })).toBeDisabled();
+    expect(submissions).toHaveLength(1);
+    await recover.click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    expect(submissions).toHaveLength(2);
+    for (const field of ['requestId', 'mode', 'intensity', 'instructions']) expect(submissions[1].get(field)).toBe(submissions[0].get(field));
+  });
+
+  test('workbench fetches private saved images instead of issuing direct image requests, without another generation', async ({ page }) => {
+    const imageUrl = '/api/body-edit/11111111-1111-4111-8111-111111111111/image';
+    let posts = 0;
+    const resourceTypes: string[] = [];
+    await page.route(`**${imageUrl}`, async route => {
+      resourceTypes.push(route.request().resourceType());
+      if (route.request().resourceType() === 'image') return route.fulfill({ status: 404, contentType: 'text/html', body: 'Not found' });
+      return route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG, headers: { 'Cache-Control': 'private, no-store' } });
+    });
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      posts++;
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl, downloadUrl: imageUrl + '?download=1', mode: 'breast', intensity: 70 },
+        credits: { charged: 0, balance: 0 }, reused: false } });
+    });
+    await visit(page); await choose(page, 'breast'); await expectRecipe(page, 'breast');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    const image = page.locator('#hero-showcase img');
+    await expect(image).toHaveAttribute('src', /^blob:/);
+    await expectDecoded(image);
+    expect(resourceTypes).toEqual(['fetch']);
+    expect(posts).toBe(1);
+    await expect(page.locator('#hero-showcase input[type=range]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Reload image', exact: true })).toHaveCount(0);
+    await page.screenshot({ path: 'test-results/result-preview-recovery/workbench-fetch.png' });
+  });
+
+  test('workbench preview retries and manual reload only read the existing private result', async ({ page }) => {
+    const imageUrl = '/api/body-edit/11111111-1111-4111-8111-111111111111/image';
+    let posts = 0, imageGets = 0, recover = false;
+    await page.route(`**${imageUrl}`, async route => {
+      imageGets++;
+      expect(route.request().resourceType()).toBe('fetch');
+      if (!recover) return route.fulfill({ status: 503, json: { error: { code: 'SESSION_UNAVAILABLE' } } });
+      return route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG });
+    });
+    await page.route('**/api/body-edit', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      posts++;
+      return route.fulfill({ json: { jobId: '11111111-1111-4111-8111-111111111111', status: 'succeeded',
+        result: { imageUrl, downloadUrl: imageUrl + '?download=1', mode: 'breast', intensity: 70 },
+        credits: { charged: 0, balance: 0 }, reused: false } });
+    });
+    await visit(page); await choose(page, 'breast'); await expectRecipe(page, 'breast');
+    await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
+    const reload = page.getByRole('button', { name: 'Reload image', exact: true });
+    await expect(reload).toBeVisible({ timeout: 8000 });
+    expect(imageGets).toBe(3); expect(posts).toBe(1);
+    const frameHeight = await page.locator('#hero-showcase [data-result-frame]').evaluate(frame => frame.getBoundingClientRect().height);
+    expect(frameHeight).toBeGreaterThan(300);
+    recover = true;
+    await reload.click();
+    await expectDecoded(page.locator('#hero-showcase img'));
+    expect(imageGets).toBe(4); expect(posts).toBe(1);
+    await expect(reload).toHaveCount(0);
+  });
+
   test('a successful generated result stays paired through settings-only changes and clears on upload', async ({ page }) => {
     await page.route('**/mock-workbench-result.png*', route => route.fulfill({ contentType: 'image/png', body: PREVIEW_PNG }));
     await page.route('**/api/body-edit', async route => {
@@ -363,14 +539,14 @@ test.describe('Editor workbench and explicit example selection', () => {
     await expect(page.locator('[data-body-editor]')).toHaveAttribute('data-photo-source', 'sample');
     await page.getByRole('button', { name: 'Edit Photo', exact: true }).click();
     const generated = page.locator('#hero-showcase img'); await expectDecoded(generated);
-    await expect(generated).toHaveAttribute('src', '/mock-workbench-result.png');
+    await expect(generated).toHaveAttribute('data-result-source', '/mock-workbench-result.png');
     const download = page.getByRole('link', { name: 'Download photo', exact: true });
     await expect(download).toBeVisible();
     const downloaded = page.waitForEvent('download'); await download.click();
     expect((await downloaded).suggestedFilename()).toBe('ai-body-edit-11111111-1111-4111-8111-111111111111.png');
     const current = await preview(page).getAttribute('src');
     await toggle(page).check(); await choose(page, 'waistOnly'); await expectRecipe(page, 'waistOnly');
-    await expect(generated).toHaveAttribute('src', '/mock-workbench-result.png');
+    await expect(generated).toHaveAttribute('data-result-source', '/mock-workbench-result.png');
     await expect(preview(page)).toHaveAttribute('src', current!);
     await expect(page.locator('[data-photo-panel="result"]').getByRole('status')).toContainText('Settings changed.');
     await page.getByLabel('Upload a photo to edit', { exact: true }).setInputFiles({ name: 'new.png', mimeType: 'image/png', buffer: PREVIEW_PNG });

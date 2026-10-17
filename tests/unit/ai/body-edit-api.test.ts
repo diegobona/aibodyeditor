@@ -489,7 +489,8 @@ describe('body edit API error privacy', () => {
       response = await handlers.submit(formRequest());
       expect(service.submit).toHaveBeenCalledTimes(1);
     }
-    expect(await expectError(response, 500, 'INTERNAL_ERROR')).toEqual({ error: { code: 'INTERNAL_ERROR' } });
+    const code = stage === 'getUser' ? 'SESSION_UNAVAILABLE' : 'INTERNAL_ERROR';
+    expect(await expectError(response, stage === 'getUser' ? 503 : 500, code)).toEqual({ error: { code } });
   });
 
   test('does not echo an arbitrary unrecognized domain error code', async () => {

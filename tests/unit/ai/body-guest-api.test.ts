@@ -36,6 +36,18 @@ test('guest can submit without authentication using the free service', async () 
   expect(service.submit).not.toHaveBeenCalled();
 });
 
+test('session database failure never falls back to guest generation or exposes connection details', async () => {
+  const { handlers, getUser, getIdentity, guestService, service } = setup();
+  getUser.mockRejectedValue(new Error('Connection terminated due to connection timeout: private database details'));
+  for (const response of [await handlers.submit(submit()), await handlers.guestSession(new Request(origin + '/api/body-edit/guest-session', { method: 'POST', headers: { Origin: origin } }))]) {
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: { code: 'SESSION_UNAVAILABLE' } });
+  }
+  expect(getIdentity).not.toHaveBeenCalled();
+  expect(guestService.submit).not.toHaveBeenCalled();
+  expect(service.submit).not.toHaveBeenCalled();
+});
+
 test('the same optional instruction contract reaches the guest service', async () => {
   const { handlers, guestService, service } = setup();
   const body = await submit().formData(); body.set('instructions', '  Only change my waist.  ');

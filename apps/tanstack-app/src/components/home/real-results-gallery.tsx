@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { PhotoComparison } from "@libs/react-shared/components/photo-comparison";
 import { useTranslation } from "@/hooks/use-translation";
@@ -8,15 +9,14 @@ import { SettingsOnlyToggle } from "./settings-only-toggle";
 type ExampleKey = (typeof REAL_RESULT_CASES)[number]["key"];
 
 /** Browsable proof of each recipe; Try uses the same selection flow as the top strip. */
-export function RealResultsGallery({ onTry, pending, settingsOnly, settingsOnlyDisabled, onSettingsOnlyChange }: {
-  onTry: (key: ExampleKey) => void;
+export function RealResultsGallery({ onTry, pending, settingsOnlyDisabled }: {
+  onTry: (key: ExampleKey, settingsOnly: boolean) => void;
   pending: boolean;
-  settingsOnly: boolean;
   settingsOnlyDisabled: boolean;
-  onSettingsOnlyChange: (checked: boolean) => void;
 }) {
   const { t } = useTranslation();
   const copy = t.home.realResults;
+  const [settingsOnlyByCase, setSettingsOnlyByCase] = useState<Partial<Record<ExampleKey, boolean>>>({});
 
   return (
     <Section id="real-results" className="bg-card py-12 md:py-16">
@@ -25,7 +25,6 @@ export function RealResultsGallery({ onTry, pending, settingsOnly, settingsOnlyD
           <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{copy.title}</h2>
           <p className="mt-3 text-lg leading-relaxed text-muted-foreground">{copy.description}</p>
         </div>
-        <SettingsOnlyToggle checked={settingsOnly} disabled={settingsOnlyDisabled} onChange={onSettingsOnlyChange} />
       </div>
       <div data-results-grid className="grid gap-x-5 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
         {REAL_RESULT_CASES.map(({ key, mode, intensity, subject }) => {
@@ -44,15 +43,17 @@ export function RealResultsGallery({ onTry, pending, settingsOnly, settingsOnlyD
               {item.instructions && <p className="mt-3 border-l-2 border-primary/25 pl-3 text-xs leading-relaxed text-muted-foreground">
                 <span className="font-semibold">{copy.requestLabel} </span>{item.instructions}
               </p>}
-              <div className="mt-auto pt-4">
+              <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-4">
                 <a href="#try" data-try-example={key} aria-label={copy.tryLabel.replace("{name}", t.home.examples.labels[key])}
                   aria-disabled={pending} onClick={(event) => {
                     if (pending) { event.preventDefault(); return; }
-                    onTry(key);
+                    onTry(key, settingsOnlyByCase[key] ?? false);
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/25 px-4 text-sm font-semibold text-primary transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-disabled:opacity-50">
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-primary/25 px-3 text-sm font-semibold text-primary transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-disabled:opacity-50">
                   {copy.try}<ArrowUpRight className="size-4" aria-hidden="true" />
                 </a>
+                <SettingsOnlyToggle checked={settingsOnlyByCase[key] ?? false} disabled={settingsOnlyDisabled}
+                  onChange={(checked) => setSettingsOnlyByCase((values) => ({ ...values, [key]: checked }))} />
               </div>
             </article>
           );

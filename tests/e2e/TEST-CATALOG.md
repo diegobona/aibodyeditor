@@ -1,5 +1,39 @@
 # E2E 测试流程目录
 
+## Workbench private result image loading — verified (2026-10-17)
+
+- The workbench loads existing private results using a same-origin authenticated fetch and displays a decoded blob URL, reusing the compact editor's loader. Direct image requests to the Node dev API may return static HTML/404 and must not be used.
+- Preserve direct result display, stable frame height, existing download and mode/strength labels. Automatic retries and Reload image read only the saved result; neither creates another edit or charge.
+- Reproduce the actual image-vs-fetch routing difference, recover the user's saved Breast 100 result, verify one debit and the unchanged 285 balance, then run only related E2E, typecheck and build.
+
+Results: reproduced the direct-image HTML/404 versus fetch JSON/401 routing difference; the new regression failed before the fix. The existing real result recovered in the user's browser as a decoded 1086×1448 blob, without another provider request. Six related E2E scenarios passed (four initially; two hit the existing initial auth-readiness wait and passed on targeted rerun, 10.7 s). Coverage includes bounded result-GET retries/manual reload, same-request recovery, current settings, retained user instructions and download. Typecheck passed (18.903 s); Workers build passed (2m11.07s, existing chunk-size warnings). Evidence: `test-results/result-preview-recovery/`. No additional paid generation or broad audit.
+
+## Neon connection failures during editing — verified with billing limitation (2026-10-16)
+
+- Local PostgreSQL connections allow 15 seconds to establish, matching Workers, instead of failing after 3 seconds; enable TCP keepalive without replaying queries or generation requests.
+- An identity/session database failure returns a private 503 SESSION_UNAVAILABLE response before either account or guest generation. It must not bypass login checks, expose database details, or discard recovery of an earlier uncertain edit.
+- Verify recovery in the editor and live provider/storage behavior; distinguish actual integration results from mocked regression checks. Run the focused API/E2E tests, typecheck and build only.
+
+Results: the real local terminal showed repeated Better Auth PostgreSQL connection timeouts before a new job existed. After increasing the Node pool connection timeout to 15 seconds/query timeout to 12 seconds and restarting the verified localhost:7001 process, the user's browser resolved its signed-in session and a Breast 100 submission returned INSUFFICIENT_CREDITS, with no provider call or debit. No balance, entitlement or existing job was changed. A separate one-shot shared-provider diagnostic generated Breast 100 from the fictional built-in original in 36.219 seconds (1086×1448); materialization and private Node storage write/read passed. This does not claim a successful charged account flow: the account has insufficient credits. 97 focused API tests and 2 related E2E tests passed (5.4 s; generation mocked in E2E). Typecheck passed (10.941 s), Workers build passed (30.731 s; existing chunk warnings), Workers SSR returned 200. Diagnostic artifacts: `test-results/db-connection-diagnostic/`.
+
+## Current edit settings and interrupted generation — verified (2026-10-16)
+
+- Reproduce Proportions/fullness sample -> manual Breast 100. Submit the current mode, strength and current instructions, not the original recipe. Clear inherited sample instructions on manual mode changes; retain user-authored instructions.
+- Starting generation removes the saved example result. Pending, failed or uncertain requests never fall back to the old case image. Show the request state and its mode/strength in the result pane.
+- A successful result displays the returned image and its actual mode/strength. Status recovery reuses the interrupted request ID and submitted settings; no new paid request is created by a setting change or automatic retry.
+- Verify intercepted multipart payload, network interruption, exact recovery, user instructions and affected sample flows; run typecheck/build and related E2E without paid generation.
+
+Results: before-fix reproduction submitted Breast 100 correctly but retained inherited fullness instructions after changing mode and redisplayed the saved Proportions sample after a network failure. After the fix both stale behaviors are absent. All 12 related E2E scenarios passed (55.9 s); the 2 new regressions passed again (6.6 s) after the recovery footer update. They verify live mode/strength, cleared inherited versus preserved user-authored text, no old-image fallback, original request-ID recovery and actual result metadata. Final typecheck passed (10.872 s), Workers build passed (29.912 s; existing chunk-size warning), Workers SSR returned 200. Provider rendering was mocked, not retried live. Evidence: `test-results/live-editor-settings/`.
+
+## Per-case settings-only options — verified (2026-10-16)
+
+- Remove the global gallery switch. Each of the ten cards has its own settings-only switch immediately after Try, initially off and independent of other cards and the top strip.
+- Card Try uses that card's switch: off loads its photo and exact recipe; on preserves the editor photo/result and applies only the recipe. Switching alone changes no editor content and never generates.
+- All card switches are disabled without a photo or during pending/uncertain edits. Preserve the 4/2/1 responsive layout, comparison sliders, all ten recipes and pending guards.
+- Verify independent defaults/state, separation from the top switch, both Try behaviors, no selection-triggered generation, responsive layout, typecheck and build.
+
+Results: 10 related E2E scenarios passed (50.5 s), including independent card defaults, separation from the top preference, photo/result retention and replacement, all ten Try recipes, pending guards and comparison controls. Browser walk confirmed Try followed by each option at 1440/1024/390px without overflow. Typecheck passed (12.985 s); Workers build passed (47.667 s; existing chunk-size warning). Workers SSR returned 200 with one switch per card, no gallery header switch and an empty initial editor. No paid generation. Evidence: `test-results/per-case-settings/`.
+
 ## Mirrored settings-only controls and compact gallery — verified (2026-10-16)
 
 - Show the same controlled settings-only switch above both the top case strip and lower gallery. Both default off, share checked/disabled state, and stay disabled without a loaded photo or during pending/uncertain requests.

@@ -144,3 +144,35 @@ Verification: 9 related scenarios passed, including SSR content, all ten Try rec
 The top case strip and lower gallery now reuse one controlled settings-only switch component and one state. Checked and disabled states synchronize; changing the preference does not replace a photo/result. Existing selection and pending/uncertain guards are reused. Gallery layout is four columns at 1024px+, two at 768px+, and one below 768px, keeping original portrait ratios, comparison sliders and Try links.
 
 Verification: 10 related E2E scenarios passed (50.5 s), typecheck passed (24.57 s), Workers build passed (1m17.851 s; existing chunk-size warning). Browser walk confirmed both synchronization directions, settings-only retention, compact portraits and no mobile overflow. No paid API calls. Evidence: `test-results/gallery-compact/`.
+
+## Per-case settings-only selection (2026-10-16, current behavior)
+
+The gallery header switch has been replaced with an independent default-off switch after each card's Try action. Each card stores its own preference. Gallery Try passes that explicit value to the shared selection handler, so the top-strip preference cannot change gallery behavior. The top switch applies only to top-strip selections. Toggling alone does not change the photo/result; pending/uncertain and missing-photo guards remain. Four/two/one columns and comparison sliders are preserved. Try copy is shortened to keep each action and option together in compact cards.
+
+Verification: 10 related E2E scenarios passed (50.5 s), typecheck passed (12.985 s), Workers build passed (47.667 s; existing chunk-size warning). Browser walk confirmed independent selection behavior and no overflow at 1440/1024/390px. Workers SSR returned 200 with ten per-card options, no gallery header option and an empty initial editor. No paid generation. Evidence: `test-results/per-case-settings/`.
+
+## Current editor settings and interrupted generation (2026-10-16)
+
+The reported Proportions sample to Breast 100 flow was reproduced without paid calls. The multipart payload already contained Breast/100; the misleading image was the saved sample redisplayed after a network failure. Separately, inherited case instructions could remain after a manual mode change and override the new preset in the prompt.
+
+The editor now tracks inherited instruction origin and clears only auto-filled case text when its mode changes. User-authored text remains. Starting submission clears the saved case reference; an interrupted/failed request displays No new result yet and recovery/error status, never the old case image. The result footer shows the submitted settings, or the actual returned mode/strength after success. Recovery keeps its existing request-ID/snapshot semantics.
+
+Verification: 12 related E2E scenarios passed (55.9 s), with the two new regressions passing again after the recovery footer refinement (6.6 s). Final typecheck passed (10.872 s); Workers build passed (29.912 s, existing chunk-size warning). Workers SSR returned 200 with the expected homepage structure. No live provider generation was performed; actual rendering quality and the user's original network failure were not independently retested. Evidence: test-results/live-editor-settings/.
+
+## Local Neon connection failure follow-up (2026-10-16)
+
+Actual dev-terminal logs showed repeated Better Auth session reads failing with PostgreSQL connection timeouts, before a new edit job was reserved. A standalone SELECT succeeding once did not establish that the running application's session and generation flow worked. The Node pool previously allowed only 3 seconds to connect and 5 seconds per query. It now uses the existing Workers budgets (15 seconds connect, 12 seconds query), with TCP keepalive enabled. No SQL or generation operation is automatically replayed.
+
+Unexpected identity resolution failures now return private HTTP 503 `SESSION_UNAVAILABLE` and translated copy, without falling back to guest generation. Uncertain client recovery remains locked to its original request ID; the new error is deliberately not treated as proof that an earlier interrupted attempt was never charged.
+
+The verified localhost:7001 Vite process was restarted. In the user's actual Edge tab, session resolution succeeded and a manual Breast 100 submission returned `INSUFFICIENT_CREDITS`. It did not invoke the provider or consume credits. Existing balances and quota records were not modified. A separate one-shot diagnostic using the shared provider, response materialization and private Node result store generated the built-in fictional sample at Breast 100 in 36.219 seconds, with a 1086×1448 image and successful byte-for-byte storage read-back. This provider/storage check does not exercise account billing; a successful charged browser generation remains unverified because the account lacks credits.
+
+Verification: 97 focused API tests and 2 E2E regressions passed (5.4 seconds, intercepted generation in E2E). Typecheck passed (10.941 seconds), Workers build passed (30.731 seconds), and local Workers SSR returned 200. Evidence, live result and current browser screenshot: `test-results/db-connection-diagnostic/`.
+
+## Workbench saved-result preview recovery (2026-10-17)
+
+The user's next real Breast 100 edit succeeded in 27.663 seconds. The stored PNG existed and decoded at 1086×1448 (2,288,028 bytes). Its ledger had exactly one 15-credit debit and the account balance was 285. The new workbench had reintroduced direct `<img src="/api/body-edit/.../image">` loading, bypassing the existing authenticated fetch/blob loader used by compact editing cards. The same local URL returned HTML/404 with image request headers, while an ordinary anonymous fetch reached the authenticated API and correctly returned JSON/401.
+
+The workbench now reuses `BodyEditComparison` with no original/comparison control, fetching the private result with same-origin credentials and displaying a blob URL. Optional wrapper/frame classes preserve its full-height direct result layout. The shared loader retains two bounded automatic GET retries, manual Reload image, size/MIME validation and object URL cleanup. The redundant workbench image error/retry state has been removed.
+
+The existing image recovered in the user's actual browser without resubmitting generation: the result decoded at 1086×1448 from a blob URL, showing Breast 100 and the existing download link. Screenshot and targeted diagnostics are in `test-results/result-preview-recovery/`. No new provider call was made for this repair.

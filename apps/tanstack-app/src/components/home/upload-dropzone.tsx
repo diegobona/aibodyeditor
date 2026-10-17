@@ -108,6 +108,7 @@ export function UploadDropzone({
   const [localMode, setLocalMode] = useState<BodyEditMode>(defaultMode);
   const [intensity, setIntensity] = useState<BodyEditIntensity>(defaultIntensity);
   const [instructions, setInstructions] = useState("");
+  const inheritedInstructions = useRef<{ mode: BodyEditMode } | undefined>(undefined);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [error, setError] = useState(""),
     [dragging, setDragging] = useState(false);
@@ -118,8 +119,6 @@ export function UploadDropzone({
   const [reference, setReference] = useState<EditorSample>();
   const [generatedSettings, setGeneratedSettings] = useState<EditorSettings>();
   const [mobileView, setMobileView] = useState<"original" | "result">("original");
-  const [resultLoadError, setResultLoadError] = useState(false);
-  const [resultRetry, setResultRetry] = useState(0);
   const workbench = layout === "workbench";
   const workspace = t.home.examples;
   const startLock = useRef(false);
@@ -172,6 +171,7 @@ export function UploadDropzone({
     setLocalMode(sample.mode);
     onModeChange?.(sample.mode);
     setIntensity(sample.intensity ?? BODY_EDIT_INTENSITY.default);
+    inheritedInstructions.current = sample.instructions ? { mode: sample.mode } : undefined;
     setInstructions(sample.instructions ?? "");
     setInstructionsOpen(Boolean(sample.instructions));
     if (sample.loadPhoto === false) {
@@ -193,6 +193,12 @@ export function UploadDropzone({
     return () => { active = false; };
   }, [sample]);
   useEffect(() => {
+    if (inheritedInstructions.current && inheritedInstructions.current.mode !== mode) {
+      inheritedInstructions.current = undefined;
+      setInstructions("");
+    }
+  }, [mode]);
+  useEffect(() => {
     if (code === "UNAUTHENTICATED" || code === "TRIAL_EXHAUSTED") setSigninOpen(true);
   }, [code]);
   const pickFile = (candidate: File | undefined) => {
@@ -212,6 +218,7 @@ export function UploadDropzone({
     setError("");
     editing.reset();
     if (!preserveSettingsOnPhotoChange) {
+      inheritedInstructions.current = undefined;
       setInstructions("");
       setInstructionsOpen(false);
     }
@@ -246,7 +253,7 @@ export function UploadDropzone({
     setError("");
     try {
       setGeneratedSettings({ mode, intensity, instructions });
-      setResultLoadError(false);
+      setReference(undefined);
       setMobileView("result");
       await editing.submit(file, mode, intensity, instructions);
     } catch {
@@ -274,6 +281,7 @@ export function UploadDropzone({
   };
   const clearPhoto = () => {
     editing.reset(); setReference(undefined); setGeneratedSettings(undefined);
+    inheritedInstructions.current = undefined;
     setInstructions(""); setInstructionsOpen(false); setFile(null); setPhotoSource(null);
     setMobileView("original"); onSampleClear?.();
     if (inputRef.current) inputRef.current.value = "";
@@ -283,6 +291,8 @@ export function UploadDropzone({
     (savedSettings.instructions ?? "").trim() !== instructions.trim());
   const resetOnChange = () => { if (!workbench) editing.reset(); };
   const resultExists = !!editing.result || !!reference;
+  const resultSettings = editing.result?.result ?? (generatedSettings && (pending || editing.error || error) ? generatedSettings : reference);
+  const generationIncomplete = !!generatedSettings && !editing.result && !!(editing.error || error);
   const input = <input ref={inputRef} id={inputId} type="file" accept={bodyEditConfig.allowedMimeTypes.join(",")}
     disabled={locked} className="sr-only" aria-label={copy.inputLabel}
     onChange={(event) => pickFile(event.target.files?.[0])} />;
@@ -338,7 +348,7 @@ export function UploadDropzone({
         </button>
         <div id={inputId + "-instructions-panel"} hidden={!instructionsOpen} className="min-w-0 space-y-1.5 pt-1">
           <label htmlFor={inputId + "-instructions"} className="text-xs font-semibold">{editCopy.instructionsLabel}</label>
-          <Textarea id={inputId + "-instructions"} value={instructions} onChange={event => { setInstructions(event.currentTarget.value); resetOnChange(); }}
+          <Textarea id={inputId + "-instructions"} value={instructions} onChange={event => { inheritedInstructions.current = undefined; setInstructions(event.currentTarget.value); resetOnChange(); }}
             disabled={locked} maxLength={bodyEditConfig.maxInstructionsLength} rows={workbench ? 5 : 2} placeholder={editCopy.instructionsPlaceholder}
             aria-invalid={code === "INVALID_INSTRUCTIONS" || undefined}
             aria-describedby={inputId + "-instructions-hint " + inputId + "-instructions-counter" + (code === "INVALID_INSTRUCTIONS" ? " " + inputId + "-error" : "")}
@@ -391,23 +401,28 @@ export function UploadDropzone({
               <section id={inputId + "-result"} aria-label={workspace.result} data-photo-panel="result"
                 className={cn("min-h-0 min-w-0 flex-col lg:flex", mobileView === "result" ? "flex" : "hidden")}>
                 <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4 text-xs font-semibold">
-                  <span>{editing.result ? editCopy.resultTitle : reference ? workspace.sampleResult : workspace.result}</span>{download}
+                  <span>{editing.result ? editCopy.resultTitle : pending ? editCopy.pending : generationIncomplete ? workspace.generationIncomplete : reference ? workspace.sampleResult : workspace.result}</span>{download}
                 </div>
                 <div id="editor-result" className="contents"><div id="hero-showcase" data-result-example={!editing.result ? reference?.id : undefined}
                   className="relative flex h-[420px] min-h-0 items-center justify-center bg-background sm:h-[480px] lg:h-auto lg:flex-1">
                   {pending ? <div role="status" className="flex max-w-xs flex-col items-center gap-3 p-6 text-center"><LoaderCircle className="size-7 animate-spin text-primary" /><p className="text-sm">{editCopy.pending}</p></div>
-                    : editing.result ? <>
-                      <img key={editing.result.jobId + resultRetry} src={editing.result.result.imageUrl + (resultRetry ? (editing.result.result.imageUrl.includes("?") ? "&" : "?") + "previewRetry=" + resultRetry : "")}
-                        alt={editCopy.afterAlt} className={cn("absolute inset-0 h-full w-full object-contain", resultLoadError && "invisible")}
-                        onLoad={() => setResultLoadError(false)} onError={() => setResultLoadError(true)} />
-                      {resultLoadError && <div role="status" className="p-6 text-center text-sm text-muted-foreground"><p>{editCopy.resultLoadError}</p><Button type="button" variant="outline" className="mt-3" onClick={() => { setResultLoadError(false); setResultRetry(value => value + 1); }}>{editCopy.reloadResult}</Button></div>}
-                    </> : reference ? <svg role="img" aria-label={reference.afterAlt ?? editCopy.afterAlt} viewBox="0 0 768 1024" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-hidden">
+                    : editing.result ? <BodyEditComparison key={editing.result.jobId} beforeSrc={null} afterSrc={editing.result.result.imageUrl}
+                      beforeAlt={editCopy.beforeAlt} afterAlt={editCopy.afterAlt} beforeLabel={editCopy.before} afterLabel={editCopy.after}
+                      controlLabel={editCopy.compareLabel} hint={editCopy.compareHint} loadingLabel={editCopy.loadingResult}
+                      loadErrorLabel={editCopy.resultLoadError} reloadLabel={editCopy.reloadResult}
+                      className="absolute inset-0" frameClassName="h-full rounded-none bg-background sm:h-full" />
+                    : generationIncomplete ? <div role="status" className="flex max-w-sm flex-col items-center gap-3 p-6 text-center">
+                      <RefreshCw className="size-7 text-muted-foreground" aria-hidden="true" />
+                      <p className="text-sm font-semibold">{workspace.generationIncomplete}</p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{error || editError}</p>
+                    </div> : reference ? <svg role="img" aria-label={reference.afterAlt ?? editCopy.afterAlt} viewBox="0 0 768 1024" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-hidden">
                       <image href={reference.src} x={-768} width={1536} height={1024} />
                     </svg>
                     : <div className="flex max-w-xs flex-col items-center gap-3 p-6 text-center text-muted-foreground"><Sparkles className="size-7 text-primary/60" /><p className="text-sm font-medium">{workspace.resultPlaceholder}</p><p className="text-xs leading-relaxed">{workspace.resultPlaceholderHint}</p></div>}
                 </div></div>
-                <div className="flex min-h-24 shrink-0 items-center border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
-                  {settingsChanged && resultExists ? <p role="status" className="text-primary">{workspace.currentSettingsDiffer}</p> : <p>{editing.result ? workspace.reviewResult : reference ? workspace.sampleNote : workspace.resultPlaceholderHint}</p>}
+                <div className="flex min-h-24 shrink-0 flex-col justify-center gap-1 border-t px-4 py-3 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+                  {resultSettings && <p data-result-settings className="font-semibold text-foreground">{copy.modes[resultSettings.mode]} · {t.home.realResults.intensity.replace("{value}", String(resultSettings.intensity ?? BODY_EDIT_INTENSITY.default))}</p>}
+                  {settingsChanged && resultExists ? <p role="status" className="text-primary">{workspace.currentSettingsDiffer}</p> : <p>{editing.result ? workspace.reviewResult : pending ? editCopy.pending : unresolved ? editCopy.checkEdit : reference ? workspace.sampleNote : workspace.resultPlaceholderHint}</p>}
                 </div>
               </section>
             </div>

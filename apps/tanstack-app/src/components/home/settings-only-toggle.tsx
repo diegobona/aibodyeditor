@@ -1,6 +1,6 @@
 import { useTranslation } from "@/hooks/use-translation";
 
-/** Two locations expose one controlled preference. */
+/** Controlled option reused by the top strip and individual gallery cards. */
 export function SettingsOnlyToggle({ checked, disabled, onChange }: {
   checked: boolean;
   disabled: boolean;

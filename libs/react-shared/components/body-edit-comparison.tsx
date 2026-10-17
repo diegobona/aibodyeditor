@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ChevronsLeftRight, LoaderCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { bodyEditConfig } from "../../../config/body-editor";
+import { cn } from "@libs/ui/utils/cn";
 
 /** Actual source and saved output are separate images, unlike the promotional diptychs. */
 export function BodyEditComparison({
@@ -16,6 +17,8 @@ export function BodyEditComparison({
   loadingLabel,
   loadErrorLabel,
   reloadLabel,
+  className,
+  frameClassName,
 }: {
   beforeSrc: string | null;
   afterSrc: string;
@@ -28,6 +31,8 @@ export function BodyEditComparison({
   loadingLabel: string;
   loadErrorLabel: string;
   reloadLabel: string;
+  className?: string;
+  frameClassName?: string;
 }) {
   const [position, setPosition] = useState(50);
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'retrying' | 'failed'>('loading');
@@ -86,11 +91,12 @@ export function BodyEditComparison({
   // Retry only the existing private result GET, never the billable edit request.
   const loaded = imageState === 'loaded';
   return (
-    <div>
-      <div data-result-frame className="relative isolate h-80 overflow-hidden rounded-2xl bg-muted has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/70 sm:h-[420px]" aria-busy={imageState === 'loading' || imageState === 'retrying'}>
+    <div className={className}>
+      <div data-result-frame className={cn("relative isolate h-80 overflow-hidden rounded-2xl bg-muted has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/70 sm:h-[420px]", frameClassName)} aria-busy={imageState === 'loading' || imageState === 'retrying'}>
         {imageUrl && <img
           key={attempt}
           src={imageUrl}
+          data-result-source={afterSrc}
           alt={afterAlt}
           className={`h-full w-full object-contain ${loaded ? '' : 'opacity-0'}`}
           onLoad={() => setImageState('loaded')}

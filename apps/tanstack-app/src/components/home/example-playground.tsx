@@ -25,14 +25,14 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
   const [settingsOnly, setSettingsOnly] = useState(false);
   const rail = useRef<HTMLDivElement>(null);
 
-  const choose = (key: ExampleKey) => {
+  const choose = (key: ExampleKey, onlySettings = settingsOnly) => {
     if (pending) return;
     const chosen = REAL_RESULT_CASES.find((value) => value.key === key)!;
     const details = t.home.realResults[key];
     setSelected(key);
     setSample({ id: key, src: REAL_RESULT_IMAGES[key], alt: details.beforeAlt, afterAlt: details.afterAlt,
       mode: chosen.mode, intensity: chosen.intensity, instructions: details.instructions,
-      loadPhoto: !(settingsOnly && photoSource) });
+      loadPhoto: !(onlySettings && photoSource) });
   };
 
   return (
@@ -68,9 +68,8 @@ export function ExamplePlayground({ selectedMode, onModeChange, pending, onPendi
           sample={sample} onSampleClear={() => { setSample(undefined); setSelected(undefined); }} />
       </div>
     </section>
-    <RealResultsGallery pending={pending} settingsOnly={settingsOnly} onSettingsOnlyChange={setSettingsOnly}
-      settingsOnlyDisabled={!photoSource || pending} onTry={(key) => {
-      choose(key);
+    <RealResultsGallery pending={pending} settingsOnlyDisabled={!photoSource || pending} onTry={(key, onlySettings) => {
+      choose(key, onlySettings);
       rail.current?.querySelector(`[data-example="${key}"]`)?.scrollIntoView({ block: "nearest", inline: "center" });
     }} />
     </>

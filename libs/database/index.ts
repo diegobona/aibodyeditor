@@ -238,8 +238,12 @@ if (_dialect === 'sqlite') {
 
   const poolInstance = new Pool({
     connectionString: _getConnectionString(),
-    connectionTimeoutMillis: _isWorkersRuntime ? CF_CONNECT_TIMEOUT : 3000,
-    query_timeout: _isWorkersRuntime ? CF_QUERY_TIMEOUT : 5000,
+    // Direct Neon connections in local Node development also need time for
+    // DNS/TLS and compute startup. Three seconds can fail before auth is read.
+    connectionTimeoutMillis: CF_CONNECT_TIMEOUT,
+    query_timeout: CF_QUERY_TIMEOUT,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
     idleTimeoutMillis: _isWorkersRuntime ? 1500 : 10000,
     max: _isWorkersRuntime ? 12 : 5,
     maxUses: _isWorkersRuntime ? 1 : undefined,

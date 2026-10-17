@@ -6,7 +6,7 @@ import { BodyEditError, type BodyEditOutcome } from '../../../../libs/credits/bo
 
 const noStore = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 const statuses: Record<string, number> = {
-  UNAUTHORIZED: 401, FORBIDDEN: 403, INVALID_ORIGIN: 403, INVALID_INPUT: 400, INVALID_INSTRUCTIONS: 400, NOT_CONFIGURED: 503,
+  UNAUTHORIZED: 401, FORBIDDEN: 403, INVALID_ORIGIN: 403, INVALID_INPUT: 400, INVALID_INSTRUCTIONS: 400, NOT_CONFIGURED: 503, SESSION_UNAVAILABLE: 503,
   NOT_FOUND: 404, IDEMPOTENCY_CONFLICT: 409, INSUFFICIENT_CREDITS: 402, TIMEOUT: 504,
   CANCELLED: 502, UPSTREAM_ERROR: 502, INVALID_RESPONSE: 502, OUTPUT_TOO_LARGE: 502,
   ASYNC_RESPONSE: 502, STORAGE_ERROR: 502, RESULT_UNAVAILABLE: 502, INTERNAL_ERROR: 500,
@@ -67,7 +67,13 @@ export function createBodyEditHandlers(deps: {
   readImage(key: string): Promise<{ bytes: Uint8Array; mimeType: string } | null>;
 }) {
   const user = async (request: Request) => {
-    const found = await deps.getUser(request);
+    let found: Awaited<ReturnType<typeof deps.getUser>>;
+    try { found = await deps.getUser(request); }
+    catch (error) {
+      if (error instanceof BodyEditError) throw error;
+      console.warn('[body-edit] identity unavailable', { name: (error as Error)?.name, code: (error as { code?: string })?.code });
+      throw new BodyEditError('SESSION_UNAVAILABLE', 503);
+    }
     if (found?.banned) throw new BodyEditError('FORBIDDEN', 403);
     return found;
   };

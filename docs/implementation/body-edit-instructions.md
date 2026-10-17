@@ -16,7 +16,7 @@ Blank instructions retain the previous input hash, including historical named st
 
 The browser captures normalized instructions in the in-memory attempt. An uncertain retry resends that snapshot and UUID, rather than reading mutable UI text. Reload recovery uses existing job/request IDs and owner checks. No raw instructions are added to job tables, credit metadata, status/config DTOs, logs or session storage; no migration is needed. Guest allowance, account credit cost/refunds and private output ownership continue through their existing paths.
 
-`INVALID_INSTRUCTIONS` is a known precharge failure in the browser. It unlocks settings and preserves text for correction, without status polling or automatic resubmission. Settings, including this field, lock during pending/uncertain generation. Login and mode/strength changes retain the input. Choosing another photo/sample or editing another photo resets it.
+`INVALID_INSTRUCTIONS` is a known precharge failure in the browser. It unlocks settings and preserves text for correction, without status polling or automatic resubmission. Settings, including this field, lock during pending/uncertain generation. Login and strength changes retain the input. User-written instructions also survive mode changes; instructions inherited automatically from a case are cleared when its mode changes, preventing the old case goal from overriding the new mode. Case selection applies its own instructions; homepage photo replacement retains current settings, while standalone guide photo replacement and Edit another photo reset instructions.
 
 The local outline continues to visualize the selected mode/strength. Extra instructions apply when generating; the outline does not parse them into a new target shape.
 
